@@ -53,10 +53,8 @@ const actions = {
 
 function boot() {
   try {
-    initGame(canvas, () => {
-      makePet();
-      game.scene?.resize?.();
-    });
+    // The art repaints itself as it's needed, and the pet stays exactly where it was.
+    initGame(canvas, () => game.scene?.resize?.());
   } catch (e) {
     console.error(e);
     fail('Pockling needs WebGL 2 to draw itself, and this browser doesn\'t have it. Try a newer browser?');
@@ -100,8 +98,10 @@ function applyDemo() {
   if (params.has('neck')) p.outfit.neck = params.get('neck');
   s.berries = Number(params.get('berries') ?? 240);
   s.foodsTried = ['apple', 'carrot', 'cookie'];
-  s.settings.sound = false;
-  s.settings.music = false;
+  if (!params.has('sound')) {
+    s.settings.sound = false;
+    s.settings.music = false;
+  }
   applySettings();
 }
 
@@ -137,7 +137,7 @@ let tickIn = 1;
 
 function frame(now) {
   requestAnimationFrame(frame);
-  if (game.g.lost) return;
+  if (game.g.lost || window.__hold) return;
   const dt = clamp((now - last) / 1000, 0, 0.05);
   last = now;
   game.time += dt;
@@ -229,5 +229,6 @@ window.__scenes = { home, hatch, bath, walk, fetchGame, snackGame, hideGame };
 window.__state = { trait, stageOf, BREED_IDS };
 window.__talk = talkMode;
 window.__audio = audio;
+window.__goTo = goTo;
 
 boot();

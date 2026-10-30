@@ -73,7 +73,7 @@ export function measure() {
   const css = probe ? getComputedStyle(probe) : null;
   const safeTop = css ? parseFloat(css.paddingTop) || 0 : 0;
   const safeBottom = css ? parseFloat(css.paddingBottom) || 0 : 0;
-  const u = clamp(Math.min(w, h * 0.6) / 390, 0.62, 2.4);
+  const u = clamp(Math.min(w, h * (w > h ? 0.78 : 0.6)) / 390, 0.62, 2.4);
   const foldY = game.fold && !game.fold.vertical ? game.fold.y : null;
   const horizon = foldY ?? Math.round(h * (w > h ? 0.56 : 0.6));
   const room = h - horizon;
@@ -140,7 +140,7 @@ let saveTimer = 0;
 
 export function save(now = false) {
   clearTimeout(saveTimer);
-  if (game.demo) return;
+  if (game.demo || game.startingOver) return;
   if (now) {
     writeSave(game.state);
     return;

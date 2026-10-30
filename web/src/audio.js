@@ -31,7 +31,7 @@ class Audio_ {
       this.sfx.gain.value = 0.85;
       this.sfx.connect(this.master);
       this.musicBus = c.createGain();
-      this.musicBus.gain.value = 0.16;
+      this.musicBus.gain.value = 0.24;
       // A little room around the music box.
       const delay = c.createDelay(1);
       delay.delayTime.value = 0.28;
@@ -70,7 +70,8 @@ class Audio_ {
   }
 
   resume() {
-    if (this.ctx?.state === 'suspended') this.ctx.resume();
+    // iOS also has its own state, 'interrupted', after a call or a trip to the background.
+    if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.ctx.resume();
   }
 
   get ready() {
@@ -364,11 +365,11 @@ class Audio_ {
   }
 
   whoosh() {
-    this.burst(0.3, { vol: 0.14, freq: 800, q: 0.8, slide: 3 });
+    this.burst(0.3, { vol: 0.22, freq: 800, q: 0.8, slide: 3 });
   }
 
   sparkle() {
-    for (let i = 0; i < 3; i++) this.tone(rand(1900, 3200), 0.13, { at: i * 0.05, vol: 0.05 });
+    for (let i = 0; i < 3; i++) this.tone(rand(1900, 3200), 0.13, { at: i * 0.05, vol: 0.08 });
   }
 
   chime() {
@@ -407,11 +408,11 @@ class Audio_ {
   }
 
   bubble() {
-    this.tone(rand(500, 900), 0.08, { vol: 0.07, slide: rand(1.6, 2.4) });
+    this.tone(rand(500, 900), 0.08, { vol: 0.1, slide: rand(1.6, 2.4) });
   }
 
   soap() {
-    this.burst(0.09, { vol: 0.05, freq: rand(3000, 5000), q: 2 });
+    this.burst(0.09, { vol: 0.13, freq: rand(3000, 5000), q: 2 });
   }
 
   water(on_) {

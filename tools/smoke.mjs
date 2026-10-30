@@ -38,6 +38,31 @@ const flows = {
     await d.js(`__game.scene.exit?.()`);
     const saved = await d.js(`localStorage.length`);
     assert(saved > 0, 'the pet is saved');
+    // It's still there after a reload, and starting over really does.
+    await d.js(`__game.ui.on_menu(); __game.ui.hideSheet()`);
+    await d.sleep(1000);
+    await d.open('web/');
+    assert((await d.js(`T.pet().name`)) === 'Biscuit', 'the pet survives a reload');
+    assert(await d.js(`T.scene === __scenes.home`), 'a returning player goes straight home');
+    await d.js(`__game.ui.on_restartYes()`);
+    await d.sleep(600);
+    await d.waitFor(`window.__game && window.__game.scene === window.__scenes.hatch`, 8000);
+  },
+
+  async contextloss(d) {
+    await d.open('web/?demo=home&breed=kitling&hour=11');
+    await d.js(`window.__ext = __game.g.gl.getExtension('WEBGL_lose_context'); __ext.loseContext()`);
+    await d.waitFor(`__game.g.lost`, 3000);
+    await d.sleep(300);
+    await d.js(`__ext.restoreContext()`);
+    await d.waitFor(`!__game.g.lost`, 4000);
+    await d.sleep(1200);
+    await d.js(`T.ff(0.4)`);
+    await d.shot('context-restored');
+    const before = await d.js(`window.__frames`);
+    await d.sleep(1200);
+    assert((await d.js(`window.__frames`)) > before, 'frames keep coming after the context comes back');
+    await d.js(`__goTo(__scenes.bath); T.ff(0.3); __goTo(__scenes.home); T.ff(0.3)`);
   },
 
   async home(d) {
@@ -316,6 +341,97 @@ const flows = {
     await d.shot('friend-love');
     await d.js(`T.up(${w * 0.8}, ${h * 0.6}); __game.fakeHour = 22; T.ff(6)`);
     await d.shot('walk-night');
+  },
+
+  async sound(d) {
+    await d.open('web/?demo=home&breed=kitling&hour=11&sound=1');
+    await d.js(`(() => {
+      __audio.unlock();
+      const a = __audio;
+      const an = a.ctx.createAnalyser();
+      an.fftSize = 2048;
+      a.master.connect(an);
+      const buf = new Float32Array(an.fftSize);
+      window.__peak = 0;
+      window.__meter = setInterval(() => {
+        an.getFloatTimeDomainData(buf);
+        for (const v of buf) window.__peak = Math.max(window.__peak, Math.abs(v));
+      }, 10);
+    })()`);
+    await d.waitFor(`__audio.ctx.state === 'running'`, 5000);
+    const names = ['hello', 'happy', 'chirrup', 'sad', 'whine', 'surprise', 'giggle', 'yum', 'yuck', 'yawn', 'ow', 'sniff', 'sneeze', 'burp', 'snore', 'mumble', 'babble', 'boop', 'boing', 'plop', 'thud', 'pop', 'chomp', 'gulp', 'whoosh', 'sparkle', 'chime', 'fanfare', 'coin', 'click', 'camera', 'crack', 'poof', 'bubble', 'soap', 'splash', 'rumble'];
+    const results = [];
+    for (const name of names) {
+      await d.js(`window.__peak = 0; __audio.${name}()`);
+      await d.sleep(name === 'fanfare' || name === 'yawn' ? 700 : 340);
+      results.push([name, await d.js(`window.__peak`)]);
+      await d.sleep(120);
+    }
+    const quiet = results.filter(([, p]) => p < 0.01).map(([n]) => n);
+    const loud = results.filter(([, p]) => p > 0.98).map(([n]) => n);
+    console.log('  peaks:', results.map(([n, p]) => `${n} ${p.toFixed(2)}`).join(', '));
+    assert(!quiet.length, `silent: ${quiet.join(', ')}`);
+    if (loud.length) console.log('  near clipping:', loud.join(', '));
+    await d.js(`window.__peak = 0; __audio.startMusic('day')`);
+    await d.sleep(2500);
+    const music = await d.js(`window.__peak`);
+    console.log('  music peak:', music.toFixed(3));
+    assert(music > 0.005, 'the music box plays');
+    await d.js(`__audio.stopMusic(); window.__peak = 0; __audio.purr(true)`);
+    await d.sleep(800);
+    const purr = await d.js(`window.__peak`);
+    await d.js(`__audio.purr(false); window.__peak = 0; __audio.water(true)`);
+    await d.sleep(600);
+    const water = await d.js(`window.__peak`);
+    await d.js(`__audio.water(false)`);
+    console.log('  purr peak:', purr.toFixed(3), 'water peak:', water.toFixed(3));
+    assert(purr > 0.005 && water > 0.005, 'purr and water make sound');
+    // And a whole session with sound on.
+    await d.js(`T.scene.giveFood('apple'); T.ff(3)`);
+    await d.js(`__goTo(__scenes.bath); T.ff(0.3); T.tap(200, 500); T.ff(0.3)`);
+    await d.js(`__goTo(__scenes.walk); T.down(340, 560); T.ff(6); T.up(340, 560)`);
+    await d.js(`__goTo(__scenes.snackGame); T.ff(6)`);
+    await d.js(`__goTo(__scenes.hideGame); T.ff(5)`);
+    await d.js(`__goTo(__scenes.fetchGame); T.ff(1)`);
+    await d.js(`__goTo(__scenes.home); T.ff(2); clearInterval(__meter)`);
+  },
+
+  async rooms(d) {
+    await d.open('web/?demo=home&breed=cubling&hour=14&berries=4000');
+    await d.js(`__game.ui.on_rooms()`);
+    await d.sleep(300);
+    for (const id of ['mint', 'lilac', 'sky', 'sunny', 'night', 'peach']) {
+      await d.js(`document.querySelector('[data-action="room"][data-id="${id}"]').click()`);
+      await d.sleep(200);
+      assert((await d.js(`__game.state.pet.room`)) === id, `room ${id} is in use`);
+      await d.js(`__game.ui.hideSheet(); T.scene.idleIn = 99; T.ff(0.4)`);
+      await d.shot(`room-${id}`);
+      await d.js(`__game.ui.on_rooms()`);
+      await d.sleep(150);
+    }
+  },
+
+  async food(d) {
+    await d.open('web/?demo=home&breed=puppling&hour=12&tummy=20&berries=4000');
+    const taste = await d.js(`(async () => { const c = await import('./src/catalog.js'); return c.TASTES.puppling; })()`);
+    console.log('  puppling tastes:', JSON.stringify(taste));
+    const love = Array.isArray(taste.love) ? taste.love[0] : taste.love;
+    await d.js(`T.scene.idleIn = 99; __game.state.foodsTried = []; T.scene.giveFood('${taste.hate}'); T.ff(0.7)`);
+    await d.shot('food-hate-0');
+    await d.js(`T.ff(0.8)`);
+    await d.shot('food-hate-1');
+    await d.js(`T.ff(4)`);
+    await d.js(`T.scene.idleIn = 99; T.scene.giveFood('${love}'); T.ff(0.7)`);
+    await d.shot('food-love-0');
+    await d.js(`T.ff(0.9)`);
+    await d.shot('food-love-1');
+    await d.js(`T.ff(0.9)`);
+    await d.shot('food-love-2');
+    await d.js(`T.ff(5)`);
+    await d.js(`__game.state.pet.tummy = 100; T.scene.idleIn = 99; T.scene.giveFood('apple'); T.ff(0.6)`);
+    await d.shot('food-full');
+    await d.js(`T.ff(3); __game.state.pet.bathDirt = 1; T.ff(3)`);
+    await d.shot('home-muddy');
   },
 
   async talk(d) {

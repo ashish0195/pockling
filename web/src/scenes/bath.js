@@ -201,7 +201,8 @@ export const bath = {
     actor.scale = 1;
     actor.air = 0;
     this.tubY = view.floorY + 6 * view.u;
-    actor.x = view.w / 2;
+    this.cx = game.stageX ?? view.w / 2;
+    actor.x = this.cx;
     actor.y = this.tubY - 34 * view.u;
     pet.dirt = game.state.pet.bathDirt ? 1 : clamp((60 - game.state.pet.clean) / 60);
     pet.settle();
@@ -216,7 +217,7 @@ export const bath = {
     this.touch = null;
     this.drops = [];
     this.done = false;
-    this.duck = { x: view.w * 0.7, bob: 0, squeak: 0 };
+    this.duck = { x: this.cx + view.w * 0.2, bob: 0, squeak: 0 };
     this.rainbow = 0;
     this.lastFoam = [999, 999];
     this.pointer = null;
@@ -515,22 +516,22 @@ export const bath = {
         for (let a = 0; a < 40; a++) {
           const t = a / 39;
           const ang = Math.PI + t * Math.PI * smooth(this.rainbow);
-          g.sprite(assets.get('fx.dot'), w / 2 + Math.cos(ang) * r, this.tubY - 40 * u + Math.sin(ang) * r, { w: 17 * u, h: 17 * u, tint: c, alpha: 0.5 });
+          g.sprite(assets.get('fx.dot'), this.cx + Math.cos(ang) * r, this.tubY - 40 * u + Math.sin(ang) * r, { w: 17 * u, h: 17 * u, tint: c, alpha: 0.5 });
         }
       });
     }
 
     // Back of the water, then the pet, then the tub front over its feet.
     const s = u * (1 + (pet.sizeBoost ?? 0));
-    g.sprite(water, w / 2, this.tubY - 112 * u, { ay: 0, tint: [0.88, 0.94, 1] });
+    g.sprite(water, this.cx, this.tubY - 112 * u, { ay: 0, tint: [0.88, 0.94, 1] });
     pet.draw(g, actor.x, actor.y, s, light);
-    g.sprite(water, w / 2, this.tubY - 92 * u, { ay: 0 });
+    g.sprite(water, this.cx, this.tubY - 92 * u, { ay: 0 });
     // The duck bobs on the water.
     const d = this.duck;
     const duck = assets.get('bath.duck');
     const ds = 1 + d.squeak * 0.2;
     g.sprite(duck, d.x, this.tubY - 62 * u + Math.sin(d.bob * 2.2) * 3 * u, { w: duck.w * u * ds, h: duck.h * u * (2 - ds), rot: Math.sin(d.bob * 1.4) * 0.09 });
-    g.sprite(tub, w / 2, this.tubY - 40 * u, { ay: 0 });
+    g.sprite(tub, this.cx, this.tubY - 40 * u, { ay: 0 });
 
     // Water from the shower head.
     const dropTex = assets.get('fx.drop');

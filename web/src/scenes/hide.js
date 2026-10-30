@@ -395,9 +395,14 @@ export const hideGame = {
       const c = smooth(this.cover);
       g.rect(0, 0, w, h, [0.24, 0.13, 0.18], c * 0.94);
       const paw = pet.tex('paw');
+      const pad = pet.tex('pawPad');
       const size = Math.max(w * 1.05, h * 0.5);
-      g.sprite(paw, w * (-0.55 + c * 0.82), h * 0.5, { w: size, h: size, rot: 0.3 });
-      g.sprite(paw, w * (1.55 - c * 0.82), h * 0.5, { w: size, h: size, rot: -0.3, flip: true });
+      for (const side of [-1, 1]) {
+        const x = w * 0.5 + side * w * (1.05 - c * 0.82);
+        const rot = side * -0.3;
+        g.sprite(paw, x, h * 0.5, { w: size, h: size, rot, flip: side > 0 });
+        g.sprite(pad, x, h * 0.5, { w: size, h: size, rot, flip: side > 0 });
+      }
     }
   },
 };

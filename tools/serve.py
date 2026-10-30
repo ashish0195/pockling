@@ -23,5 +23,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+class Server(http.server.ThreadingHTTPServer):
+    # A page loads dozens of modules at once; the default backlog of 5 resets some of them.
+    request_queue_size = 128
+
+
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8651
-http.server.ThreadingHTTPServer(('127.0.0.1', port), Handler).serve_forever()
+Server(('127.0.0.1', port), Handler).serve_forever()

@@ -348,6 +348,8 @@ export const ui = {
   },
 
   on_restartYes() {
+    // Leaving the page normally saves it, which would bring the old pet straight back.
+    game.startingOver = true;
     clearSave();
     location.reload();
   },

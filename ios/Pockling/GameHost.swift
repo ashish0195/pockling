@@ -60,7 +60,10 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
             isReady = true
             flush()
         case "save":
-            store.write(body["json"] as? String ?? "")
+            let json = body["json"] as? String ?? ""
+            store.write(json)
+            // Starting over: a reload mustn't bring back the save we put into the page at launch.
+            if json.isEmpty { webView.configuration.userContentController.removeAllUserScripts() }
         case "haptic":
             haptics.play(body["kind"] as? String ?? "light")
         case "purr":

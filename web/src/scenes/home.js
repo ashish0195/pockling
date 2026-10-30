@@ -82,6 +82,9 @@ export const home = {
     const state = game.state;
     actor.update(dt);
     talkMode.update(dt);
+    const p = game.state.pet;
+    const grime = p.bathDirt ? 1 : clamp((32 - p.clean) / 32) * 0.8;
+    game.pet.dirt += (grime - game.pet.dirt) * Math.min(1, dt * 2);
     game.fx.update(dt);
     this.dim.step(dt);
     this.zoom.step(dt);
@@ -163,7 +166,7 @@ export const home = {
   /** Comes right up to the screen and squishes its nose on the glass, fogging it up. */
   *pressGlass() {
     const { actor, pet, view } = game;
-    const cx = view.w / 2;
+    const cx = game.stageX ?? view.w / 2;
     const startX = actor.x;
     const startY = actor.y;
     pet.setFace('starry');
@@ -220,7 +223,7 @@ export const home = {
   /** A big wet lick right across the screen. */
   *lickGlass() {
     const { actor, pet, view } = game;
-    const cx = view.w / 2;
+    const cx = game.stageX ?? view.w / 2;
     const startX = actor.x;
     const startY = actor.y;
     const big = clamp((view.w * 0.95) / (200 * view.u * pet.stage.scale), 1.6, 3.2);

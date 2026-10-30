@@ -95,6 +95,7 @@
     add({ breed: 'kitling', coat: 'peach' }, 600, 626, 1.34, 'happy');
   } else if (mode === 'word') {
     canvas.style.display = 'none';
+    document.documentElement.style.background = 'transparent';
     document.body.style.background = 'transparent';
     const [c, x] = makeCanvas(W, H);
     x.textAlign = 'center';

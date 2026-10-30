@@ -135,6 +135,11 @@ export async function drive(options, fn) {
       await sleep(wait);
       await api.js(HELPERS);
     },
+    /** A screenshot of the page as it stands, as fast as it can go. */
+    async capture(file, quality = 92) {
+      const r = await send('Page.captureScreenshot', { format: 'jpeg', quality, optimizeForSpeed: true });
+      writeFileSync(file, Buffer.from(r.result.data, 'base64'));
+    },
     /** Screenshots after this keep the page's transparency. */
     transparent() {
       return send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } });
