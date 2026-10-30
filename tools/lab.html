@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pockling lab</title>
+<style>html, body { margin: 0; height: 100%; background: #fbe9dc; overflow: hidden; } canvas { width: 100vw; height: 100vh; display: block; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+  // A contact sheet for judging the art: every breed, or one pet in every expression.
+  import { Renderer, Assets } from '../web/src/gl.js';
+  import { Pet, FACES } from '../web/src/pet.js';
+  import { BREEDS, BREED_IDS } from '../web/src/catalog.js';
+  import { defineOutfits } from '../web/src/bake/outfits.js';
+  import { defineFx } from '../web/src/bake/fx.js';
+
+  const q = new URLSearchParams(location.search);
+  const mode = q.get('mode') ?? 'breeds';
+  const canvas = document.getElementById('c');
+  const g = new Renderer(canvas);
+  const assets = new Assets(g);
+  defineOutfits(assets);
+  defineFx(assets);
+  g.resize(innerWidth, innerHeight, devicePixelRatio);
+
+  const pets = [];
+  const add = (spec, x, y, s, face, opts = {}) => {
+    const pet = new Pet(assets, spec, { prefix: `p${pets.length}`, bakeScale: Number(q.get('s') ?? 3) });
+    if (face) pet.setFace(face);
+    Object.assign(pet, opts);
+    if (q.get('yaw')) pet.r.yaw.target = Number(q.get('yaw'));
+    pet.settle();
+    pet.blinkIn = 1e9;
+    pets.push({ pet, x, y, s });
+    return pet;
+  };
+
+  const W = innerWidth, H = innerHeight;
+  if (mode === 'breeds') {
+    const coatIndex = Number(q.get('coat') ?? 0);
+    BREED_IDS.forEach((id, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      add({ breed: id, coat: BREEDS[id].coats[coatIndex].id, seed: 1, stage: q.get('stage') ?? 'grown', outfit: q.get('outfit') ? { [q.get('slot') ?? 'head']: q.get('outfit') } : {} }, W * (col + 0.5) / 3, H * (row + 0.82) / 2, Math.min(W / 3, H / 2) / 300, q.get('face') ?? 'smile');
+    });
+  } else if (mode === 'faces') {
+    const id = q.get('breed') ?? 'kitling';
+    const names = Object.keys(FACES);
+    const cols = 6, rows = Math.ceil(names.length / cols);
+    names.forEach((f, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      add({ breed: id, coat: BREEDS[id].coats[Number(q.get('coat') ?? 0)].id, seed: 1, stage: 'grown' }, W * (col + 0.5) / cols, H * (row + 0.88) / rows, Math.min(W / cols, H / rows) / 290, f);
+    });
+  } else if (mode === 'one') {
+    const id = q.get('breed') ?? 'kitling';
+    add({ breed: id, coat: BREEDS[id].coats[Number(q.get('coat') ?? 0)].id, seed: 1, stage: q.get('stage') ?? 'grown' }, W / 2, H * 0.86, Math.min(W, H) / 300, q.get('face') ?? 'smile', { });
+  } else if (mode === 'outfits') {
+    const names = q.get('list').split(',');
+    names.forEach((o, i) => {
+      const col = i % 5, row = Math.floor(i / 5);
+      const [slot, id] = o.split(':');
+      add({ breed: q.get('breed') ?? 'cubling', coat: 'milktea', seed: 1, stage: 'grown', outfit: { [slot]: id } }, W * (col + 0.5) / 5, H * (row + 0.88) / 3, Math.min(W / 5, H / 3) / 300, 'smile');
+    });
+  }
+
+  let last = performance.now();
+  const yaw = Number(q.get('yaw') ?? 0);
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    g.time += dt;
+    g.begin(0.985, 0.93, 0.875);
+    for (const p of pets) {
+      if (yaw) p.pet.r.yaw.target = yaw;
+      p.pet.update(dt);
+      const sh = assets.get('fx.shadow');
+      const st = p.pet.stage.scale * p.s;
+      g.sprite(sh, p.x, p.y, { w: 210 * st, h: 44 * st, alpha: 0.5 });
+      p.pet.draw(g, p.x, p.y, p.s);
+    }
+    g.end();
+    window.__frames = (window.__frames ?? 0) + 1;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__ready = true;
+</script>
+</body>
+</html>

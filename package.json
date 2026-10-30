@@ -1,0 +1,11 @@
+{
+  "name": "pockling",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pockling: a tiny fluffy pet that lives in your pocket.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "serve": "python3 tools/serve.py 8651"
+  }
+}

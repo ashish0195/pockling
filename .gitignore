@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.claude/
+tools/.art/
+ios/build/
+xcuserdata/
+ios/*.log
