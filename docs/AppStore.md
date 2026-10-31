@@ -126,7 +126,8 @@ Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
 
 ## TestFlight
 
-Internal group "Internal", with automatic distribution, so every upload reaches its testers. `ashish@9io.ai` is in it.
+- Internal group "Internal", with automatic distribution, so every upload reaches its testers. `ashish@9io.ai` is in it.
+- External group "External", with two testers. Build 2 went to Beta App Review on 31 October 2026. Apple invites them when it's approved, and later builds have to be added to the group by hand.
 
 ## Not tested before submitting
 
