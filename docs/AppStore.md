@@ -2,7 +2,7 @@
 
 Copy and settings for Pockling on the App Store.
 
-**Status:** Pockling 1.0 (build 1) is uploaded and the listing is filled in, but not submitted. See "Before submitting" at the end.
+**Status:** Pockling 1.0 (build 2) was submitted on 31 October 2026 and is waiting for review.
 
 **App Store Connect:** Apple ID 6829163472
 **Name:** Pockling: Cute Virtual Pet
@@ -128,7 +128,8 @@ Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
 
 Internal group "Internal", with automatic distribution, so every upload reaches its testers. `ashish@9io.ai` is in it.
 
-## Before submitting
+## Not tested before submitting
 
-- Test on a real iPhone through TestFlight: talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone.
-- For the account holder: App Review contact details, publishing App Privacy (saved as Data Not Collected, not published), then Add for Review and Submit.
+Nothing has run on a real iPhone yet. TestFlight has the same build, for trying talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone. Apple Silicon Macs, Apple Vision Pro and the iPhone Duo fold haven't been run either.
+
+Removing a version from review to swap a build goes back to the end of the queue, so anything found now ships as an update.
