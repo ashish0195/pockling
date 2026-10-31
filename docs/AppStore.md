@@ -12,7 +12,7 @@ Copy and settings for Pockling on the App Store.
 **Team:** 9X9HQVQ78G
 **Primary language:** English (U.S.)
 **Category:** Games, with the subcategories Simulation and Family. No secondary category.
-**Price:** Free, no in-app purchases, in every country and region.
+**Price:** Free, no in-app purchases, in all 175 countries and regions, and on Apple silicon Macs and Apple Vision Pro (App Store Connect's defaults, neither tested).
 **Age rating:** 4+. Every answer is None or No: no web access, user content, chat, ads, contests or gambling, and no violence.
 **Content rights:** no third-party content. All the art and sound is made by the app's own code.
 **Export compliance:** `ITSAppUsesNonExemptEncryption` is false. The app uses no encryption.
