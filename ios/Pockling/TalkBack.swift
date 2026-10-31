@@ -42,6 +42,7 @@ final class TalkBack {
     private var quiet = 0.0
     private var took = 0.0
     private var routeObserver: NSObjectProtocol?
+    private var restarts: [Date] = []
     private var pretendVoice: DispatchSourceTimer?
 
     init() {
@@ -122,7 +123,15 @@ final class TalkBack {
                 self?.queue.async {
                     guard let self, thisRun == self.run, self.phase != .off else { return }
                     self.tearDown()
-                    self.begin()
+                    // A route that won't settle would otherwise have us starting over for ever.
+                    let now = Date()
+                    self.restarts = self.restarts.filter { now.timeIntervalSince($0) < 5 } + [now]
+                    if self.restarts.count > 3 {
+                        self.restarts = []
+                        self.tell("error")
+                    } else {
+                        self.begin()
+                    }
                 }
             }
             if !TalkBack.hasMicrophone { startPretendVoice(sampleRate: format.sampleRate, run: thisRun) }
@@ -142,12 +151,12 @@ final class TalkBack {
         routeObserver = nil
         pretendVoice?.cancel()
         pretendVoice = nil
+        player?.stop()
         if let engine {
             if TalkBack.hasMicrophone { engine.inputNode.removeTap(onBus: 0) }
             engine.mainMixerNode.removeTap(onBus: 0)
             engine.stop()
         }
-        player?.stop()
         engine = nil
         player = nil
         clearTake()
@@ -211,7 +220,12 @@ final class TalkBack {
     // MARK: Saying it back
 
     private func playBack(seconds: Double) {
-        guard let mono, let player else { return }
+        // A route change stops the engine a moment before we hear about it, and playing on a stopped engine aborts.
+        guard let mono, let player, engine?.isRunning == true else {
+            clearTake()
+            phase = .listening
+            return
+        }
         // Leave off most of the silence that ended the take.
         let trim = Int(TalkBack.silenceEnd * 0.8 / seconds)
         let parts = take.dropLast(min(trim, max(0, take.count - 1)))

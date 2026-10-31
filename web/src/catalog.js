@@ -145,7 +145,7 @@ export const OUTFITS = {
   bow: { name: 'Pink bow', slot: 'head', cost: 25 },
   flower: { name: 'Daisy', slot: 'head', cost: 25 },
   party: { name: 'Party hat', slot: 'head', cost: 40 },
-  beanie: { name: 'Cosy beanie', slot: 'head', cost: 50 },
+  beanie: { name: 'Cozy beanie', slot: 'head', cost: 50 },
   crown: { name: 'Tiny crown', slot: 'head', cost: 120 },
   wizard: { name: 'Wizard hat', slot: 'head', cost: 90 },
   pumpkin: { name: 'Pumpkin hat', slot: 'head', cost: 60 },

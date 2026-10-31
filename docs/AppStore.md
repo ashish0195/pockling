@@ -1,18 +1,30 @@
 # App Store listing
 
-Not submitted yet. The app record needs creating in App Store Connect first.
+Copy and settings for Pockling on the App Store.
+
+**Status:** see "Before submitting" at the end.
 
 **Name:** Pockling: Cute Virtual Pet
 **Subtitle:** Hatch, love, feed and walk it
 **Bundle id:** app.pockling.Pockling
-**Category:** Games (Simulation, Family)
-**Price:** Free, no in-app purchases
-**Age rating:** 4+
+**SKU:** pockling
+**Team:** 9X9HQVQ78G
+**Primary language:** English (U.S.)
+**Category:** Games, with the subcategories Simulation and Family. No secondary category.
+**Price:** Free, no in-app purchases, in every country and region.
+**Age rating:** 4+. Every answer is None or No: no web access, user content, chat, ads, contests or gambling, and no violence.
+**Content rights:** no third-party content. All the art and sound is made by the app's own code.
+**Export compliance:** `ITSAppUsesNonExemptEncryption` is false. The app uses no encryption.
 **Support URL:** https://bitfold.9io.ai/pockling/support/
+**Marketing URL:** https://bitfold.9io.ai/pockling/
 **Privacy policy URL:** https://bitfold.9io.ai/pockling/privacy/
-**App Privacy:** Data Not Collected
+**Copyright:** 2026 9io
+**App Privacy:** Data Not Collected, no tracking.
+**Release:** automatically once App Review approves it.
 
-**Keywords:** virtual pet,tamagotchi,cute,kawaii,raise,pet care,fluffy,kitten,puppy,bunny,feed,dress up
+**Keywords:** kawaii,raise,care,fluffy,kitten,puppy,bunny,fox,dragon,bear,dress up,animal,adopt,talking,bath,egg
+
+Words already in the name and subtitle count without being repeated here. No other company's product names: Apple rejects them, and they don't belong in our listing anyway.
 
 **Promotional text:**
 A tiny friend is waiting in an egg. Tap to hatch it, then stroke it, feed it, bathe it and tuck it in. No ads, ever.
@@ -27,7 +39,7 @@ ALL THE LOVE
 Stroke it and it purrs, and you feel the purr in your hand. Boop its nose. Tickle its tummy until it rolls over laughing. Hold it for a cuddle. Pull it and it stretches. It presses its nose on your screen and fogs up the glass. Sometimes it licks it.
 
 FEED IT
-Drag a snack up to its mouth and watch it nibble. Every pet has favourites, and one food it can't stand. You'll find out which.
+Drag a snack up to its mouth and watch it nibble. Every pet has favorites, and one food it can't stand. You'll find out which.
 
 BATH TIME
 Soap it into a ball of bubbles, rinse it, then rub it dry until it poofs up twice its size. Squeak the duck. Stay for the rainbow.
@@ -62,8 +74,58 @@ The microphone is used only for talk-back, the microphone button on the right of
 
 The fold in iPhone Duo is used to place the line between the wall and the floor.
 
+## Screenshots and previews
+
+All of it comes out of the game itself, staged with its own hooks, and goes to `build/appstore/` (not in git). The dev server has to be running.
+
+```bash
+node tools/store-shots.mjs build/appstore/raw phone
+```
+
+```bash
+node tools/store-shots.mjs build/appstore/raw ipad
+```
+
+```bash
+node tools/store-frame.mjs build/appstore/raw build/appstore
+```
+
+```bash
+node tools/store-preview.mjs build/appstore/preview
+```
+
+```bash
+node tools/make-art.mjs store build/appstore/creative
+```
+
+| App Store Connect slot | Folder | Size |
+|---|---|---|
+| iPhone with Dynamic Island (medium display), **required** | `iphone-6.3/` | 1206x2622 |
+| iPhone with Dynamic Island (large display) | `iphone-6.9/` | 1320x2868 |
+| iPad 13", **required** | `ipad-13/` | 2064x2752 |
+| App preview (iPhone) | `preview/pockling-preview.mp4` | 886x1920, 29 s, silent audio track |
+| Product page header | `creative/header-3840x1646.png` | 3840x1646 |
+| Search results | `creative/search-3840x2560.jpg` | 3840x2560 |
+
+The headlines are in `tools/store-frame.mjs`. `10-hatch` on iPhone is a real capture from the simulator (the raw `hatch.png` is swapped for it); the rest render the same code in Chrome, with the iPhone's safe areas.
+
+The iPhone Duo slot stays empty for now: the fold has never been run on a device or a simulator, so we shouldn't earn the "Made for iPhone Duo" badge yet. Apple requires it from April 2027 for apps built with the iOS 27.1 SDK.
+
+## Uploading a build
+
+The team has no registered devices, so archive unsigned and let the export sign it.
+
+```bash
+xcodebuild archive -project ios/Pockling.xcodeproj -scheme Pockling -configuration Release -destination 'generic/platform=iOS' -archivePath ios/build/Pockling.xcarchive CODE_SIGNING_ALLOWED=NO
+```
+
+```bash
+xcodebuild -exportArchive -archivePath ios/build/Pockling.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath ios/build/export -allowProvisioningUpdates
+```
+
+Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
+
 ## Before submitting
 
-- Create the app record for `app.pockling.Pockling` in App Store Connect, under team 9X9HQVQ78G.
-- Take screenshots on the real App Store sizes.
-- Test talk-back with real speech on a real iPhone: the simulator can't (see `ios/Pockling/TalkBack.swift`).
+- Test on a real iPhone through TestFlight: talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone.
+- App Review contact details and publishing App Privacy are for the account holder to do, then Submit for Review.

@@ -189,6 +189,7 @@ export const ui = {
   hideSheet() {
     $('#sheets')?.replaceChildren();
     this.hideTray();
+    game.scene?.liftFor?.(null);
   },
 
   get sheetOpen() {
@@ -376,7 +377,7 @@ export const ui = {
 
   // ── Closet and shop ──
 
-  on_closet(el, slot = 'head') {
+  on_closet(el, slot = 'head', again = false) {
     const s = game.state;
     const p = s.pet;
     const slots = [['head', 'Hats'], ['face', 'Glasses'], ['neck', 'Neck']];
@@ -387,10 +388,13 @@ export const ui = {
       const on = p.outfit[item.slot] === id;
       return `<button class="tile${on ? ' on' : ''}${owned || s.berries >= item.cost ? '' : ' locked'}" data-action="outfit" data-id="${id}" data-slot="${slot}"><img src="${outfitThumb(id)}" alt="">${item.name}${owned ? '' : `<span class="price">🍓 ${item.cost}</span>`}</button>`;
     };
-    this.sheet(`${this.head('Closet')}
+    const wrap = this.sheet(`${this.head('Closet')}
       <div class="tabs">${slots.map(([k, label]) => `<button class="tab${k === slot ? ' on' : ''}" data-action="closetTab" data-slot="${k}">${label}</button>`).join('')}</div>
       <div class="grid">${items.map(tile).join('')}</div>
       <p class="muted center" style="font-size:13px;margin-top:12px">You have 🍓 ${s.berries}. Earn more on walks, in games and by visiting every day.</p>`);
+    wrap.classList.add('see-pet');
+    if (again) wrap.classList.add('still');
+    game.scene?.liftFor?.(wrap);
   },
 
   on_shop(el) {
@@ -398,7 +402,7 @@ export const ui = {
   },
 
   on_closetTab(el) {
-    this.on_closet(el, el.dataset.slot);
+    this.on_closet(el, el.dataset.slot, true);
   },
 
   on_outfit(el) {
@@ -415,12 +419,17 @@ export const ui = {
     wear(s, id);
     const c = game.pet?.anchors.top;
     if (c) {
-      game.fx.sparkles(c[0], c[1] + 20, 8, 50);
+      game.fx.sparkles(c[0] + (game.scene?.pan?.x ?? 0), c[1] + 20 + (game.scene?.lift?.x ?? 0), 8, 50);
       audio.sparkle();
     }
     game.pet?.squash(0.1);
     game.actor?.relax('happy');
-    this.on_closet(el, slot);
+    // Wearing something shouldn't lose your place in the closet.
+    const sheet = $('#sheet-wrap .sheet');
+    const scrolled = [sheet?.scrollTop ?? 0, sheet?.querySelector('.grid')?.scrollLeft ?? 0];
+    this.on_closet(el, slot, true);
+    $('#sheet-wrap .sheet').scrollTop = scrolled[0];
+    $('#sheet-wrap .grid').scrollLeft = scrolled[1];
     this.refresh();
     save();
   },

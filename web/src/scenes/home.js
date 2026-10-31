@@ -31,6 +31,8 @@ export const home = {
     pet.asleep = false;
     this.dim = new Spring(0, 30, 9);
     this.zoom = new Spring(1, 60, 11);
+    this.lift = new Spring(0, 42, 11);
+    this.pan = new Spring(0, 42, 11);
     this.focus = [game.view.w / 2, game.view.h * 0.6];
     this.touch = null;
     this.drag = null;
@@ -67,6 +69,25 @@ export const home = {
     talkMode.stop();
   },
 
+  /** With the closet open, the camera moves so the pet shows above it, or beside it on a wide screen. */
+  liftFor(wrap) {
+    const { actor, pet, view } = game;
+    const sheet = wrap?.querySelector('.sheet');
+    this.lift.target = 0;
+    this.pan.target = 0;
+    if (!sheet) return;
+    const box = sheet.getBoundingClientRect();
+    const outer = wrap.getBoundingClientRect();
+    if (box.width < outer.width * 0.8) {
+      this.pan.target = Math.max(0, actor.x - (outer.width - box.width) / 2);
+      return;
+    }
+    const top = outer.bottom - box.height;
+    // On a small screen the sheet wins over the feet, not the face.
+    const headroom = actor.y - 250 * view.u * pet.stage.scale - 60;
+    this.lift.target = clamp(actor.y + 14 * view.u - top, 0, Math.max(0, headroom));
+  },
+
   resize() {
     defineRoomArt();
     this.layout = roomLayout(game.view);
@@ -88,6 +109,8 @@ export const home = {
     game.fx.update(dt);
     this.dim.step(dt);
     this.zoom.step(dt);
+    this.lift.step(dt);
+    this.pan.step(dt);
 
     for (const c of this.clouds) {
       c.x += c.v * dt;
@@ -1093,6 +1116,7 @@ export const home = {
     const py = ty * 5 * u;
 
     g.save();
+    if (this.lift.x > 0.5 || this.pan.x > 0.5) g.translate(-this.pan.x, -this.lift.x);
     const z = this.zoom.x;
     if (z !== 1) {
       g.translate(this.focus[0], this.focus[1]);
@@ -1183,7 +1207,7 @@ export const home = {
 
     // Foreground: fairy lights, close to the camera, glowing at night.
     const lights = assets.get('room.lights');
-    g.sprite(lights, px * 1.2, Math.max(view.safeTop - 2, 0) + 2 * u, { ax: 0, ay: 0, tint: amb });
+    g.sprite(lights, px * 1.2, 2 * u, { ax: 0, ay: 0, tint: amb });
     if (lights.bulbs) {
       const glowAmt = clamp(light.night * 0.9 + (1 - light.mix.day) * 0.2 + dim);
       if (glowAmt > 0.03) {
@@ -1191,7 +1215,7 @@ export const home = {
         lights.bulbs.forEach(([bx, by, col], i) => {
           const tw = 0.62 + 0.38 * Math.sin(game.time * 1.7 + i * 1.3);
           const c = col.startsWith('#') ? [parseInt(col.slice(1, 3), 16) / 255, parseInt(col.slice(3, 5), 16) / 255, parseInt(col.slice(5, 7), 16) / 255] : [1, 1, 1];
-          g.sprite(glow, bx + px * 1.2, by + Math.max(view.safeTop - 2, 0) + 2 * u, { w: 44 * u, h: 44 * u, tint: c, alpha: glowAmt * tw * 0.8, add: 1 });
+          g.sprite(glow, bx + px * 1.2, by + 2 * u, { w: 44 * u, h: 44 * u, tint: c, alpha: glowAmt * tw * 0.8, add: 1 });
         });
       }
     }

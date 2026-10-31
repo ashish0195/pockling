@@ -282,7 +282,9 @@ const flows = {
     await d.js(`__game.ui.on_closet(document.body, 'head')`);
     await d.sleep(350);
     await d.shot('menu-closet', { draw: false });
+    assert(await d.js(`T.scene.lift.target > 0`), 'the camera moves so the pet stands above the closet');
     await d.js(`__game.ui.hideSheet()`);
+    assert((await d.js(`T.scene.lift.target`)) === 0, 'and moves back when the closet closes');
     await d.sleep(300);
     await d.js(`__game.ui.on_rooms()`);
     await d.sleep(350);

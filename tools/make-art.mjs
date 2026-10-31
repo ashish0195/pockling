@@ -21,6 +21,17 @@ const snap = async (name, mode, width, height) => {
   return file;
 };
 
+// The App Store's header and search images have their own command, because nothing in the game needs them.
+//   node tools/make-art.mjs store <out dir>
+if (process.argv[2] === 'store') {
+  const dest = process.argv[3];
+  for (const [name, mode, width, height] of [['header-3840x1646', 'header', 3840, 1646], ['search-3840x2560', 'search', 3840, 2560]]) {
+    const png = await snap(name, mode, width, height);
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', png, '-pix_fmt', 'rgb24', join(dest, `${name}.png`)]);
+  }
+  process.exit(0);
+}
+
 const icon = await snap('icon-1024', 'icon', 1024, 1024);
 const sips = (...args) => execFileSync('sips', args, { stdio: 'ignore' });
 const web = join(root, 'web');

@@ -336,6 +336,37 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   z-index: 3;
 }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+#sheet-wrap.see-pet { background: transparent; }
+#ui:has(.see-pet) #needs { opacity: 0; }
+@media (orientation: portrait) and (max-height: 760px) {
+  /* Short phones: two rows that slide sideways, so there's room left to see the pet. */
+  .see-pet .grid {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-template-rows: repeat(2, auto);
+    grid-auto-columns: 31%;
+    overflow-x: auto;
+    touch-action: pan-x;
+    margin: 0 -16px;
+    padding: 3px 16px;
+    scrollbar-width: none;
+  }
+  .see-pet .muted { display: none; }
+}
+@media (orientation: landscape) {
+  /* Wide screens: down the side, with the pet beside it. */
+  #ui:has(.see-pet) #dock, #ui:has(.see-pet) #side { opacity: 0; }
+  #sheet-wrap.see-pet { align-items: flex-end; justify-content: stretch; }
+  #sheet-wrap.see-pet .sheet {
+    flex: 1;
+    width: 52%;
+    max-height: none;
+    border-radius: 28px 0 0 28px;
+    padding-right: calc(var(--safe-r) + 16px);
+    animation: none;
+  }
+}
+#sheet-wrap.still, #sheet-wrap.still .sheet { animation: none; }
 .sheet {
   max-height: 86dvh;
   overflow-y: auto;

@@ -168,7 +168,7 @@ export function roomLayout(view) {
   const { w, horizon, floorY, u } = view;
   return {
     window: { x: w * 0.29, y: Math.max(horizon - 340 * u, 118 * u), w: 132 * u, h: 192 * u },
-    bed: { x: w * 0.82, y: horizon + 46 * u, w: 148 * u, h: 86 * u },
+    bed: { x: Math.min(w * 0.82, w - 100 * u), y: horizon + 46 * u, w: 148 * u, h: 86 * u },
     plant: { x: w * 0.09, y: horizon + 12 * u },
     shelf: { x: w * 0.74, y: Math.max(horizon - 248 * u, 150 * u), w: 124 * u },
     rug: { x: w * 0.5, y: floorY - 6 * u, rx: Math.min(w * 0.44, 190 * u), ry: 46 * u },

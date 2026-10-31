@@ -61,7 +61,7 @@ window.T = {
 
 /** Opens a browser and gives fn a set of helpers. Throws at the end if the page logged any errors. */
 export async function drive(options, fn) {
-  const { width = 390, height = 844, dpr = 1, base = process.env.BASE ?? 'http://localhost:8651/', outDir = process.env.SHOTS ?? join(tmpdir(), 'pockling-shots'), quiet = false, media = false } = options;
+  const { width = 390, height = 844, dpr = 1, base = process.env.BASE ?? 'http://localhost:8651/', outDir = process.env.SHOTS ?? join(tmpdir(), 'pockling-shots'), quiet = false, media = false, safe = null } = options;
   mkdirSync(outDir, { recursive: true });
   const port = await new Promise((done) => {
     const s = createServer();
@@ -173,6 +173,7 @@ export async function drive(options, fn) {
   await send('Log.enable');
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: dpr, mobile: false });
+  if (safe) await send('Emulation.setSafeAreaInsetsOverride', { insets: { top: safe[0], bottom: safe[1], left: 0, right: 0 } });
   if (media) {
     await send('Emulation.setFocusEmulationEnabled', { enabled: true });
     await send('Browser.grantPermissions', { permissions: ['audioCapture'], origin: new URL(base).origin });

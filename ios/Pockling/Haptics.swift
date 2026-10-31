@@ -64,8 +64,9 @@ final class Haptics {
             relativeTime: 0,
             duration: length
         )
-        let points = (0...16).map { index -> CHHapticParameterCurve.ControlPoint in
-            let t = Double(index) / 16 * length
+        // Well under 16 control points, which is where a curve may stop working: only a real device can tell.
+        let points = (0...12).map { index -> CHHapticParameterCurve.ControlPoint in
+            let t = Double(index) / 12 * length
             let breath = 0.5 - 0.5 * cos(t / length * 2 * .pi)
             return .init(relativeTime: t, value: Float(0.35 + 0.6 * breath))
         }
