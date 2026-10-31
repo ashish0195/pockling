@@ -218,7 +218,7 @@ export const hatch = {
     const picks = [...NAMES].sort(() => Math.random() - 0.5).slice(0, 4);
     document.getElementById('layer').innerHTML = `
       <div id="hatch-top" style="top:calc(var(--safe-t) + 22px)">
-        <h1 style="font-size:27px">It's a ${coat.name.toLowerCase()} ${b.name}!</h1>
+        <h1 style="font-size:27px">It's ${/^[aeiou]/i.test(coat.name) ? 'an' : 'a'} ${coat.name.toLowerCase()} ${b.name}!</h1>
         <p>Say hello. What will you call it?</p>
       </div>
       <div id="hatch">
