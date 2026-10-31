@@ -2,8 +2,9 @@
 
 Copy and settings for Pockling on the App Store.
 
-**Status:** see "Before submitting" at the end.
+**Status:** Pockling 1.0 (build 1) is uploaded and the listing is filled in, but not submitted. See "Before submitting" at the end.
 
+**App Store Connect:** Apple ID 6829163472
 **Name:** Pockling: Cute Virtual Pet
 **Subtitle:** Hatch, love, feed and walk it
 **Bundle id:** app.pockling.Pockling
@@ -68,11 +69,9 @@ No ads. No in-app purchases. No accounts. No timers that nag you. Nothing you sa
 
 Pockling is a virtual pet with no account, no network features and no purchases. Everything is inside the app.
 
-To try it: pick an egg and tap Hatch, tap the egg six times, choose a name, then tap Welcome home. Stroke the pet with a finger, drag food up from the Feed tray, and try Wash, Play, Walk and Sleep along the bottom.
+To try it: pick an egg and tap Hatch this egg, tap the egg six times, choose a name, then tap Welcome home. Stroke the pet with a finger, drag food up from the Feed tray, and try Wash, Play, Walk and Sleep along the bottom.
 
 The microphone is used only for talk-back, the microphone button on the right of the home screen. Sound is held in memory just long enough to play back at a higher pitch, and is never stored or transmitted. The rest of the app works if permission is refused.
-
-The fold in iPhone Duo is used to place the line between the wall and the floor.
 
 ## Screenshots and previews
 
@@ -125,7 +124,11 @@ xcodebuild -exportArchive -archivePath ios/build/Pockling.xcarchive -exportOptio
 
 Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
 
+## TestFlight
+
+Internal group "Internal", with automatic distribution, so every upload reaches its testers. `ashish@9io.ai` is in it.
+
 ## Before submitting
 
 - Test on a real iPhone through TestFlight: talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone.
-- App Review contact details and publishing App Privacy are for the account holder to do, then Submit for Review.
+- For the account holder: App Review contact details, publishing App Privacy (saved as Data Not Collected, not published), then Add for Review and Submit.
