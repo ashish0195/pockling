@@ -130,9 +130,10 @@
       x.fillText(wide ? 'A tiny friend who lives behind your screen' : 'Hatch it. Love it. Tuck it in.', W / 2, titleY + size * (wide ? 0.76 : 0.82));
     });
     const row = H * (wide ? 0.985 : 0.965);
-    const big = wide ? 3.05 : 4.3;
-    const faces = [['drakling', 'mint', 'smile', -1400, 0.74], ['puppling', 'honey', 'happy', 1400, 0.74], ['foxling', 'ember', 'joy', -790, 0.86], ['bunling', 'lilac', 'bliss', 790, 0.86], ['kitling', 'peach', 'happy', 0, 1]];
-    for (const [breed, coat, face, dx, size] of faces) add({ breed, coat }, W / 2 + dx * (wide || Math.abs(dx) > 1000 ? 1 : 1.08) * k, row, big * size * k, face);
+    const big = wide ? 3.05 : 3.9;
+    const [outer, inner] = wide ? [[1400, 0.74], [790, 0.86]] : [[1440, 0.7], [845, 0.86]];
+    const faces = [['drakling', 'mint', 'smile', -1, outer], ['puppling', 'honey', 'happy', 1, outer], ['foxling', 'ember', 'joy', -1, inner], ['bunling', 'lilac', 'bliss', 1, inner], ['kitling', 'peach', 'happy', 0, [0, 1]]];
+    for (const [breed, coat, face, side, [dx, size]] of faces) add({ breed, coat }, W / 2 + side * dx * k, row, big * size * k, face);
   } else if (mode === 'word') {
     canvas.style.display = 'none';
     document.documentElement.style.background = 'transparent';
