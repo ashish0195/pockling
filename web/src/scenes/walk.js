@@ -280,6 +280,12 @@ export const walk = {
       if (moving) {
         this.stepPhase = (this.stepPhase ?? 0) + (Math.abs(this.speed) / (11 * u)) * dt;
         actor.air = Math.abs(Math.sin(this.stepPhase)) * 8 * u;
+        // A pitter-patter each time a little bounce lands.
+        const beat = Math.floor(this.stepPhase / Math.PI);
+        if (beat !== this.stepBeat) {
+          this.stepBeat = beat;
+          audio.step();
+        }
         const ph = Math.cos(this.stepPhase * 2);
         pet.r.sy.target = 1 + ph * 0.03;
         pet.r.sx.target = 1 - ph * 0.025;

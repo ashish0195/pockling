@@ -82,11 +82,17 @@ export class Actor {
     pet.r.lean.target = dir * 0.05;
     pet.walking = 1;
     let phase = 0;
+    let steps = 0;
     while (Math.abs(x - this.x) > 3) {
       const { dt } = this;
       this.x += dir * Math.min(speed * dt, Math.abs(x - this.x));
       phase += dt * (speed / 11);
       this.air = Math.abs(Math.sin(phase)) * 9 * this.scale;
+      // A pitter-patter each time a little bounce lands.
+      if (Math.floor(phase / Math.PI) > steps) {
+        steps = Math.floor(phase / Math.PI);
+        audio.step();
+      }
       pet.r.sy.target = 1 + Math.cos(phase * 2) * 0.03;
       pet.r.sx.target = 1 - Math.cos(phase * 2) * 0.025;
       yield;
@@ -154,7 +160,7 @@ export class Actor {
   *wave() {
     const pet = this.pet;
     pet.setFace('smile');
-    audio.chirrup();
+    audio.hello();
     pet.r.lean.target = -0.03;
     for (let i = 0; i < 3; i++) {
       pet.paws(0, 0, 8, -46);
@@ -183,6 +189,7 @@ export class Actor {
   *stretch() {
     const pet = this.pet;
     pet.setFace('bliss');
+    audio.stretchy();
     pet.r.sy.target = 1.14;
     pet.r.sx.target = 0.9;
     pet.paws(-14, -56, 14, -56);
@@ -193,7 +200,6 @@ export class Actor {
     pet.paws();
     yield 0.25;
     this.relax('smile');
-    audio.chirrup();
     yield 0.4;
     this.relax();
   }
@@ -214,8 +220,10 @@ export class Actor {
       if (pet.spec.breed === 'drakling') {
         this.fx.sparkles(m[0], m[1], 14, 34);
         this.fx.stars(m[0], m[1], 5);
+        audio.sparkle();
       } else {
         this.fx.bubbles(m[0], m[1], 4, 14);
+        audio.bubble();
       }
     }
     haptic('light');
@@ -231,22 +239,27 @@ export class Actor {
     const pet = this.pet;
     pet.setFace('happy');
     pet.wag(1.2, 16);
-    audio.chirrup();
+    audio.wee();
     let a = 0;
     const turns = 3;
     let t = 0;
+    let steps = 0;
     while (t < 1.5) {
       t += this.dt;
       a = (t / 1.5) * turns * Math.PI * 2;
       pet.r.yaw.target = Math.sin(a) * 1.05;
       this.air = Math.abs(Math.sin(a * 2)) * 6;
+      if (Math.floor(t / 0.14) > steps) {
+        steps = Math.floor(t / 0.14);
+        audio.step();
+      }
       yield;
     }
     this.air = 0;
     pet.r.yaw.target = 0;
     pet.setFace('dizzy');
     pet.wag(0.2, 5);
-    audio.mumble();
+    audio.dizzy();
     pet.r.lean.target = 0.04;
     yield 0.4;
     pet.r.lean.target = -0.04;
@@ -260,13 +273,16 @@ export class Actor {
     const pet = this.pet;
     pet.setFace('happy');
     pet.wag(1, 14);
-    audio.chirrup();
+    audio.trill();
     for (let i = 0; i < 6; i++) {
       const s = i % 2 ? 1 : -1;
       pet.r.lean.target = s * 0.1;
       pet.r.yaw.target = s * 0.26;
       pet.paws(0, s > 0 ? -44 : 0, 0, s < 0 ? -44 : 0);
       pet.squash(0.08);
+      // It sings its own little tune, a "la" and a tap for every step.
+      if (i) audio.la(i - 1);
+      audio.step();
       const t = this.at.top;
       if (t && i % 2) this.fx.notes(t[0], t[1] - 6, 1);
       yield 0.3;
@@ -279,6 +295,7 @@ export class Actor {
   *lookAround() {
     const pet = this.pet;
     const s = Math.random() < 0.5 ? -1 : 1;
+    if (Math.random() < 0.45) audio.curious();
     pet.r.yaw.target = s * 0.46;
     pet.lookFree = [s * 0.9, 0.1];
     pet.ears(s * 0.1, s * 0.1);
@@ -296,10 +313,12 @@ export class Actor {
     for (let i = 0; i < 7; i++) {
       pet.paws(0, 0, 10, i % 2 ? -92 : -80);
       pet.r.earR.kick(4);
+      audio.scritch();
       yield 0.08;
     }
     pet.paws();
     this.relax('smile');
+    audio.coo();
     yield 0.3;
     this.relax();
   }
@@ -374,6 +393,7 @@ export class Actor {
     pet.r.lean.target = 0;
     const b = this.at.belly;
     if (b) this.fx.hearts(b[0], b[1] - 16, 2, 30);
+    audio.heart();
     yield 0.35;
     this.relax('smile');
     yield 0.5;
@@ -384,12 +404,12 @@ export class Actor {
   *rollOver() {
     const pet = this.pet;
     audio.giggle();
-    audio.giggle();
     haptic('success');
     pet.setFace('joy');
     pet.wag(1.2, 18);
     pet.squash(0.2);
     yield 0.1;
+    audio.wee();
     let t = 0;
     const dir = Math.random() < 0.5 ? -1 : 1;
     while (t < 0.9) {
@@ -443,6 +463,7 @@ export class Actor {
     const pet = this.pet;
     if (height > 180) {
       audio.ow();
+      audio.stars(0.25);
       pet.setFace('dizzy');
       const t = this.at.top;
       if (t) this.fx.stars(t[0], t[1], 6);
@@ -520,7 +541,10 @@ export class Actor {
     pet.setFace('starry');
     pet.wag(1.3, 18);
     pet.paws(-10, -56, 10, -56);
-    for (let i = 0; i < 3; i++) yield* this.hop(56, 0.36, { sound: false });
+    for (let i = 0; i < 3; i++) {
+      audio.yay(i);
+      yield* this.hop(56, 0.36, { sound: false });
+    }
     pet.setFace('joy');
     yield 0.7;
     this.relax('smile');

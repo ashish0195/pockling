@@ -361,11 +361,11 @@ const flows = {
       }, 10);
     })()`);
     await d.waitFor(`__audio.ctx.state === 'running'`, 5000);
-    const names = ['hello', 'happy', 'chirrup', 'sad', 'whine', 'surprise', 'giggle', 'yum', 'yuck', 'yawn', 'ow', 'sniff', 'sneeze', 'burp', 'snore', 'mumble', 'babble', 'boop', 'boing', 'plop', 'thud', 'pop', 'chomp', 'gulp', 'whoosh', 'sparkle', 'chime', 'fanfare', 'coin', 'click', 'camera', 'crack', 'poof', 'bubble', 'soap', 'splash', 'rumble'];
+    const names = ['hello', 'happy', 'chirrup', 'sad', 'whine', 'surprise', 'giggle', 'yum', 'yuck', 'yawn', 'ow', 'sniff', 'sneeze', 'burp', 'snore', 'mumble', 'babble', 'boop', 'boing', 'plop', 'thud', 'pop', 'chomp', 'gulp', 'whoosh', 'sparkle', 'chime', 'fanfare', 'coin', 'click', 'camera', 'crack', 'poof', 'bubble', 'soap', 'splash', 'rumble', 'coo', 'trill', 'squeak', 'wee', 'stretchy', 'dizzy', 'stars', 'curious', 'la', 'yay', 'heart', 'step', 'scritch'];
     const results = [];
     for (const name of names) {
       await d.js(`window.__peak = 0; __audio.${name}()`);
-      await d.sleep(name === 'fanfare' || name === 'yawn' ? 700 : 340);
+      await d.sleep(['fanfare', 'yawn', 'stretchy', 'dizzy'].includes(name) ? 700 : 340);
       results.push([name, await d.js(`window.__peak`)]);
       await d.sleep(120);
     }
@@ -388,6 +388,39 @@ const flows = {
     await d.js(`__audio.water(false)`);
     console.log('  purr peak:', purr.toFixed(3), 'water peak:', water.toFixed(3));
     assert(purr > 0.005 && water > 0.005, 'purr and water make sound');
+    // Playing with it makes its sounds: count the calls while stroking, holding, stretching and swinging
+    // it, and while it plays by itself.
+    const played = await d.js(`(() => {
+      window.__calls = {};
+      for (const n of ['heart', 'coo', 'squeak', 'wee', 'step', 'la', 'trill', 'scritch', 'yay', 'dizzy', 'stretchy']) {
+        const f = __audio[n].bind(__audio);
+        __audio[n] = (...args) => { __calls[n] = (__calls[n] ?? 0) + 1; return f(...args); };
+      }
+      const { actor, pet } = __game;
+      T.scene.idleIn = 99;
+      let a = pet.anchors;
+      const u = a.unit;
+      let [cx, cy] = a.center;
+      // A long stroke, then a long hold.
+      T.down(cx, a.top[1] + 30 * u);
+      for (let i = 0; i < 40; i++) { T.move(cx + Math.sin(i * 0.5) * 60 * u, a.top[1] + (40 + Math.cos(i * 0.5) * 10) * u); T.ff(0.08); }
+      T.up(cx, a.top[1] + 30 * u); T.ff(1.5);
+      T.down(cx, cy); T.ff(3.5); T.up(cx, cy); T.ff(2.5);
+      // Pull it sideways until it comes off the floor, swing it about, let go.
+      a = pet.anchors; [cx, cy] = a.center;
+      T.down(cx, cy); T.ff(0.05); T.move(cx + 12, cy); T.ff(0.05);
+      for (let i = 1; i <= 24 && !T.scene.carrying; i++) { T.move(cx + i * 20 * a.unit, cy); T.ff(0.05); }
+      const lifted = T.scene.carrying;
+      T.move(cx - 200, cy - 150); T.ff(1 / 30); T.move(cx + 200, cy - 150); T.ff(1 / 30);
+      T.up(cx + 200, cy - 150); T.ff(3);
+      for (const s of ['dance', 'chaseTail', 'scratch', 'stretch', 'celebrate']) { actor.play(actor[s]()); T.ff(3.4); }
+      return { lifted, calls: __calls };
+    })()`);
+    console.log('  sounds while playing:', JSON.stringify(played.calls));
+    assert(played.lifted, 'pulling it far enough picks it up');
+    const missing = ['heart', 'coo', 'squeak', 'wee', 'step', 'la', 'trill', 'scritch', 'yay', 'dizzy', 'stretchy'].filter((n) => !played.calls[n]);
+    assert(!missing.length, `no sound from: ${missing.join(', ')}`);
+    assert(played.calls.squeak === 3, 'a stretch squeaks three times as it gets longer');
     // And a whole session with sound on.
     await d.js(`T.scene.giveFood('apple'); T.ff(3)`);
     await d.js(`__goTo(__scenes.bath); T.ff(0.3); T.tap(200, 500); T.ff(0.3)`);

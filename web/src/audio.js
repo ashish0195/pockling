@@ -1,7 +1,17 @@
 // Every sound is synthesized: no recordings, nothing to download. The pet's voice is a pair of
 // oscillators through a vowel filter with a pitch contour, so each breed sounds like itself and it can
 // babble in its own language. There's also a purr, chomps, plops, sparkles and a small music box.
+// Phone speakers play little below about 300 Hz, so anything that matters has some sound above that:
+// `node tools/sounds.mjs` measures each one.
 import { rand, pick, clamp } from './util.js';
+
+// Hearts popping up in quick succession climb this scale, so a long stroke sings. It uses only the notes
+// the day and night music boxes share (D, E, G, A), so it's always in tune with whichever is playing.
+const HEART_NOTES = [783.99, 880, 1174.66, 1318.51, 1567.98, 1760, 2349.32, 2637.02];
+// A little tune to dance to, as steps from the pet's own note.
+const DANCE_STEPS = [1, 1.125, 1.25, 1.5, 1.25, 1.125, 1.333, 1.5];
+// Turns a sine into one short pulse a cycle: the beat of a purr.
+const PULSE = Float32Array.from({ length: 256 }, (_, i) => Math.max(0, (i / 255) * 2 - 1) ** 2.2);
 
 class Audio_ {
   constructor() {
@@ -13,6 +23,8 @@ class Audio_ {
     this.musicTimer = 0;
     this.musicMood = 'day';
     this.musicStep = 0;
+    this.last = {};
+    this.heartRun = 0;
   }
 
   /** Browsers only allow sound after a touch, so call this from one. */
@@ -78,8 +90,20 @@ class Audio_ {
     return this.ctx && this.sfxOn;
   }
 
-  /** One voiced note with a pitch contour. contour is [[time 0..1, multiplier], ...]. */
-  chirp(freq, dur, { contour = [[0, 1], [1, 1]], at = 0, vol = 0.34, vowel = 1500, q = 2.2, vib = 0, type = 'triangle' } = {}) {
+  /** False if this sound played less than gap seconds ago, so quick repeats don't pile up. */
+  spaced(key, gap) {
+    if (!this.ready) return false;
+    const now = this.ctx.currentTime;
+    if (now - (this.last[key] ?? -1e9) < gap) return false;
+    this.last[key] = now;
+    return true;
+  }
+
+  /**
+   * One voiced note with a pitch contour. contour is [[time 0..1, multiplier], ...]. roll flutters the
+   * voice about 24 times a second, from 0 to 1, for a rolled "brrr" like a cat's trill.
+   */
+  chirp(freq, dur, { contour = [[0, 1], [1, 1]], at = 0, vol = 0.34, vowel = 1500, q = 2.2, vib = 0, roll = 0, type = 'triangle' } = {}) {
     if (!this.ready) return;
     const c = this.ctx;
     const t = c.currentTime + at;
@@ -117,7 +141,23 @@ class Audio_ {
     o1.connect(dry);
     dry.connect(low);
     f.connect(low);
-    low.connect(g);
+    if (roll) {
+      // The flutter sits before the envelope, so the note still starts and ends in silence.
+      const roller = c.createGain();
+      roller.gain.value = 1 - roll / 2;
+      const flutter = c.createOscillator();
+      flutter.frequency.value = 24;
+      const depth = c.createGain();
+      depth.gain.value = roll / 2;
+      flutter.connect(depth);
+      depth.connect(roller.gain);
+      low.connect(roller);
+      roller.connect(g);
+      flutter.start(t);
+      flutter.stop(t + dur + 0.02);
+    } else {
+      low.connect(g);
+    }
     g.connect(this.sfx);
     if (vib) {
       const lfo = c.createOscillator();
@@ -174,6 +214,32 @@ class Audio_ {
     g.connect(this.sfx);
     o.start(t);
     o.stop(t + dur + 0.02);
+  }
+
+  /** A small glassy bell: a sine and a quick inharmonic partial, as a real bell has. */
+  ting(freq, dur, { at = 0, vol = 0.08 } = {}) {
+    if (!this.ready) return;
+    const c = this.ctx;
+    const t = c.currentTime + at;
+    const o = c.createOscillator();
+    o.frequency.value = freq;
+    const o2 = c.createOscillator();
+    o2.frequency.value = freq * 2.76;
+    const g2 = c.createGain();
+    g2.gain.setValueAtTime(0.3, t);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.25);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g);
+    o2.connect(g2);
+    g2.connect(g);
+    g.connect(this.sfx);
+    o.start(t);
+    o2.start(t);
+    o.stop(t + dur + 0.02);
+    o2.stop(t + dur + 0.02);
   }
 
   // ── The pet's voice ──
@@ -248,15 +314,68 @@ class Audio_ {
     this.chirp(150 * this.voiceBase, 0.42, { contour: [[0, 1.2], [0.3, 0.8], [1, 0.62]], vowel: 420, q: 1.2, type: 'sawtooth', vol: 0.34, vib: 0.05 });
   }
 
+  /** In through the nose, out with a little whistle. */
   snore() {
-    const t = 1.3;
-    this.burst(t, { vol: 0.055, freq: 380, q: 2.2, slide: 1.4 });
-    this.chirp(90 * this.voiceBase, t, { contour: [[0, 0.85], [1, 1.05]], vowel: 340, q: 1, type: 'sawtooth', vol: 0.05 });
-    this.burst(1.1, { at: t + 0.15, vol: 0.05, freq: 3000, q: 0.7, slide: 0.6 });
+    this.burst(0.95, { vol: 0.06, freq: 560, q: 1.6, slide: 1.8 });
+    this.chirp(150 * this.voiceBase, 0.9, { contour: [[0, 0.85], [1, 1.08]], vowel: 520, q: 1.1, type: 'sawtooth', vol: 0.04 });
+    this.tone(rand(1150, 1350), 0.7, { at: 1.1, vol: 0.035, slide: 0.72 });
+    this.burst(0.75, { at: 1.1, vol: 0.035, freq: 2400, q: 0.8, slide: 0.6 });
   }
 
   mumble() {
     this.babble(2, 0.5);
+  }
+
+  /** Stroked or cuddled: a soft, rolled "mrrrm" that lifts a little at the end. */
+  coo() {
+    this.chirp(this.v * rand(0.84, 0.96), rand(0.34, 0.46), { contour: [[0, 0.9], [0.45, rand(1.12, 1.22)], [1, rand(0.96, 1.04)]], vowel: 950, q: 1.6, vib: 0.02, roll: 0.5, vol: 0.22 });
+  }
+
+  /** The rolled little "brrrp?" of being pleased to see you. */
+  trill() {
+    this.chirp(this.v * rand(0.95, 1.05), 0.24, { contour: [[0, 0.88], [1, 1.32]], vowel: 1300, roll: 0.6, vol: 0.26 });
+  }
+
+  /** Pulled like dough: squeaks that climb the further it stretches. */
+  squeak(level = 0) {
+    this.chirp(this.v * (1.18 + level * 0.16), 0.13, { contour: [[0, 0.92], [1, 1.22]], vowel: 2100, q: 2.6, vol: 0.24 });
+  }
+
+  /** "Wheee!" */
+  wee() {
+    this.chirp(this.v * rand(1.02, 1.12), 0.42, { contour: [[0, 0.82], [0.55, 1.62], [1, 1.5]], vowel: 1700, vib: 0.012, vol: 0.28 });
+  }
+
+  /** A big stretch: a straining "nnnn" that rises, then an "ahh". */
+  stretchy() {
+    this.chirp(this.v * 0.82, 0.62, { contour: [[0, 0.86], [0.8, 1.22], [1, 1.28]], vowel: 1000, q: 1.8, vib: 0.022, vol: 0.22 });
+    this.chirp(this.v * 1.05, 0.42, { at: 0.66, contour: [[0, 1.18], [1, 0.8]], vowel: 800, q: 1.4, vol: 0.18 });
+  }
+
+  /** Dizzy: a wobbly slide down, and stars tinkling round its head. */
+  dizzy() {
+    this.chirp(this.v * 1.05, 0.7, { contour: [[0, 1.25], [0.5, 0.92], [1, 0.74]], vowel: 1100, vib: 0.09, vol: 0.22 });
+    this.stars(0.12);
+  }
+
+  /** Little stars circling a bumped head. */
+  stars(at = 0) {
+    for (let i = 0; i < 3; i++) this.ting(2350 + i * 280, 0.22, { at: at + i * 0.16, vol: 0.055 });
+  }
+
+  /** "Hm?" */
+  curious() {
+    this.chirp(this.v * 0.92, 0.2, { contour: [[0, 0.9], [1, 1.38]], vowel: 1100, q: 1.8, vol: 0.18 });
+  }
+
+  /** One "la" of a song to dance to; i walks through the tune. */
+  la(i = 0) {
+    this.chirp(this.v * DANCE_STEPS[i % DANCE_STEPS.length], 0.17, { contour: [[0, 0.97], [1, 1.03]], vowel: 1400, vib: 0.01, vol: 0.19 });
+  }
+
+  /** "Yay!", a little higher with each hop. */
+  yay(i = 0) {
+    this.chirp(this.v * (1.15 + i * 0.12), 0.16, { contour: [[0, 0.9], [0.6, 1.4], [1, 1.3]], vol: 0.26 });
   }
 
   /** Pet-talk: a burst of little syllables. */
@@ -280,66 +399,75 @@ class Audio_ {
     const c = this.ctx;
     if (on_ && !this.purrNode) {
       const t = c.currentTime;
+      // Noise pulsing about 26 times a second, louder breathing out than in. A real purr's body is low,
+      // so most of the noise sits in a band a phone speaker can play, with a little low end for headphones.
       const s = c.createBufferSource();
       s.buffer = this.noise;
       s.loop = true;
-      const f = c.createBiquadFilter();
-      f.type = 'lowpass';
-      f.frequency.value = 340;
-      f.Q.value = 2;
-      const trem = c.createGain();
-      trem.gain.value = 0.55;
+      const band = c.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = 480;
+      band.Q.value = 0.8;
+      const low = c.createBiquadFilter();
+      low.type = 'lowpass';
+      low.frequency.value = 300;
+      low.Q.value = 1.5;
+      const gate = c.createGain();
+      gate.gain.value = 0.06;
       const lfo = c.createOscillator();
-      lfo.frequency.value = 24;
-      const depth = c.createGain();
-      depth.gain.value = 0.45;
-      lfo.connect(depth);
-      depth.connect(trem.gain);
+      lfo.frequency.value = 26;
+      const pulse = c.createWaveShaper();
+      pulse.curve = PULSE;
+      lfo.connect(pulse);
+      pulse.connect(gate.gain);
+      const breathe = c.createGain();
+      breathe.gain.value = 0.7;
       const breath = c.createOscillator();
-      breath.frequency.value = 0.7;
+      breath.frequency.value = 0.75;
       const breathDepth = c.createGain();
-      breathDepth.gain.value = 0.14;
+      breathDepth.gain.value = 0.3;
       breath.connect(breathDepth);
-      breathDepth.connect(trem.gain);
-      const hum = c.createOscillator();
-      hum.type = 'sine';
-      hum.frequency.value = 48;
-      const humGain = c.createGain();
-      humGain.gain.value = 0.3;
+      breathDepth.connect(breathe.gain);
+      // Brighter on the way out.
+      const bright = c.createGain();
+      bright.gain.value = 110;
+      breath.connect(bright);
+      bright.connect(band.frequency);
       const out = c.createGain();
       out.gain.setValueAtTime(0.0001, t);
-      out.gain.exponentialRampToValueAtTime(0.62, t + 0.25);
-      s.connect(f);
-      f.connect(trem);
-      hum.connect(humGain);
-      humGain.connect(trem);
-      trem.connect(out);
+      out.gain.exponentialRampToValueAtTime(1.2, t + 0.25);
+      s.connect(band);
+      band.connect(gate);
+      s.connect(low);
+      low.connect(gate);
+      gate.connect(breathe);
+      breathe.connect(out);
       out.connect(this.sfx);
       s.start();
       lfo.start();
       breath.start();
-      hum.start();
-      this.purrNode = { s, lfo, breath, hum, out };
+      this.purrNode = { s, lfo, breath, out };
     } else if (!on_ && this.purrNode) {
-      const { s, lfo, breath, hum, out } = this.purrNode;
+      const { s, lfo, breath, out } = this.purrNode;
       this.purrNode = null;
       const t = c.currentTime;
       out.gain.cancelScheduledValues(t);
       out.gain.setValueAtTime(Math.max(out.gain.value, 0.001), t);
       out.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-      for (const n of [s, lfo, breath, hum]) n.stop(t + 0.35);
+      for (const n of [s, lfo, breath]) n.stop(t + 0.35);
     }
   }
 
   // ── Everything else ──
 
   boop() {
-    this.tone(880, 0.1, { vol: 0.24, slide: 1.5 });
-    this.tone(1320, 0.09, { at: 0.06, vol: 0.14, slide: 1.1 });
+    this.tone(880, 0.1, { vol: 0.36, slide: 1.6 });
+    this.tone(1320, 0.09, { at: 0.06, vol: 0.2, slide: 1.15 });
   }
 
   boing() {
     this.tone(180, 0.28, { vol: 0.24, slide: 2.6, type: 'triangle' });
+    this.tone(330, 0.24, { vol: 0.12, slide: 2.4 });
   }
 
   plop() {
@@ -348,7 +476,29 @@ class Audio_ {
 
   thud() {
     this.tone(130, 0.14, { vol: 0.34, slide: 0.5 });
-    this.burst(0.07, { vol: 0.14, freq: 500 });
+    // And a soft "pomf" a phone speaker can play.
+    this.tone(320, 0.12, { vol: 0.16, slide: 0.55, type: 'triangle' });
+    this.burst(0.1, { vol: 0.18, freq: 700, q: 0.9, slide: 0.45 });
+  }
+
+  /** The ting of a heart popping up. Hearts close together climb the scale. */
+  heart() {
+    if (!this.spaced('heart', 0.16)) return;
+    const now = this.ctx.currentTime;
+    this.heartRun = now - (this.heartAt ?? -1e9) < 1.3 ? this.heartRun + 1 : 0;
+    this.heartAt = now;
+    this.ting(HEART_NOTES[this.heartRun % HEART_NOTES.length], 0.55, { vol: 0.1 });
+  }
+
+  /** A tiny padded footstep. */
+  step() {
+    this.tone(rand(380, 440), 0.05, { vol: 0.07, slide: 0.55, type: 'triangle' });
+    this.burst(0.025, { vol: 0.03, freq: 1500, q: 1.1 });
+  }
+
+  /** Scratching behind an ear. */
+  scritch() {
+    this.burst(0.055, { vol: 0.12, freq: rand(3000, 4400), q: 1.6, slide: 0.75 });
   }
 
   pop() {
@@ -361,7 +511,7 @@ class Audio_ {
   }
 
   gulp() {
-    this.tone(260, 0.16, { vol: 0.24, slide: 0.45 });
+    this.tone(440, 0.16, { vol: 0.24, slide: 0.45 });
   }
 
   whoosh() {
@@ -450,6 +600,8 @@ class Audio_ {
   rumble() {
     this.tone(70, 0.42, { vol: 0.34, slide: 1.3, type: 'triangle' });
     this.tone(95, 0.3, { at: 0.26, vol: 0.26, slide: 0.8, type: 'triangle' });
+    // The gurgle on top, for phone speakers.
+    this.chirp(118, 0.5, { contour: [[0, 1], [0.5, 1.25], [1, 0.9]], vowel: 460, q: 1.4, type: 'sawtooth', vol: 0.1, vib: 0.06, roll: 0.5 });
   }
 
   // ── A small music box ──

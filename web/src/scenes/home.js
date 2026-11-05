@@ -368,6 +368,7 @@ export const home = {
           this.rub(t, l, step);
         } else {
           t.mode = 'stretch';
+          t.squeaks = -1;
           this.stopRub();
           pet.setFace('surprised');
           audio.surprise();
@@ -385,6 +386,12 @@ export const home = {
         const d = Math.hypot(dx, dy);
         const k = Math.min(1, 70 / Math.max(d, 1));
         pet.pullBy = [(dx - pet.pullAt[0]) * 0.72 * k, (dy - pet.pullAt[1]) * 0.72 * k];
+        // Squeaks that climb as it stretches further.
+        const squeak = d > 205 ? 2 : d > 180 ? 1 : d > 150 ? 0 : -1;
+        if (squeak > t.squeaks) {
+          t.squeaks = squeak;
+          audio.squeak(squeak);
+        }
         // Stretch far enough and it comes off the floor.
         if (d > 215 || (dy < -165 && d > 170)) this.pickUp(t);
         if (t.mode === 'stretch' && d < 110) {
@@ -463,6 +470,7 @@ export const home = {
     } else if (part === 'head') {
       actor.play(actor.pat());
       game.fx.hearts(x, y - 8, 1, 10);
+      audio.heart();
     } else if (part === 'cheek') {
       actor.play(actor.flick());
     } else {
@@ -503,6 +511,7 @@ export const home = {
     audio.purr(true);
     hapticPurr(true);
     this.heartStep = 0;
+    this.cooIn = 1.1;
   },
 
   stopRub() {
@@ -526,6 +535,7 @@ export const home = {
       this.heartStep = 0;
       fx.hearts(t.x, t.y - 10, 1, 14);
       fx.sparkles(t.x, t.y, 2, 14);
+      if (!this.talk) audio.heart();
       game.ui.refresh();
     }
     // Stroked long enough, the eyes turn to hearts.
@@ -542,6 +552,15 @@ export const home = {
       t.mode = 'cuddle';
       this.startCuddle();
     }
+    // A happy "mrrm" every so often while it's stroked or held. Not while it's listening to you, or it
+    // would hear itself.
+    if ((t.mode === 'rub' || t.mode === 'cuddle') && !this.talk) {
+      this.cooIn -= dt;
+      if (this.cooIn <= 0) {
+        this.cooIn = rand(1.8, 3.2);
+        audio.coo();
+      }
+    }
     if (t.mode === 'cuddle') {
       this.cuddleTime = (this.cuddleTime ?? 0) + dt;
       this.heartIn = (this.heartIn ?? 0) - dt;
@@ -549,6 +568,7 @@ export const home = {
         this.heartIn = 0.34;
         const c = pet.anchors.center;
         if (c) game.fx.hearts(c[0], c[1] - 20, 2, 110 * game.view.u);
+        if (!this.talk) audio.heart();
         const res = cuddle(game.state, 1.6, game.now());
         if (res.levelUp || res.grew) celebrate(res);
         game.ui.refresh();
@@ -572,6 +592,7 @@ export const home = {
     audio.purr(true);
     hapticPurr(true);
     audio.chirp(audio.v, 0.3, { contour: [[0, 0.9], [1, 1.1]], vol: 0.2 });
+    this.cooIn = 1.1;
   },
 
   endCuddle() {
@@ -608,6 +629,7 @@ export const home = {
     pet.jiggle(10);
     this.carrying = true;
     this.carryTo = [t.x, t.y];
+    this.carryWas = null;
     this.carryV = 0;
     pet.setFace('surprised');
     pet.paws(-14, -50, 14, -50);
@@ -628,6 +650,10 @@ export const home = {
     const s = pet.anchors.unit ?? 1;
     const targetAir = clamp(view.floorY - (y + (GROUND - 20) * s), 0, view.h);
     const dx = x - actor.x;
+    // Swung about fast: "wheee!"
+    const swing = Math.hypot(x - (this.carryWas?.[0] ?? x), y - (this.carryWas?.[1] ?? y)) / Math.max(dt, 1e-3);
+    this.carryWas = [x, y];
+    if (swing > 1100 * view.u && audio.spaced('wee', 1.4)) audio.wee();
     actor.x += dx * Math.min(1, dt * 14);
     actor.air += (targetAir - actor.air) * Math.min(1, dt * 14);
     actor.x = clamp(actor.x, 30, view.w - 30);
