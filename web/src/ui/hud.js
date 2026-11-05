@@ -23,6 +23,7 @@ function outfitThumb(id) {
 }
 
 export const SITE = 'https://bitfold.9io.ai/pockling/';
+export const APP_STORE = 'https://apps.apple.com/app/id6829163472';
 
 export const ui = {
   mode: 'none',
@@ -305,7 +306,8 @@ export const ui = {
       <button class="row" data-action="closet"><span>👒 Closet<small>Hats, glasses, scarves</small></span><span>›</span></button>
       <button class="row" data-action="rooms"><span>🏠 Rooms<small>Paint the walls</small></span><span>›</span></button>
       <button class="row" data-action="card"><span>🪪 ${esc(s.pet.name)}'s card<small>Share your pet</small></span><span>›</span></button>
-      <button class="row" data-action="settings"><span>⚙️ Settings</span><span>›</span></button>`);
+      <button class="row" data-action="settings"><span>⚙️ Settings</span><span>›</span></button>
+      ${isNative ? '' : `<button class="row" data-action="link" data-url="${APP_STORE}"><span>📱 Get the app<small>Free on the App Store for iPhone and iPad</small></span><span>›</span></button>`}`);
   },
 
   on_settings() {
