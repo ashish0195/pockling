@@ -2,7 +2,9 @@
 
 Copy and settings for Pockling on the App Store.
 
-**Status:** Pockling 1.0 (build 2) was submitted on 31 October 2026 and is waiting for review.
+**Status:** Pockling 1.0 (build 2) went live on the App Store on 5 November 2026: https://apps.apple.com/app/id6829163472. It isn't on sale in the EU until the account's DSA trader verification clears. On the way, Apple sent it back on 1 November under Guideline 2.1, Information Needed, asking for a screen recording from a physical device and written answers, without naming a defect. It went back the same day with a recording from the iOS Simulator, labelled as one, and the answers under Review notes below.
+
+**1.1:** build 3, with sounds for playing with the pet and for its idle animations, was uploaded on 6 November 2026 and reaches the Internal TestFlight group automatically. It isn't submitted for review, and the App Store version for it hasn't been created yet.
 
 **App Store Connect:** Apple ID 6829163472
 **Name:** Pockling: Cute Virtual Pet
@@ -63,15 +65,25 @@ Kitling, Bunling, Puppling, Cubling, Foxling and Drakling, each in four coats.
 KIND BY DESIGN
 No ads. No in-app purchases. No accounts. No timers that nag you. Nothing you say or do leaves your device. And your pet can never die or run away: if you've been gone, it's just very glad to see you.
 
-**What's New:** Your Pockling has hatched.
+**What's New (1.0):** Your Pockling has hatched.
+
+**What's New (1.1):** Your Pockling has more to say. It coos while you stroke it, hearts chime as they pop up, and it hums, sings and pitter-patters about as it plays. Swing it around for a "wheee!" The purr comes through phone speakers much more clearly too.
 
 **Review notes:**
 
-Pockling is a virtual pet with no account, no network features and no purchases. Everything is inside the app.
+1. Screen recording: attached (pockling-simulator-walkthrough.mp4). Please note it was captured in the iOS Simulator (iPhone 18 Pro, iOS 27.0), not on a physical device, from a Simulator build of the same source as build 2. We do not have a physical-device recording yet. If you still need one, tell us and we will send it. The video starts at launch and is uncut, scaled down to fit the upload limit, with a small label added. It has no sound, because the Simulator's recorder captures video only. In Simulator builds, talk-back plays a built-in test voice instead of using the microphone; on a device it uses the real microphone. The app has no accounts, no user-generated content and no paid content, so those flows do not exist. Berries are earned in the game and cannot be bought.
 
-To try it: pick an egg and tap Hatch this egg, tap the egg six times, choose a name, then tap Welcome home. Stroke the pet with a finger, drag food up from the Feed tray, and try Wash, Play, Walk and Sleep along the bottom.
+2. Purpose and audience: Pockling is a virtual pet for people of all ages. It gives them a small, calm creature to look after each day, with no ads, purchases, accounts or nagging timers. The pet cannot die or run away.
 
-The microphone is used only for talk-back, the microphone button on the right of the home screen. Sound is held in memory just long enough to play back at a higher pitch, and is never stored or transmitted. The rest of the app works if permission is refused.
+3. Setup: none, and no login. Pick an egg and tap Hatch this egg, tap the egg six times, choose a name, then tap Welcome home. Stroke the pet with a finger, drag food up from the Feed tray, and try Wash, Play, Walk and Sleep along the bottom. The microphone is used only for talk-back, the microphone button on the right of the home screen. Sound is held in memory just long enough to play back at a higher pitch, and is never stored or transmitted. The rest of the app works if permission is refused.
+
+4. External services: none. The game runs from files inside the app and makes no network requests. There are no analytics, ads, payments, sign-in or AI services. The only links out are Privacy and Support, which open in the browser, and a link on the pet card if the player chooses to share it.
+
+5. Regional differences: none. The app is the same in every region, in English. Its sky follows the device's own clock.
+
+6. Regulated or third-party material: not applicable. All art and sound is made by the app's own code, apart from standard system emoji in some buttons.
+
+The video is in `build/appstore/review/` (not in git). It came from `xcrun simctl io <device> recordVideo` on a fresh install, scaled to 720 wide with the Simulator label overlaid, to stay under the 10 MB a browser upload allows.
 
 ## Screenshots and previews
 
@@ -127,7 +139,7 @@ Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
 ## TestFlight
 
 - Internal group "Internal", with automatic distribution, so every upload reaches its testers. `ashish@9io.ai` is in it.
-- External group "External", with two testers. Build 2 went to Beta App Review on 31 October 2026. Apple invites them when it's approved, and later builds have to be added to the group by hand.
+- External group "External", with two testers. Build 2 went to Beta App Review on 31 October 2026 and showed as approved for testing by 1 November. Later builds have to be added to the group by hand.
 
 ## Not tested before submitting
 
