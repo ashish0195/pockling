@@ -37,14 +37,18 @@ export function loadSave() {
   }
 }
 
-export function writeSave(state) {
+/**
+ * Saves the game. In the app, widget is the Home Screen widget's snapshot of the pet ({ snapshot, key },
+ * from widget.js): the app keeps it on the phone for the widget.
+ */
+export function writeSave(state, widget = null) {
   const text = JSON.stringify(state);
   try {
     localStorage.setItem(KEY, text);
   } catch {
     // Private windows can refuse; the game still plays.
   }
-  if (bridge) send('save', { json: text });
+  if (bridge) send('save', widget ? { json: text, widget: widget.snapshot, widgetKey: widget.key } : { json: text });
 }
 
 export function clearSave() {

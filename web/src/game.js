@@ -13,6 +13,7 @@ import { Pet } from './pet.js';
 import { askForReview, haptic, isNative, loadSave, setHaptics, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
 import { clamp, dayNumber, hourOf, lerp, mixRgb, seeded } from './util.js';
+import { widgetKey, widgetSnapshot } from './widget.js';
 
 export const game = {
   g: null,
@@ -141,14 +142,20 @@ export function defineRoomArt() {
 
 let saveTimer = 0;
 
+/** In the app, each save carries a fresh snapshot of the pet for the Home Screen widget (widget.js). */
+function write() {
+  const widget = isNative ? widgetSnapshot(game.state, game.now()) : null;
+  writeSave(game.state, widget && { snapshot: JSON.stringify(widget), key: widgetKey(widget) });
+}
+
 export function save(now = false) {
   clearTimeout(saveTimer);
   if (game.demo || game.startingOver) return;
   if (now) {
-    writeSave(game.state);
+    write();
     return;
   }
-  saveTimer = setTimeout(() => writeSave(game.state), 800);
+  saveTimer = setTimeout(write, 800);
 }
 
 export function tickState() {

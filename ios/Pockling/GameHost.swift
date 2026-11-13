@@ -4,9 +4,9 @@ import SwiftUI
 import UIKit
 import WebKit
 
-/// Runs the game in a web view and answers what it asks of the phone: saving, haptics, sharing,
-/// the microphone, reminders, notifications, usage data, the rating prompt and tilt. The game's
-/// side of this is web/src/platform.js.
+/// Runs the game in a web view and answers what it asks of the phone: saving (and the widget's copy of
+/// the pet), haptics, sharing, the microphone, reminders, notifications, usage data, the rating prompt
+/// and tilt. The game's side of this is web/src/platform.js.
 final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavigationDelegate {
     let webView: WKWebView
 
@@ -63,8 +63,13 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         case "save":
             let json = body["json"] as? String ?? ""
             store.write(json)
-            // Starting over: a reload mustn't bring back the save we put into the page at launch.
-            if json.isEmpty { webView.configuration.userContentController.removeAllUserScripts() }
+            if json.isEmpty {
+                // Starting over: a reload mustn't bring back the save we put into the page at launch.
+                webView.configuration.userContentController.removeAllUserScripts()
+                WidgetShare.clear()
+            } else if let widget = body["widget"] as? String {
+                WidgetShare.save(widget, key: body["widgetKey"] as? String ?? "", inBackground: UIApplication.shared.applicationState == .background)
+            }
         case "haptic":
             haptics.play(body["kind"] as? String ?? "light")
         case "purr":
@@ -146,6 +151,7 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         motion.stopDeviceMotionUpdates()
         haptics.purr(false)
         talk.stop()
+        WidgetShare.appWentBackground()
     }
 
     @objc private func cameForeground() {
