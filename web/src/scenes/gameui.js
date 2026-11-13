@@ -1,6 +1,6 @@
 // What all the mini-games share: the top bar and the end-of-game sheet.
 import { audio } from '../audio.js';
-import { celebrate, fadeTo, game, save } from '../game.js';
+import { celebrate, fadeTo, game, roundDone, save } from '../game.js';
 import { haptic } from '../platform.js';
 import { played } from '../state.js';
 
@@ -36,6 +36,7 @@ export const setHint = (text) => {
 export function endGame(gameId, title, score, line, again, home) {
   const result = played(game.state, gameId, score, game.now());
   save();
+  roundDone({ score });
   audio.fanfare();
   haptic('success');
   const c = game.pet?.anchors.center;

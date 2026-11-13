@@ -5,7 +5,7 @@ import { BREEDS, FOODS, FOOD_IDS, OUTFITS, OUTFIT_IDS, ROOMS, ROOM_IDS, coatOf }
 import { applySettings, celebrate, defineRoomArt, game, save } from '../game.js';
 import { foodThumb } from '../bake/food.js';
 import { OUTFIT_ART } from '../bake/outfits.js';
-import { canRemind, clearSave, haptic, isNative, openLink, setReminders } from '../platform.js';
+import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting } from '../platform.js';
 import { ageDays, buyOutfit, buyRoom, levelOf, levelProgress, mood, stageOf, tasteOf, trait, useRoom, wear } from '../state.js';
 import { dayNumber } from '../util.js';
 
@@ -28,6 +28,8 @@ export const APP_STORE = 'https://apps.apple.com/app/id6829163472';
 export const ui = {
   mode: 'none',
   actions: {},
+  /** The player's notification and usage-data choices, as the app last told us (app only). */
+  choices: { reminders: false, news: false, analytics: true, allowed: false },
 
   init(actions) {
     this.actions = actions;
@@ -46,6 +48,13 @@ export const ui = {
       haptic('light');
       this.run(b.dataset.action, b);
     });
+    if (isNative) {
+      this.refreshChoices();
+      // Back from iOS Settings, notifications may be allowed now.
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && $('[data-action="choice"]')) this.refreshChoices();
+      });
+    }
   },
 
   run(name, el) {
@@ -142,17 +151,19 @@ export const ui = {
     setTimeout(() => t.remove(), 2800);
   },
 
+  /** A card in the middle of the screen. onClose gets the [data-close] button that closed it, if any. */
   banner(html, { onClose } = {}) {
     const wrap = document.createElement('div');
     wrap.className = 'banner-wrap';
     wrap.innerHTML = `<div class="banner">${html}</div>`;
     $('#banners').append(wrap);
-    const close = () => {
+    const close = (by = null) => {
       wrap.remove();
-      onClose?.();
+      onClose?.(by);
     };
     wrap.addEventListener('click', (e) => {
-      if (e.target === wrap || e.target.closest('[data-close]')) close();
+      const by = e.target.closest('[data-close]');
+      if (e.target === wrap || by) close(by);
     });
     return close;
   },
@@ -317,9 +328,9 @@ export const ui = {
       ${toggle('sound', '🔊 Sounds')}
       ${toggle('music', '🎵 Music box')}
       ${toggle('haptics', '📳 Feel it purr', 'Vibration when you stroke your pet')}
-      ${canRemind ? toggle('reminders', '🔔 Daily reminder', 'A little nudge in the evening') : ''}
+      ${isNative ? this.choiceToggles() : ''}
       <h3>About</h3>
-      <button class="row" data-action="link" data-url="${SITE}privacy/"><span>🔒 Privacy<small>Nothing leaves your device</small></span><span>›</span></button>
+      <button class="row" data-action="link" data-url="${SITE}privacy/"><span>🔒 Privacy<small>${isNative ? 'What the app sends, and what it never does' : 'Nothing leaves your device'}</small></span><span>›</span></button>
       <button class="row" data-action="link" data-url="${SITE}support/"><span>💬 Help and support</span><span>›</span></button>
       <p class="muted center" style="font-size:13px;margin-top:14px">Pockling, a Bitfold Original from 9io.<br>No ads. No accounts. No tracking.</p>
       <button class="row" data-action="restart" style="margin-top:10px"><span style="color:#c2355f">Start over with a new egg</span></button>`);
@@ -333,8 +344,94 @@ export const ui = {
     el.querySelector('.switch').classList.toggle('on', s[key]);
     applySettings();
     if (key === 'music' && s.music) audio.startMusic(game.state.pet?.asleep ? 'night' : 'day');
-    if (key === 'reminders') setReminders(s.reminders, game.state.pet.name);
     save();
+  },
+
+  // ── Notifications and usage data (app only) ──
+
+  /**
+   * The app's own switches, kept by NineIO on the phone rather than in the save. A notification switch
+   * shows on only while iOS lets the app notify, so it never claims reminders that can't arrive.
+   */
+  choiceToggles() {
+    const row = (key, label, sub) => `<button class="row" data-action="choice" data-key="${key}" role="switch" aria-checked="${this.chosen(key)}"><span>${label}<small>${sub}</small></span><span class="switch${this.chosen(key) ? ' on' : ''}"></span></button>`;
+    return `${row('reminders', '🔔 Reminders', 'A hello at 6 pm, and a nudge after a few days away')}
+      ${row('news', '📣 News and new games', 'New games and events from 9io')}
+      ${row('analytics', '📊 Share anonymous usage data', 'Helps us see what Pocklings like doing. No account, no ads, no tracking.')}`;
+  },
+
+  chosen(key) {
+    const c = this.choices;
+    return key === 'analytics' ? Boolean(c.analytics) : Boolean(c[key] && c.allowed);
+  },
+
+  showChoices() {
+    for (const el of root().querySelectorAll('[data-action="choice"]')) {
+      const value = this.chosen(el.dataset.key);
+      el.setAttribute('aria-checked', value);
+      el.querySelector('.switch').classList.toggle('on', value);
+    }
+  },
+
+  async refreshChoices() {
+    const choices = await notifySettings();
+    if (!choices) return;
+    this.choices = choices;
+    this.showChoices();
+  },
+
+  async on_choice(el) {
+    const key = el.dataset.key;
+    const value = el.getAttribute('aria-checked') !== 'true';
+    // Flip it straight away; the app's answer settles it, since iOS may still say no.
+    el.setAttribute('aria-checked', value);
+    el.querySelector('.switch').classList.toggle('on', value);
+    const answer = await setNotifySetting(key, value);
+    if (!answer) return;
+    this.choices = answer;
+    this.showChoices();
+    if (answer.blocked) this.notificationsOff();
+  },
+
+  /** A notification switch went on, but iOS has notifications turned off for Pockling. */
+  notificationsOff() {
+    this.banner(`<div class="big">🔕</div><h2>Notifications are off</h2><p>Pockling isn't allowed to send notifications. You can turn them on in iOS Settings.</p><button class="btn" data-close data-go="settings">Open Settings</button><button class="btn alt" data-close>Not now</button>`, {
+      onClose: (by) => {
+        if (by?.dataset.go === 'settings') openNotificationSettings();
+      },
+    });
+  },
+
+  /**
+   * Our own "turn on notifications?" card, after a game that ended well (game.js decides when). It waits
+   * for a quiet moment and shows only if the app says so. The player's answer goes to the app, which asks
+   * iOS unless it was Not now.
+   */
+  async offerNotifications() {
+    for (let i = 0; i < 20 && !this.quiet(); i++) await new Promise((r) => setTimeout(r, 700));
+    if (!this.quiet()) return;
+    const answer = await canOfferNotifications();
+    if (!answer?.offer || !this.quiet()) return;
+    const name = esc(game.state.pet.name);
+    this.banner(`<div class="big">🔔</div><h2>Can ${name} say hello?</h2><p>A hello at 6 pm each day, and a nudge after a few days away.</p>
+      <button class="btn" data-close data-answer="all">Reminders and news<small>Also news about new games and events from 9io</small></button>
+      <button class="btn alt" data-close data-answer="reminders">Just reminders</button>
+      <button class="btn plain" data-close data-answer="later">Not now</button>`, {
+      onClose: async (by) => {
+        audio.click();
+        const result = await answerNotificationOffer(by?.dataset.answer ?? 'later');
+        if (!result) return;
+        this.choices = result;
+        if (result.granted) this.toast(`🔔 ${game.state.pet.name} will say hello at 6 pm`);
+      },
+    });
+  },
+
+  /** Nothing else going on: the pet awake at home, no sheet, card, tray or talking. */
+  quiet() {
+    const scene = game.scene;
+    return Boolean(scene?.offersNotifications && this.mode === 'home' && !scene.talk && !game.state.pet?.asleep
+      && !this.sheetOpen && !$('#tray') && !$('#banners').children.length);
   },
 
   on_link(el) {

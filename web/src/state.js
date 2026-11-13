@@ -25,7 +25,8 @@ export function newGame() {
     pet: null,
     berries: 30,
     owned: { outfits: [], rooms: ['peach'] },
-    settings: { sound: true, music: true, haptics: true, reminders: false },
+    // Up to 1.1 this also held the reminder switch. The app has kept it since 1.2: see Reminders.swift.
+    settings: { sound: true, music: true, haptics: true },
     stamps: [],
     streak: 0,
     lastVisit: null,

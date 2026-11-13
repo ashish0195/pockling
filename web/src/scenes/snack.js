@@ -12,6 +12,7 @@ import { home } from './home.js';
 const LENGTH = 45;
 
 export const snackGame = {
+  mode: 'snack',
   enter() {
     const { actor, pet, view } = game;
     defineRoomArt();

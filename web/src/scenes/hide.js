@@ -121,6 +121,7 @@ function bakeSpot(kind, w, h, Q) {
 }
 
 export const hideGame = {
+  mode: 'hide',
   enter() {
     const { actor, pet, view, assets } = game;
     defineRoomArt();

@@ -3,7 +3,7 @@
 // device. In the iOS app the native side does the recording; on the web it's done here.
 import { audio } from './audio.js';
 import { game } from './game.js';
-import { isNative, nativeTalk, on, haptic, setKeepAwake } from './platform.js';
+import { isNative, nativeTalk, on, haptic, setKeepAwake, track } from './platform.js';
 import { clamp, rand } from './util.js';
 
 const PITCH_UP = 1.5;
@@ -181,6 +181,7 @@ export const talkMode = {
     game.actor.relax('listen');
     this.button(true);
     setKeepAwake(true);
+    track('talk');
     game.ui.toast(`Say something! ${game.state.pet.name} will say it back`);
     if (isNative) {
       nativeTalk(true);

@@ -15,7 +15,7 @@ import { takePhoto } from './card.js';
 import { defineBubbles } from './bake/props.js';
 import { ui } from './ui/hud.js';
 import { fadeTo } from './game.js';
-import { on, ready, setKeepAwake, startMotion, setReminders } from './platform.js';
+import { on, ready, setKeepAwake, setPetName, startMotion } from './platform.js';
 import { adopt, stageOf, trait } from './state.js';
 import { clamp } from './util.js';
 
@@ -117,8 +117,9 @@ function start() {
       const visit = checkDaily();
       if (visit) setTimeout(() => ui.daily(visit), 900);
     }
-    if (state.settings.reminders) setReminders(true, state.pet.name);
   }
+  // For the text of reminders on the phone. Whether they're on is the app's to know.
+  setPetName(state.pet?.name ?? null);
   document.getElementById('veil').classList.remove('on');
   document.getElementById('loader').classList.add('done');
   setTimeout(() => document.getElementById('loader')?.remove(), 400);

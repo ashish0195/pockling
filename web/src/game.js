@@ -10,7 +10,7 @@ import { BREEDS, ROOMS, STAGES } from './catalog.js';
 import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
-import { haptic, loadSave, setHaptics, writeSave } from './platform.js';
+import { haptic, isNative, loadSave, setHaptics, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
 import { clamp, hourOf, lerp, mixRgb, seeded } from './util.js';
 
@@ -124,6 +124,9 @@ export function setPetStage() {
 export function adoptPet(spec) {
   adopt(game.state, spec, game.now());
   save(true);
+  // The name is for the reminders' text on the phone; the event only says which egg it was.
+  setPetName(game.state.pet.name);
+  track('hatch', { breed: spec.breed, coat: spec.coat });
 }
 
 export function defineRoomArt() {
@@ -155,10 +158,61 @@ export function tickState() {
 // ── Scenes ───────────────────────────────────────────────────────────────────────────────────────
 
 export function goTo(scene, data) {
+  // Coming back into the same scene halfway through (the bath starts over on a resize) is the same go.
+  const sameGo = scene === game.scene && round && !round.done;
   game.scene?.exit?.();
   game.fx.clear();
+  if (!sameGo) {
+    endRound();
+    beginRound(scene);
+  }
   game.scene = scene;
   scene.enter?.(data);
+  if (scene.offersNotifications && happyRound) {
+    happyRound = false;
+    offerNotificationsSoon();
+  }
+}
+
+// ── Usage data and the notification card (the app only: in a browser, track() sends nothing) ─────
+
+/** The game or activity being played, for its play and finish events. Scenes name it with `mode`. */
+let round = null;
+let happyRound = false;
+let offered = false;
+const launchedAt = Date.now();
+
+function beginRound(scene) {
+  if (!scene.mode) return;
+  round = { mode: scene.mode, done: false };
+  happyRound = false;
+  track('play', { mode: scene.mode });
+}
+
+/** A game or activity came to its proper end: the score sheet, the poof after a bath, home from a walk. */
+export function roundDone(props = {}) {
+  if (!round || round.done) return;
+  round.done = true;
+  happyRound = true;
+  track('finish', { mode: round.mode, result: 'done', ...props });
+}
+
+/** Leaving before the end, by the ✕. */
+function endRound() {
+  if (round && !round.done) track('finish', { mode: round.mode, result: 'quit' });
+  round = null;
+}
+
+/**
+ * Home again after a game that ended well: a good moment to offer reminders, once per launch. Never in
+ * the launch the pet hatched in, nor before it has been looked after on two different days. The app
+ * adds its own limits: only before iOS has asked, at most three times, days apart.
+ */
+function offerNotificationsSoon() {
+  const p = game.state.pet;
+  if (offered || !isNative || game.demo || !p || p.born >= launchedAt || p.careDays < 2) return;
+  offered = true;
+  game.ui?.offerNotifications?.();
 }
 
 /** A soft fade to a new scene, covering any baking it needs to do. */
@@ -187,7 +241,10 @@ export function celebrate(result) {
       game.fx.heartBurst(c[0], c[1], 14);
     }
   }
-  if (result.grew) game.scene?.grew?.(result.grew);
+  if (result.grew) {
+    track('grow', { stage: result.grew });
+    game.scene?.grew?.(result.grew);
+  }
   game.ui?.refresh();
   save();
 }

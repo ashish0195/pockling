@@ -1,6 +1,7 @@
-// Everything that differs between the website and the iOS app: saving, haptics, sharing, the mic and
-// reminders. In the app, a small native layer answers through window.webkit.messageHandlers.pockling
-// and calls back through window.__pockling; on the web we use the browser's own APIs.
+// Everything that differs between the website and the iOS app: saving, haptics, sharing, the mic,
+// reminders and usage data. In the app, a small native layer answers through
+// window.webkit.messageHandlers.pockling and calls back through window.__pockling; on the web we use
+// the browser's own APIs.
 
 const bridge = window.webkit?.messageHandlers?.pockling ?? null;
 const listeners = new Map();
@@ -113,12 +114,63 @@ export function openLink(url) {
   else window.open(url, '_blank', 'noopener');
 }
 
-// ── Reminders (app only) ─────────────────────────────────────────────────────────────────────────
+// ── Notifications and usage data (app only) ──────────────────────────────────────────────────────
+//
+// The app's NineIO (ios/Pockling/NineIO.swift) sends 9io anonymous usage events and looks after
+// notifications. The website sends nothing: without the bridge, everything here does nothing.
 
-export const canRemind = isNative;
+/**
+ * Records a usage event: a lower_snake_case name and a few short properties, such as a game's mode key
+ * or a score. Never the pet's name or anything the player typed.
+ */
+export function track(name, props = {}) {
+  if (!bridge) return;
+  const strings = {};
+  for (const [key, value] of Object.entries(props)) strings[key] = String(value);
+  send('track', { name, props: strings });
+}
 
-export function setReminders(enabled, name) {
-  if (bridge) send('reminders', { enabled, name });
+let asked = 0;
+const waiting = new Map();
+
+on('answer', ({ id, value }) => {
+  waiting.get(id)?.(value);
+  waiting.delete(id);
+});
+
+/** Asks the app something and waits for its answer: null in a browser. */
+function ask(cmd, data = {}) {
+  if (!bridge) return Promise.resolve(null);
+  const id = ++asked;
+  return new Promise((done) => {
+    waiting.set(id, done);
+    send(cmd, { ...data, id });
+  });
+}
+
+/**
+ * The player's choices: { reminders, news, analytics, allowed }, allowed being whether iOS lets the app
+ * show notifications. The answers below carry them too, as they stand afterwards.
+ */
+export const notifySettings = () => ask('notifySettings');
+
+/** key is reminders, news or analytics. Turning on a notification one asks iOS; blocked: it said no. */
+export const setNotifySetting = (key, value) => ask('notifySet', { key, on: value });
+
+/** { offer }: whether to show our own "turn on notifications?" card now. */
+export const canOfferNotifications = () => ask('notifyOffer');
+
+/** answer is all (reminders and news), reminders or later. { granted }: iOS allowed them. */
+export const answerNotificationOffer = (answer) => ask('notifyAnswer', { answer });
+
+/** Opens Pockling's page in iOS Settings, to allow notifications. */
+export function openNotificationSettings() {
+  send('openSettings');
+}
+
+/** The pet's name, for the text of reminders on the phone (null before an egg has hatched). */
+export function setPetName(name) {
+  send('pet', { name });
 }
 
 /** Tells the app's layer what the game is doing, so it can keep the screen awake or stop the mic. */

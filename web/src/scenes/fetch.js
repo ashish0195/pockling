@@ -13,6 +13,7 @@ const THROWS = 5;
 const HOME_Z = 0.22;
 
 export const fetchGame = {
+  mode: 'fetch',
   enter() {
     const { assets, actor, pet, view } = game;
     definePark(assets, quality());

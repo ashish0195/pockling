@@ -6,6 +6,8 @@ Copy and settings for Pockling on the App Store.
 
 **1.1:** build 3, with sounds for playing with the pet and for its idle animations, was uploaded on 6 November 2026 and reaches the Internal TestFlight group automatically. It isn't submitted for review, and the App Store version for it hasn't been created yet.
 
+**1.2:** build 4 adds notifications (a daily reminder, a nudge after a few days away, and news the player opts in to) and anonymous usage data, through 9io's shared client `ios/Pockling/NineIO.swift` (a copy of `stocks-bot/games/client/NineIO.swift`). It builds, but it hasn't been uploaded, and 9io's games server at https://9io.ai/games-api/ isn't deployed yet: until it is, the app keeps its events and retries. It changes the App Privacy answers: see Version 1.2 below.
+
 **App Store Connect:** Apple ID 6829163472
 **Name:** Pockling: Cute Virtual Pet
 **Subtitle:** Hatch, love, feed and walk it
@@ -22,7 +24,7 @@ Copy and settings for Pockling on the App Store.
 **Marketing URL:** https://bitfold.9io.ai/pockling/
 **Privacy policy URL:** https://bitfold.9io.ai/pockling/privacy/
 **Copyright:** 2026 9io
-**App Privacy:** Data Not Collected, no tracking.
+**App Privacy:** Data Not Collected, no tracking. From 1.2 the app collects anonymous data: see Version 1.2 below.
 **Release:** automatically once App Review approves it.
 
 **Keywords:** kawaii,raise,care,fluffy,kitten,puppy,bunny,fox,dragon,bear,dress up,animal,adopt,talking,bath,egg
@@ -69,6 +71,8 @@ No ads. No in-app purchases. No accounts. No timers that nag you. Nothing you sa
 
 **What's New (1.1):** Your Pockling has more to say. It coos while you stroke it, hearts chime as they pop up, and it hums, sings and pitter-patters about as it plays. Swing it around for a "wheee!" The purr comes through phone speakers much more clearly too.
 
+**What's New (1.2):** Your Pockling can say hello now! Turn on reminders and it presses its nose to the window at 6 pm, with a little nudge if you've been away a few days. The app also shares anonymous usage data now, so we can see what Pocklings like doing most. No account, no ads, no tracking, and you can switch it off in Settings.
+
 **Review notes:**
 
 1. Screen recording: attached (pockling-simulator-walkthrough.mp4). Please note it was captured in the iOS Simulator (iPhone 18 Pro, iOS 27.0), not on a physical device, from a Simulator build of the same source as build 2. We do not have a physical-device recording yet. If you still need one, tell us and we will send it. The video starts at launch and is uncut, scaled down to fit the upload limit, with a small label added. It has no sound, because the Simulator's recorder captures video only. In Simulator builds, talk-back plays a built-in test voice instead of using the microphone; on a device it uses the real microphone. The app has no accounts, no user-generated content and no paid content, so those flows do not exist. Berries are earned in the game and cannot be bought.
@@ -84,6 +88,53 @@ No ads. No in-app purchases. No accounts. No timers that nag you. Nothing you sa
 6. Regulated or third-party material: not applicable. All art and sound is made by the app's own code, apart from standard system emoji in some buttons.
 
 The video is in `build/appstore/review/` (not in git). It came from `xcrun simctl io <device> recordVideo` on a fresh install, scaled to 720 wide with the Simulator label overlaid, to stay under the 10 MB a browser upload allows.
+
+## Version 1.2: notifications and usage data
+
+**App Privacy (1.2):** Data Not Linked to You. Under "Do you or your third-party partners collect data from this app?", Yes, with two data types:
+
+- Identifiers › Device ID: App Functionality and Analytics. Not linked to the user's identity. Not used for tracking.
+- Usage Data › Product Interaction: Analytics. Not linked to the user's identity. Not used for tracking.
+
+The product page then shows Data Not Linked to You: Identifiers, Usage Data, and no Data Used to Track You. The app's privacy manifest (`ios/Pockling/PrivacyInfo.xcprivacy`) declares the same. App Privacy is app-wide and goes live as soon as it's published, so publish it just before submitting 1.2.
+
+**Review notes (1.2):**
+
+1. New in 1.2: notifications and anonymous usage data. The game itself is as in 1.1, and the notes for 1.0 above still describe it, its setup and the microphone, except note 4, which these replace.
+
+2. The notification card: after a game or activity that ends well (Fetch, Snack Drop, Hide and Seek, a walk or a bath), back on the home screen, the app may show its own card before iOS's permission prompt. It never appears in the launch the pet hatched in, or before the pet has been cared for on two different days, and only while iOS hasn't asked yet: at most three times, three days apart. It says what the reminders are (a hello at 6 pm each day, and a nudge after a few days away) and offers "Reminders and news", whose line says it also brings news about new games and events from 9io, "Just reminders", and "Not now". iOS's prompt follows only the first two.
+
+3. Promotional notifications (Guideline 4.5.4): news is off unless the player chooses "Reminders and news" on the card or turns on "News and new games" in Settings, and that switch turns it off again. Our server sends news only to devices that opted in. Reminders are scheduled on the device.
+
+4. Settings: the menu button (top right), then Settings, has three new switches next to Sounds, Music box and Feel it purr: Reminders, News and new games, and Share anonymous usage data ("Helps us see what Pocklings like doing. No account, no ads, no tracking."), with Privacy and Help and support links below. Turning on a notification switch asks iOS if it hasn't asked yet; if notifications are off in iOS Settings, the app says so and offers to open them. To see the permission prompt without waiting for the card, turn on Reminders there.
+
+5. Data now sent, only to our own server at https://9io.ai/games-api/: an anonymous install ID (a random UUID made on the device); usage events (the app opening and how long it stayed open, games and activities started and finished with their scores, care such as feeding, bedtime, talk-back and photos, the egg hatched and the pet growing up, the card's answer and notifications opened); the app and iOS versions, device model, language and time zone; and, once notifications are allowed, the push token with the player's notification choices. No names (the pet's name never leaves the device), accounts, advertising identifier, contacts, location or recordings, and the server keeps no IP addresses. Nothing is linked to the player or used for tracking, and there are no third-party SDKs. The player can turn usage data off in Settings.
+
+6. External services: the requests above to our own server, and Apple's push service for notifications. No analytics services, ads, payments, sign-in or AI services.
+
+**Lines that say the app collects no data:**
+
+To change in App Store Connect with 1.2:
+
+- App Privacy: "Data Not Collected". Use the answers above.
+- Description, KIND BY DESIGN: "Nothing you say or do leaves your device." Suggested: "Nothing you say leaves your device, and the app's anonymous usage data can be switched off."
+- Review notes, note 4: "External services: none. The game runs from files inside the app and makes no network requests. There are no analytics, ads, payments, sign-in or AI services." Replaced by notes 5 and 6 above.
+
+Changed in this repo for 1.2:
+
+- `docs/AppStore.md`: "**App Privacy:** Data Not Collected, no tracking." now points here.
+- `web/privacy/index.html`: "Pockling doesn't collect, store on a server, share or sell any information about you. There are no accounts, no analytics...", its description tag, "Nothing goes through a server" (reminders), "The iOS app has no network features" and "collects nothing from anyone, children included". Rewritten for 1.2.
+- `web/support/index.html`: "Nothing about you or your pet leaves your device." Rewritten.
+- `web/src/ui/hud.js`, Settings › Privacy: "Nothing leaves your device". The app now says "What the app sends, and what it never does"; the browser keeps the old line, which is still true there.
+- `ios/Pockling/Reminders.swift`, a comment: "Nothing goes through a server." Rewritten.
+
+Still true, so left alone: the microphone's purpose string in `Info.plist` ("Nothing is saved or sent anywhere"), the comments in `TalkBack.swift` and `web/src/talk.js` (both about sound), and Settings' "No ads. No accounts. No tracking."
+
+Elsewhere, not changed (stocks-bot, the 9io.ai site):
+
+- `alphaengine/api/static/games.html`, line 143 (Pockling's structured data): "No ads, no sign-up, and nothing leaves your device." Line 502, under It talks back, says "Nothing leaves your device." too, which still holds for what you say.
+- `alphaengine/api/static/llms.txt`, line 32: "No ads, no sign-up, and nothing leaves your device."
+- `alphaengine/api/blog/posts/our-games-on-the-app-store.md`, line 14: "each App Store page says no data is collected", and line 71: each page says "Data Not Collected" (dated 6 November 2026).
 
 ## Screenshots and previews
 
@@ -136,6 +187,14 @@ xcodebuild -exportArchive -archivePath ios/build/Pockling.xcarchive -exportOptio
 
 Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
 
+From 1.2 the app has a capability, push notifications (`ios/Pockling/Pockling.entitlements`). The unsigned archive carries no entitlements and the export signs with only what it carries, so sign the archived app ad hoc with them between the two commands, as for Football Kick 1.1:
+
+```bash
+codesign --force --sign - --entitlements ios/Pockling/Pockling.entitlements --generate-entitlement-der ios/build/Pockling.xcarchive/Products/Applications/Pockling.app
+```
+
+Export to a folder first, unzip the IPA and check with `codesign -d --entitlements -` that it lists `aps-environment` as `production`. The App ID needs Push Notifications turned on; automatic signing with `-allowProvisioningUpdates` should do that, or it's a tick at developer.apple.com.
+
 ## TestFlight
 
 - Internal group "Internal", with automatic distribution, so every upload reaches its testers. `ashish@9io.ai` is in it.
@@ -146,3 +205,5 @@ Raise `CURRENT_PROJECT_VERSION` in the project for every upload.
 Nothing has run on a real iPhone yet. TestFlight has the same build, for trying talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone. Apple Silicon Macs, Apple Vision Pro and the iPhone Duo fold haven't been run either.
 
 Removing a version from review to swap a build goes back to the end of the queue, so anything found now ships as an update.
+
+1.2's notifications and usage data have only been built, not run: not the card, iOS's prompt, a reminder or nudge arriving, 1.1's reminder setting carrying over, or anything reaching 9io's games server, which isn't deployed yet. The web side was tried in headless Chrome with a stand-in for the app's bridge.

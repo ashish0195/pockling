@@ -5,7 +5,7 @@ import { audio } from '../audio.js';
 import { drawPark, definePark, strip } from '../bake/park.js';
 import { drawSky } from '../bake/room.js';
 import { BREEDS, BREED_IDS } from '../catalog.js';
-import { ambient, celebrate, fadeTo, game, petLight, quality, refreshLight, save } from '../game.js';
+import { ambient, celebrate, fadeTo, game, petLight, quality, refreshLight, roundDone, save } from '../game.js';
 import { Pet } from '../pet.js';
 import { haptic } from '../platform.js';
 import { walked } from '../state.js';
@@ -16,6 +16,7 @@ const METRE = 11;
 const WALK_SCALE = 0.72;
 
 export const walk = {
+  mode: 'walk',
   enter() {
     const { assets, view, actor, pet } = game;
     definePark(assets, quality());
@@ -432,6 +433,7 @@ export const walk = {
     const metres = Math.floor(this.dist / (METRE * u));
     const result = walked(game.state, metres, this.berries, this.muddy, game.now());
     save();
+    roundDone({ metres });
     const s = game.state;
     const name = esc(s.pet.name);
     game.ui.sheet(`${game.ui.head('What a walk!')}

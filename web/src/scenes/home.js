@@ -6,7 +6,7 @@ import { drawSky, roomLayout } from '../bake/room.js';
 import { FOODS, STAGES } from '../catalog.js';
 import { ambient, petLight, bakeScale, celebrate, checkDaily, defineRoomArt, game, refreshLight, save, setPetStage } from '../game.js';
 import { GROUND } from '../pet.js';
-import { haptic, purr as hapticPurr, setKeepAwake } from '../platform.js';
+import { haptic, purr as hapticPurr, setKeepAwake, track } from '../platform.js';
 import { cuddle, feed, goToSleep, levelOf, mood, stageOf, tasteOf, talked, wakeUp } from '../state.js';
 import { talkMode } from '../talk.js';
 import { clamp, lerp, pick, rand, smooth, Spring, TAU } from '../util.js';
@@ -15,6 +15,8 @@ const THOUGHTS = { hungry: '🍎', sleepy: '🌙', dirty: '🫧', lonely: '💗'
 
 export const home = {
   talkable: true,
+  // Back here after a game that ended well, the app may offer reminders (game.js).
+  offersNotifications: true,
 
   enter({ greet = false } = {}) {
     const { actor, pet } = game;
@@ -881,6 +883,7 @@ export const home = {
       }
       this.eating = null;
       const result = feed(s, foodId, game.now());
+      if (result.ok) track('feed', { food: foodId, taste });
       for (let i = 0; i < 3; i++) {
         pet.r.yaw.target = i % 2 ? -0.28 : 0.28;
         yield 0.13;
@@ -928,6 +931,7 @@ export const home = {
     audio.gulp();
     pet.squash(-0.08);
     const result = feed(s, foodId, game.now());
+    if (result.ok) track('feed', { food: foodId, taste });
     game.ui.refresh();
     yield 0.14;
     const c = pet.anchors.center;
@@ -978,6 +982,7 @@ export const home = {
       actor.play(this.notSleepy());
       return;
     }
+    track('sleep');
     celebrate(r);
     actor.stop();
     actor.play(this.goToBed());

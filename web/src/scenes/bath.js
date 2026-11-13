@@ -1,6 +1,6 @@
 // Bath time. Soap it up, rinse it off, towel it dry until it poofs up twice its size.
 import { audio } from '../audio.js';
-import { celebrate, fadeTo, game, quality, save } from '../game.js';
+import { celebrate, fadeTo, game, quality, roundDone, save } from '../game.js';
 import { makeCanvas } from '../bake/paint.js';
 import { GROUND } from '../pet.js';
 import { haptic, purr as hapticPurr } from '../platform.js';
@@ -189,6 +189,7 @@ function bakeDuck(view) {
 const TOWEL_SVG = `<svg viewBox="0 0 60 50" width="30" height="26" aria-hidden="true"><rect y="6" width="60" height="44" rx="9" fill="#ff9fbc"/><rect y="34" width="60" height="5" fill="#fff" opacity=".85"/><rect y="42" width="60" height="3" fill="#fff" opacity=".85"/><rect width="60" height="24" rx="9" fill="#ffc9da"/></svg>`;
 
 export const bath = {
+  mode: 'bath',
   enter() {
     const { assets, view, pet, actor } = game;
     const Q = quality();
@@ -342,6 +343,7 @@ export const bath = {
     setClean(game.state, 100);
     game.ui.refresh();
     save();
+    roundDone();
     yield 1.6;
     pet.setFace('smile');
     yield 0.7;

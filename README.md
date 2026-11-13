@@ -46,6 +46,9 @@ node tools/smoke.mjs
 - `web/src/platform.js`: everything that differs between browser and app. Its native half is
   `ios/Pockling/GameHost.swift`.
 - `web/src/talk.js` and `ios/Pockling/TalkBack.swift`: the same talk-back, for each platform.
+- `ios/Pockling/NineIO.swift`: 9io's anonymous usage data and notifications, in the iOS app only. It's a
+  copy of `stocks-bot/games/client/NineIO.swift`: change it there and copy it back. Pockling's own
+  reminders are `ios/Pockling/Reminders.swift`.
 
 ## Images
 

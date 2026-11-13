@@ -2,7 +2,7 @@
 import { audio } from './audio.js';
 import { BREEDS, coatOf } from './catalog.js';
 import { game } from './game.js';
-import { haptic, shareImage } from './platform.js';
+import { haptic, shareImage, track } from './platform.js';
 import { ageDays, levelOf, stageOf, trait } from './state.js';
 import { TAU } from './util.js';
 
@@ -116,6 +116,7 @@ export async function takePhoto() {
   }
   await new Promise((r) => setTimeout(r, 260));
   const photo = grabPhoto();
+  track('photo');
   audio.camera();
   haptic('medium');
   flash(view);

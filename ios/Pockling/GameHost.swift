@@ -5,7 +5,8 @@ import UIKit
 import WebKit
 
 /// Runs the game in a web view and answers what it asks of the phone: saving, haptics, sharing,
-/// the microphone, reminders and tilt. The game's side of this is web/src/platform.js.
+/// the microphone, reminders, notifications, usage data and tilt. The game's side of this is
+/// web/src/platform.js.
 final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavigationDelegate {
     let webView: WKWebView
 
@@ -72,8 +73,14 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
             share(png: body["png"] as? String ?? "", text: body["text"] as? String ?? "")
         case "open":
             if let text = body["url"] as? String, let url = URL(string: text) { UIApplication.shared.open(url) }
-        case "reminders":
-            Reminders.set(enabled: body["enabled"] as? Bool ?? false, name: body["name"] as? String ?? "Your Pockling")
+        case "pet":
+            Reminders.setName(body["name"] as? String)
+        case "track":
+            track(body)
+        case "notifySettings", "notifySet", "notifyOffer", "notifyAnswer":
+            Task { await answerNotify(command, body) }
+        case "openSettings":
+            if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
         case "keepAwake":
             UIApplication.shared.isIdleTimerDisabled = body["on"] as? Bool ?? false
         case "talkStart":
@@ -141,6 +148,57 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
 
     @objc private func cameForeground() {
         updateMotion()
+        // Notifications may have been allowed in iOS Settings while we were away.
+        Reminders.refresh()
+    }
+
+    // MARK: Usage data and notifications (NineIO.swift)
+
+    /// A usage event from the game: a name and a few short strings, never the pet's name or anything
+    /// typed. The name has to fit the games API's pattern, so a typo can't slip through.
+    private func track(_ body: [String: Any]) {
+        guard let name = body["name"] as? String,
+              name.range(of: "^[a-z][a-z0-9_]{0,39}$", options: .regularExpression) != nil else { return }
+        let props = (body["props"] as? [String: Any] ?? [:]).compactMapValues { $0 as? String }
+        NineIO.event(name, props)
+    }
+
+    /// Answers the game's Settings and its notification card. Every answer goes back with the id of
+    /// the question and the player's choices as they now stand.
+    @MainActor
+    private func answerNotify(_ command: String, _ body: [String: Any]) async {
+        let nine = NineIO.shared
+        var answer: [String: Any] = [:]
+        switch command {
+        case "notifySet":
+            let key = body["key"] as? String ?? ""
+            let on = body["on"] as? Bool ?? false
+            switch key {
+            case "reminders": nine.remindersEnabled = on
+            case "news": nine.newsEnabled = on
+            case "analytics": nine.analyticsEnabled = on
+            default: break
+            }
+            if on, key == "reminders" || key == "news" {
+                // False means they're off in iOS Settings, and the game offers to open them.
+                answer["blocked"] = !(await nine.ensurePermission())
+            }
+            Reminders.refresh()
+        case "notifyOffer":
+            answer["offer"] = await nine.shouldOfferNotifications()
+        case "notifyAnswer":
+            let choice = NineIO.Answer(rawValue: body["answer"] as? String ?? "") ?? .later
+            answer["granted"] = await nine.answerNotificationOffer(choice)
+            Reminders.refresh()
+        default:
+            break
+        }
+        let status = await nine.notificationStatus()
+        answer["allowed"] = status == .authorized || status == .provisional || status == .ephemeral
+        answer["reminders"] = nine.remindersEnabled
+        answer["news"] = nine.newsEnabled
+        answer["analytics"] = nine.analyticsEnabled
+        emit("answer", ["id": body["id"] ?? 0, "value": answer])
     }
 
     // MARK: Sharing
