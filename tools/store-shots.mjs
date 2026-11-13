@@ -12,6 +12,17 @@ const DEVICES = {
   ipad: { width: 1032, height: 1376, dpr: 2, safe: [32, 20] },
 };
 
+// The six kinds for the lineup, each drawn alone on a clear background as kinds-<breed>.png: breed, coat,
+// face, and how its ears sit (the puppy's droop, so it fits beside a friend; the bunny's stand up). Each
+// stands with its feet at KIND_FEET of the page's width across and down, its body KIND_BODY of the width
+// wide; tools/store-frame.mjs places them by the same two numbers, so change them there too.
+const KINDS = [
+  ['kitling', 'peach', 'happy', 0], ['puppling', 'honey', 'smile', 1.1], ['bunling', 'lilac', 'smile', -0.4],
+  ['foxling', 'tangerine', 'happy', 0], ['cubling', 'milktea', 'happy', 0], ['drakling', 'mint', 'smile', 0],
+];
+const KIND_BODY = 0.45;
+const KIND_FEET = [0.5, 1.2];
+
 const HOLD = `(() => {
   window.__hold = true;
   let n = 20261031;
@@ -33,6 +44,70 @@ const HOLD = `(() => {
     }
     T.draw();
   };
+  // Where the pet's feet are on screen, after the scene's own camera.
+  window.__feet = () => {
+    const a = __game.pet.anchors;
+    return [a.center[0], a.center[1] + 88 * a.unit];
+  };
+  // The camera moves in, as it does for a cuddle, so the pet reads at the size of a search result: the
+  // stage scales up z times about a point on screen (x, y in CSS pixels), which can also move towards
+  // (toX, toY) as far as the stage still fills the screen, and is drawn sharp at that size. The HUD over
+  // it stays as it is.
+  window.__zoom = (z, x, y, toX = x, toY = y) => {
+    const v = __game.view;
+    const c = document.getElementById('stage');
+    const tx = Math.min(0, Math.max(v.w * (1 - z), toX - z * x));
+    const ty = Math.min(0, Math.max(v.h * (1 - z), toY - z * y));
+    __game.g.resize(v.w, v.h, devicePixelRatio * z);
+    c.style.transformOrigin = '0 0';
+    c.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + z + ')';
+    T.draw();
+  };
+})()`;
+
+// A second canvas that keeps its alpha (the game's own is opaque), with its own renderer and textures,
+// for drawing a pet alone on nothing.
+const ALONE = `(async () => {
+  const [{ Renderer, Assets }, { Pet }, { defineFx }, { defineOutfits }] = await Promise.all(
+    ['gl', 'pet', 'bake/fx', 'bake/outfits'].map((m) => import('./src/' + m + '.js')));
+  document.getElementById('stage').style.display = 'none';
+  document.getElementById('ui').hidden = true;
+  document.documentElement.style.background = 'transparent';
+  document.body.style.background = 'transparent';
+  const c = document.createElement('canvas');
+  const getContext = c.getContext.bind(c);
+  c.getContext = (type, options) => getContext(type, { ...options, alpha: true });
+  c.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;display:block';
+  document.body.append(c);
+  const g = new Renderer(c);
+  const assets = new Assets(g);
+  defineFx(assets);
+  defineOutfits(assets);
+  const W = innerWidth;
+  g.resize(W, innerHeight, devicePixelRatio);
+  window.__alone = (breed, coat, face, ears) => {
+    const pet = new Pet(assets, { breed, coat, seed: 11, stage: 'grown', outfit: {} }, { prefix: breed, bakeScale: 4 });
+    pet.setFace(face);
+    pet.ears(ears);
+    pet.settle();
+    pet.blinkIn = 1e9;
+    pet.lookIn = 1e9;
+    pet.lookFree = [0, 0];
+    const s = (W * ${KIND_BODY}) / (200 * pet.stage.scale);
+    const st = s * pet.stage.scale;
+    const x = W * ${KIND_FEET[0]};
+    const y = W * ${KIND_FEET[1]};
+    // Twice: the first draw bakes the textures, and a texture baked halfway through a frame can come out
+    // on the wrong part.
+    for (let i = 0; i < 2; i++) {
+      g.begin();
+      g.gl.clearColor(0, 0, 0, 0);
+      g.gl.clear(g.gl.COLOR_BUFFER_BIT);
+      g.sprite(assets.get('fx.shadow'), x, y + 4 * st, { w: 236 * st, h: 50 * st, alpha: 0.6 });
+      pet.draw(g, x, y, s, [1, 1, 1]);
+      g.end();
+    }
+  };
 })()`;
 
 const open = async (d, query) => {
@@ -40,6 +115,9 @@ const open = async (d, query) => {
   await d.js(HOLD);
   await d.sleep(150);
 };
+
+/** The camera in z times, about the pet's feet unless at (page code) works out another point. */
+const zoom = (d, z, at = '__feet()') => d.js(`__zoom(${z}, ...${at})`);
 
 const MOMENTS = {
   /** Stroking the head: purring, hearts all over. */
@@ -56,6 +134,7 @@ const MOMENTS = {
       T.down(x, y);
       __run(4.2, (i) => T.move(x + Math.sin(i * 0.2) * 58 * u, y + Math.cos(i * 0.2) * 14 * u));
     })()`);
+    await zoom(d, 1.4);
   },
 
   /** Nose on the glass, fogging it up. */
@@ -76,6 +155,8 @@ const MOMENTS = {
     const taste = await d.js(`(async () => { const c = await import('./src/catalog.js'); return c.TASTES.bunling; })()`);
     const love = Array.isArray(taste.love) ? taste.love[0] : taste.love;
     await d.js(`__game.state.foodsTried = ['${love}', 'apple', 'carrot', 'cookie']; T.scene.giveFood('${love}'); __run(1.05)`);
+    // Not so far that the bunny's ears run off the screen.
+    await zoom(d, 1.2);
   },
 
   /** A ball of bubbles, the real way: soap on a dirty fox. */
@@ -93,6 +174,7 @@ const MOMENTS = {
       T.up(c[0], c[1]);
       __run(0.25);
     })()`);
+    await zoom(d, 1.3);
   },
 
   /** Clean, fluffy, under a rainbow. */
@@ -129,6 +211,11 @@ const MOMENTS = {
       f.x = s.scroll + g.actor.x + 192 * u;
       for (let i = 0; i < 40 && !f.met; i++) __run(0.1);
       __run(1.7);
+      // In until the two of them fill the screen from side to side, which on a phone they already do.
+      const a = g.pet.anchors, b = s.friendPet.anchors;
+      const left = a.center[0] - 125 * a.unit, right = b.center[0] + 125 * b.unit;
+      const z = Math.min(1.4, (0.92 * v.w) / (right - left));
+      if (z > 1.02) __zoom(z, (left + right) / 2, __feet()[1]);
     })()`);
   },
 
@@ -159,6 +246,8 @@ const MOMENTS = {
       t.setState('speaking');
       __run(0.42, () => { t.level = 0.82; });
     })()`);
+    // Its wings stay on the screen.
+    await zoom(d, 1.3);
   },
 
   /** Tucked in under the star projector. */
@@ -166,6 +255,8 @@ const MOMENTS = {
     await open(d, 'demo=home&breed=puppling&coat=honey&hour=21&days=12&tummy=80&love=90&fun=80&energy=25&clean=95');
     await d.js(`T.scene.idleIn = 1e9; T.scene.sleep(); __run(7)`);
     await d.sleep(900);
+    // The bed is off to one side: the pet comes in towards the middle.
+    await zoom(d, 1.6, `(() => { const c = __game.pet.anchors.center; return [c[0], c[1], __game.view.w / 2, c[1]]; })()`);
   },
 
   /** Dressed up, with the closet open and the pet above it. */
@@ -182,6 +273,23 @@ const MOMENTS = {
       __run(1.8);
     })()`);
     await d.sleep(500);
+    // Not so far that the crown goes up under the Dynamic Island.
+    await zoom(d, 1.15);
+  },
+
+  /** The six kinds, each alone on a clear background; tools/store-frame.mjs stands them together. */
+  async kinds(d) {
+    await open(d, 'demo=home&breed=kitling&coat=peach&hour=12&days=12');
+    await d.js(ALONE);
+    await d.transparent();
+    const saved = [];
+    for (const [breed, coat, face, ears] of KINDS) {
+      await d.js(`__alone('${breed}', '${coat}', '${face}', ${ears})`);
+      await d.sleep(150);
+      saved.push(`kinds-${breed}`);
+      await d.shot(saved.at(-1), { draw: false });
+    }
+    return saved;
   },
 
   /** The egg bursting open. */
@@ -203,9 +311,11 @@ mkdirSync(out, { recursive: true });
 const dpr = Number(dprArg ?? device.dpr);
 for (const name of names.length ? names : Object.keys(MOMENTS)) {
   const t0 = Date.now();
+  let saved;
   await drive({ ...device, dpr, outDir: out, quiet: true }, async (d) => {
-    await MOMENTS[name](d);
-    await d.shot(process.env.SHOT_AS ?? name);
+    // A moment that saves its own pictures says which.
+    saved = await MOMENTS[name](d);
+    if (!saved) await d.shot(process.env.SHOT_AS ?? name);
   });
-  console.log(`${name}: ${((Date.now() - t0) / 1000).toFixed(0)}s -> ${join(out, name + '.png')}`);
+  console.log(`${name}: ${((Date.now() - t0) / 1000).toFixed(0)}s -> ${(saved ?? [name]).map((f) => join(out, f + '.png')).join(', ')}`);
 }

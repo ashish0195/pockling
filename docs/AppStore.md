@@ -165,11 +165,11 @@ node tools/make-art.mjs store build/appstore/creative
 | iPhone with Dynamic Island (medium display), **required** | `iphone-6.3/` | 1206x2622 |
 | iPhone with Dynamic Island (large display) | `iphone-6.9/` | 1320x2868 |
 | iPad 13", **required** | `ipad-13/` | 2064x2752 |
-| App preview (iPhone) | `preview/pockling-preview.mp4` | 886x1920, 29 s, silent audio track |
+| App preview (iPhone) | `preview/pockling-preview.mp4` | 886x1920, 29.5 s, silent audio track |
 | Product page header | `creative/header-3840x1646.png` | 3840x1646 |
 | Search results | `creative/search-3840x2560.jpg` | 3840x2560 |
 
-The headlines are in `tools/store-frame.mjs`. `10-hatch` on iPhone is a real capture from the simulator (the raw `hatch.png` is swapped for it); the rest render the same code in Chrome, with the iPhone's safe areas.
+The headlines are in `tools/store-frame.mjs`. Since the ASO update (14 Nov 2026, `docs/ASO.md`) the ten shots are `01-glass` … `10-dress`: the first says "Your cute / virtual pet", `04-kinds` stands the six pets together (each drawn alone by `store-shots.mjs`, grouped by `store-frame.mjs`), the phone is larger and some scenes zoom the game's camera so the pet reads at search size, and "Tap the egg" is gone. The preview opens on the nose on the glass with "Your cute / virtual pet" and runs 29.5 s. The approved set, as JPEGs, the preview and the creative images are committed in `docs/aso/store/`. A busy machine makes `tools/drive.mjs` time out (15 s for Chrome, 12 s for the game); retry, or run when it's quiet.
 
 The iPhone Duo slot stays empty for now: the fold has never been run on a device or a simulator, so we shouldn't earn the "Made for iPhone Duo" badge yet. Apple requires it from April 2027 for apps built with the iOS 27.1 SDK.
 

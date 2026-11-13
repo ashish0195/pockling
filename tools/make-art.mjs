@@ -13,7 +13,8 @@ const snap = async (name, mode, width, height) => {
   let file;
   await drive({ width, height, outDir: out, quiet: true }, async (d) => {
     await d.rawOpen(`tools/art.html?mode=${mode}`);
-    await d.waitFor('window.__ready', 20000);
+    // Baking five pets can take minutes on a busy machine.
+    await d.waitFor('window.__ready', 600000);
     await d.sleep(300);
     if (mode === 'word') await d.transparent();
     file = await d.shot(name, { draw: false });
@@ -29,6 +30,8 @@ if (process.argv[2] === 'store') {
     const png = await snap(name, mode, width, height);
     execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', png, '-pix_fmt', 'rgb24', join(dest, `${name}.png`)]);
   }
+  // The search image goes up as a JPEG, at the quality of the last one (about 1 MB).
+  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '90', join(dest, 'search-3840x2560.png'), '--out', join(dest, 'search-3840x2560.jpg')], { stdio: 'ignore' });
   process.exit(0);
 }
 

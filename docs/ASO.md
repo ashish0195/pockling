@@ -121,6 +121,12 @@ each frame, and a trust line.
 "Tap the egg. Say hi." (an almost empty phone) goes. Captions are the only text Apple may read from
 screenshots, so the first one says "virtual pet".
 
+**Made, 14 Nov 2026:** `docs/aso/store/` has the three sets (`iphone-6.3/`, `iphone-6.9/`, `ipad-13/`,
+ten JPEGs each, RGB), the re-cut preview (`preview/pockling-preview.mp4`, 886 × 1920, 29.5 s, silent
+stereo track) and the creative images (`creative/`; the search image now reads "Your cute virtual
+pet" / "Hatch it, cuddle it, feed it. No ads, ever."). The pet is about a third of each shot's height,
+up from a fifth: a larger phone, and the game's camera zoomed in some scenes (`store-shots.mjs`).
+
 ## App preview
 
 The 29-second preview stays, re-cut so its first three seconds are the nose on the glass with
