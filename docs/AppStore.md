@@ -93,7 +93,7 @@ The video is in `build/appstore/review/` (not in git). It came from `xcrun simct
 
 **App Privacy (1.2):** Data Not Linked to You. Under "Do you or your third-party partners collect data from this app?", Yes, with two data types:
 
-- Identifiers › Device ID: App Functionality and Analytics. Not linked to the user's identity. Not used for tracking.
+- Identifiers › Device ID: App Functionality, Analytics, and Developer’s Advertising or Marketing (the news pushes, sent only to players who chose them). Not linked to the user's identity. Not used for tracking.
 - Usage Data › Product Interaction: Analytics. Not linked to the user's identity. Not used for tracking.
 
 The product page then shows Data Not Linked to You: Identifiers, Usage Data, and no Data Used to Track You. The app's privacy manifest (`ios/Pockling/PrivacyInfo.xcprivacy`) declares the same. App Privacy is app-wide and goes live as soon as it's published, so publish it just before submitting 1.2.
