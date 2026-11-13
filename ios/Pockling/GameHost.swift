@@ -5,8 +5,8 @@ import UIKit
 import WebKit
 
 /// Runs the game in a web view and answers what it asks of the phone: saving, haptics, sharing,
-/// the microphone, reminders, notifications, usage data and tilt. The game's side of this is
-/// web/src/platform.js.
+/// the microphone, reminders, notifications, usage data, the rating prompt and tilt. The game's
+/// side of this is web/src/platform.js.
 final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavigationDelegate {
     let webView: WKWebView
 
@@ -79,6 +79,8 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
             track(body)
         case "notifySettings", "notifySet", "notifyOffer", "notifyAnswer":
             Task { await answerNotify(command, body) }
+        case "review":
+            askForReview(body)
         case "openSettings":
             if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
         case "keepAwake":
@@ -161,6 +163,14 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
               name.range(of: "^[a-z][a-z0-9_]{0,39}$", options: .regularExpression) != nil else { return }
         let props = (body["props"] as? [String: Any] ?? [:]).compactMapValues { $0 as? String }
         NineIO.event(name, props)
+    }
+
+    /// A happy moment in the game (the pet grew up, a streak day): NineIO shows iOS's rating prompt
+    /// if it's due. The moment's key has to fit the games API's pattern too.
+    private func askForReview(_ body: [String: Any]) {
+        guard let moment = body["at"] as? String,
+              moment.range(of: "^[a-z][a-z0-9_]{0,39}$", options: .regularExpression) != nil else { return }
+        Task { @MainActor in NineIO.shared.askForReview(at: moment) }
     }
 
     /// Answers the game's Settings and its notification card. Every answer goes back with the id of

@@ -10,9 +10,9 @@ import { BREEDS, ROOMS, STAGES } from './catalog.js';
 import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
-import { haptic, isNative, loadSave, setHaptics, setPetName, track, writeSave } from './platform.js';
+import { askForReview, haptic, isNative, loadSave, setHaptics, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
-import { clamp, hourOf, lerp, mixRgb, seeded } from './util.js';
+import { clamp, dayNumber, hourOf, lerp, mixRgb, seeded } from './util.js';
 
 export const game = {
   g: null,
@@ -170,16 +170,17 @@ export function goTo(scene, data) {
   scene.enter?.(data);
   if (scene.offersNotifications && happyRound) {
     happyRound = false;
-    offerNotificationsSoon();
+    afterHappyRound();
   }
 }
 
-// ── Usage data and the notification card (the app only: in a browser, track() sends nothing) ─────
+// ── Usage data, the notification card and the rating prompt (the app only) ──────────────────────
 
 /** The game or activity being played, for its play and finish events. Scenes name it with `mode`. */
 let round = null;
 let happyRound = false;
 let offered = false;
+let rated = false;
 const launchedAt = Date.now();
 
 function beginRound(scene) {
@@ -204,15 +205,36 @@ function endRound() {
 }
 
 /**
- * Home again after a game that ended well: a good moment to offer reminders, once per launch. Never in
- * the launch the pet hatched in, nor before it has been looked after on two different days. The app
- * adds its own limits: only before iOS has asked, at most three times, days apart.
+ * Home again after a game that ended well: a good moment to offer reminders, once per launch, and not
+ * before the pet has been looked after on two different days; or else, on a day whose stamp kept a
+ * streak going, for the app's rating prompt. Never in the launch the pet hatched in. The app adds its
+ * own limits: the card only before iOS has asked, at most three times, days apart; the rating from the
+ * second day of use, once per version, never in a launch that showed the card.
  */
-function offerNotificationsSoon() {
+function afterHappyRound() {
   const p = game.state.pet;
-  if (offered || !isNative || game.demo || !p || p.born >= launchedAt || p.careDays < 2) return;
-  offered = true;
-  game.ui?.offerNotifications?.();
+  if (!isNative || game.demo || !p || p.born >= launchedAt) return;
+  const offer = !offered && p.careDays >= 2;
+  const rate = !rated && keptStreakToday();
+  if (!offer && !rate) return;
+  offered ||= offer;
+  rated ||= rate;
+  game.ui?.afterHappyRound?.({ offer, rate });
+}
+
+/** Today's stamp is in the book, and it's the second day in a row or more. */
+function keptStreakToday() {
+  const s = game.state;
+  return s.streak >= 2 && s.lastVisit === dayNumber(game.now());
+}
+
+/** The pet grew up and the banner saying so was closed: the app may ask for a rating. */
+export function grewUpAndCheered() {
+  if (!isNative || game.demo || rated) return;
+  rated = true;
+  setTimeout(() => {
+    if (game.ui?.quiet?.()) askForReview('grew');
+  }, 700);
 }
 
 /** A soft fade to a new scene, covering any baking it needs to do. */

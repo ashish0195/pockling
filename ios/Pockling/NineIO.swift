@@ -30,8 +30,11 @@
 //    to the privacy policy. When a notification switch is turned on, call `ensurePermission()`.
 // 6. Reminders the app schedules: `scheduleReminder(...)`, or tag your own content with `tag(_:id:)`.
 //    Set `comeback` for a nudge after some days away.
+// 7. At a happy moment, once play has stopped (a won match, three stars, a solved puzzle), call
+//    `askForReview(at: "win")`. NineIO decides whether iOS's rating prompt is due.
 
 import Foundation
+import StoreKit
 import UIKit
 import UserNotifications
 
@@ -64,12 +67,16 @@ final class NineIO: NSObject, UNUserNotificationCenterDelegate {
     private var openedAt: Date?
     private var flushing = false
     private var token: String?
+    /// The notification card and the rating prompt never share a session (foreground to background).
+    private var offeredCardThisSession = false
+    private var askedForReviewThisSession = false
     private let defaults = UserDefaults.standard
 
     private enum Key {
         static let install = "9io.install", queue = "9io.queue", analytics = "9io.analytics"
         static let reminders = "9io.reminders", news = "9io.news", token = "9io.token"
         static let offered = "9io.offeredAt", offers = "9io.offers", synced = "9io.synced"
+        static let days = "9io.days", day = "9io.day", reviewed = "9io.reviewedVersion"
     }
 
     // MARK: - Starting
@@ -180,6 +187,9 @@ final class NineIO: NSObject, UNUserNotificationCenterDelegate {
     @objc private func didBecomeActive() {
         guard openedAt == nil else { return }
         openedAt = Date()
+        offeredCardThisSession = false
+        askedForReviewThisSession = false
+        countDayOfUse()
         track("open")
         refreshRegistration()
         flush()
@@ -214,13 +224,15 @@ final class NineIO: NSObject, UNUserNotificationCenterDelegate {
     }
 
     /// Whether to show the app's own "turn on notifications?" card now: only before iOS has asked,
-    /// at most three times, and at least three days apart.
+    /// at most three times, at least three days apart, and not in a session that asked for a rating.
+    /// A yes counts as showing it, so the rating prompt then waits for another session.
     func shouldOfferNotifications() async -> Bool {
-        guard await notificationStatus() == .notDetermined else { return false }
+        guard !askedForReviewThisSession, await notificationStatus() == .notDetermined else { return false }
         guard defaults.integer(forKey: Key.offers) < 3 else { return false }
         if let last = defaults.object(forKey: Key.offered) as? Date, Date().timeIntervalSince(last) < 3 * 86_400 {
             return false
         }
+        offeredCardThisSession = true
         return true
     }
 
@@ -355,6 +367,49 @@ final class NineIO: NSObject, UNUserNotificationCenterDelegate {
         content.sound = .default
         Self.tag(content, id: id, open: open)
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "9io." + id, content: content, trigger: trigger))
+    }
+
+    // MARK: - Asking for a rating
+
+    /// How many different days the app has been opened on. Counting began with the version that
+    /// brought it, so a player who had an earlier one starts again at their first day on this.
+    var daysOfUse: Int { defaults.integer(forKey: Key.days) }
+
+    /// Whether `askForReview(at:)` would ask now: from the second day of use (so never in the first
+    /// session), once per app version, and not in a session that showed the notification card.
+    var reviewIsDue: Bool {
+        guard !app.isEmpty, daysOfUse >= 2, !offeredCardThisSession else { return false }
+        return defaults.string(forKey: Key.reviewed) != Self.version
+    }
+
+    /// At a happy moment, once play has stopped (a won match, three stars, a solved puzzle, a pet that
+    /// grew up), asks iOS for its rating prompt if `reviewIsDue` and the app is on screen. iOS decides
+    /// whether it really shows: at most three times a year, and never if the player turned it off.
+    /// `moment` is a short lower_snake_case key for the `review_ask` event. Never call it mid-game,
+    /// at launch, or from a button: Apple doesn't allow a button that leads to the prompt.
+    @discardableResult
+    func askForReview(at moment: String) -> Bool {
+        guard reviewIsDue, UIApplication.shared.applicationState == .active,
+              let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else { return false }
+        defaults.set(Self.version, forKey: Key.reviewed)
+        askedForReviewThisSession = true
+        track("review_ask", ["at": moment, "days": String(daysOfUse)])
+        AppStore.requestReview(in: scene)
+        return true
+    }
+
+    /// A session that starts on a calendar day the app hasn't been used on yet counts one more day.
+    private func countDayOfUse() {
+        let today = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        let key = String(format: "%04d-%02d-%02d", today.year ?? 0, today.month ?? 0, today.day ?? 0)
+        guard defaults.string(forKey: Key.day) != key else { return }
+        defaults.set(key, forKey: Key.day)
+        defaults.set(daysOfUse + 1, forKey: Key.days)
+    }
+
+    private static var version: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
     // MARK: - UNUserNotificationCenterDelegate

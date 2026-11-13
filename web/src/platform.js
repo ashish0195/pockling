@@ -168,6 +168,15 @@ export function openNotificationSettings() {
   send('openSettings');
 }
 
+/**
+ * A happy moment, once nothing is going on (the pet grew up, a day that kept a streak going): the app
+ * may show iOS's rating prompt. The app decides whether it's due: from the second day of use, once per
+ * version, never in a launch that showed the notification card. moment is a lower_snake_case key.
+ */
+export function askForReview(moment) {
+  send('review', { at: moment });
+}
+
 /** The pet's name, for the text of reminders on the phone (null before an egg has hatched). */
 export function setPetName(name) {
   send('pet', { name });

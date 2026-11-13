@@ -2,10 +2,10 @@
 // switch modes with show(); menus are sheets that slide up. Buttons use data-action, handled in one place.
 import { audio } from '../audio.js';
 import { BREEDS, FOODS, FOOD_IDS, OUTFITS, OUTFIT_IDS, ROOMS, ROOM_IDS, coatOf } from '../catalog.js';
-import { applySettings, celebrate, defineRoomArt, game, save } from '../game.js';
+import { applySettings, celebrate, defineRoomArt, game, grewUpAndCheered, save } from '../game.js';
 import { foodThumb } from '../bake/food.js';
 import { OUTFIT_ART } from '../bake/outfits.js';
-import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting } from '../platform.js';
+import { answerNotificationOffer, askForReview, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting } from '../platform.js';
 import { ageDays, buyOutfit, buyRoom, levelOf, levelProgress, mood, stageOf, tasteOf, trait, useRoom, wear } from '../state.js';
 import { dayNumber } from '../util.js';
 
@@ -175,7 +175,9 @@ export const ui = {
   grew(stageName) {
     const p = game.state.pet;
     const line = stageName === 'Grown' ? `${esc(p.name)} is all grown up. You did that.` : `${esc(p.name)} isn't a baby any more!`;
-    this.banner(`<div class="big">🌟</div><h2>${esc(p.name)} grew!</h2><p>${line}</p><button class="btn" data-close>So proud</button>`);
+    this.banner(`<div class="big">🌟</div><h2>${esc(p.name)} grew!</h2><p>${line}</p><button class="btn" data-close>So proud</button>`, {
+      onClose: () => grewUpAndCheered(),
+    });
   },
 
   daily(visit) {
@@ -403,15 +405,19 @@ export const ui = {
   },
 
   /**
-   * Our own "turn on notifications?" card, after a game that ended well (game.js decides when). It waits
-   * for a quiet moment and shows only if the app says so. The player's answer goes to the app, which asks
-   * iOS unless it was Not now.
+   * After a game that ended well (game.js decides when and what for), at a quiet moment: our own "turn on
+   * notifications?" card if offer and the app says so, or else, if rate, the app's rating prompt (the app
+   * decides whether it's due). The card's answer goes to the app, which asks iOS unless it was Not now.
    */
-  async offerNotifications() {
+  async afterHappyRound({ offer, rate }) {
     for (let i = 0; i < 20 && !this.quiet(); i++) await new Promise((r) => setTimeout(r, 700));
     if (!this.quiet()) return;
-    const answer = await canOfferNotifications();
-    if (!answer?.offer || !this.quiet()) return;
+    const answer = offer ? await canOfferNotifications() : null;
+    if (!this.quiet()) return;
+    if (!answer?.offer) {
+      if (rate) askForReview('streak');
+      return;
+    }
     const name = esc(game.state.pet.name);
     this.banner(`<div class="big">🔔</div><h2>Can ${name} say hello?</h2><p>A hello at 6 pm each day, and a nudge after a few days away.</p>
       <button class="btn" data-close data-answer="all">Reminders and news<small>Also news about new games and events from 9io</small></button>
