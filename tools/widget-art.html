@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pockling widget art</title>
+<style>html, body { margin: 0; background: transparent; } canvas { display: none; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+  // Paints the pet for the iOS widget on its own, with nothing behind it. tools/widget-art.mjs calls the
+  // functions at the bottom for every breed, coat, stage and look, and saves what they return in
+  // ios/PetArt.
+  import { seeded } from '../web/src/util.js';
+
+  // The same pictures every run, so painting again only changes what really changed.
+  Math.random = seeded(20261114);
+  // The game draws on an opaque canvas; the widget wants the pet with see-through around it.
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (kind, options) {
+    return getContext.call(this, kind, kind === 'webgl2' ? { ...options, alpha: true, preserveDrawingBuffer: true } : options);
+  };
+
+  const { Renderer, Assets } = await import('../web/src/gl.js');
+  const { Pet } = await import('../web/src/pet.js');
+  const { defineOutfits } = await import('../web/src/bake/outfits.js');
+  const { defineFx } = await import('../web/src/bake/fx.js');
+  const { bakeEgg } = await import('../web/src/bake/props.js');
+  const { LOOKS } = await import('../web/src/widget.js');
+
+  // Each look is a face from the game's own table.
+  const FACE = { smile: 'smile', sleep: 'sleep', happy: 'happy', hungry: 'hungry', sleepy: 'sleepy', sad: 'sad', pout: 'pout' };
+  for (const look of LOOKS) if (!FACE[look]) throw new Error(`no face for the look ${look}`);
+
+  const SIZE = 1100; // the canvas the pet is painted on, in pixels
+  const SCALE = 2; // pixels per pet unit, before the stage's own size
+  const FEET = 860; // where it stands
+
+  const canvas = document.getElementById('c');
+  const g = new Renderer(canvas);
+  const assets = new Assets(g);
+  defineOutfits(assets);
+  defineFx(assets);
+  g.resize(SIZE, SIZE, 1);
+  const [work, wx] = canvas2d(SIZE, SIZE);
+
+  function canvas2d(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return [c, c.getContext('2d', { willReadFrequently: true })];
+  }
+
+  let current = null;
+  function petFor(breed, coat) {
+    const prefix = `w.${breed}.${coat}`;
+    if (current?.prefix !== prefix) {
+      if (current) assets.drop(current.prefix);
+      current = new Pet(assets, { breed, coat, seed: 1, stage: 'grown', outfit: {} }, { prefix, bakeScale: 3 });
+      // The fur is baked the first time it's drawn, and that first frame can come out wrong: draw once
+      // to bake it all, and keep only the frames after.
+      current.fresh = true;
+    }
+    return current;
+  }
+
+  /** Paints one look onto the work canvas and returns its pixels. */
+  function draw(breed, coat, stage, look) {
+    const pet = petFor(breed, coat);
+    if (pet.fresh) {
+      pet.fresh = false;
+      draw(breed, coat, stage, look);
+    }
+    pet.setStage(stage);
+    pet.setFace(FACE[look]);
+    pet.t = 0;
+    pet.breathNow = 0;
+    pet.blink = 1;
+    pet.lookFree = [0, 0];
+    pet.settle();
+    g.begin(0, 0, 0);
+    const gl = g.gl;
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    const s = SCALE * pet.stage.scale;
+    g.sprite(assets.get('fx.shadow'), SIZE / 2, FEET + 4 * s, { w: 236 * s, h: 50 * s, alpha: 0.55 });
+    pet.draw(g, SIZE / 2, FEET, SCALE);
+    g.end();
+    wx.clearRect(0, 0, SIZE, SIZE);
+    wx.drawImage(canvas, 0, 0);
+    return wx.getImageData(0, 0, SIZE, SIZE).data;
+  }
+
+  const emptyBox = () => ({ x0: SIZE, y0: SIZE, x1: 0, y1: 0 });
+  const grow = (box, x, y) => {
+    if (x < box.x0) box.x0 = x;
+    if (x >= box.x1) box.x1 = x + 1;
+    if (y < box.y0) box.y0 = y;
+    if (y >= box.y1) box.y1 = y + 1;
+  };
+
+  function opaqueBox(data) {
+    const box = emptyBox();
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) if (data[(y * SIZE + x) * 4 + 3] > 6) grow(box, x, y);
+    }
+    return box;
+  }
+
+  /** Where the picture of `box` lands: its size, and how many picture pixels to a canvas pixel. */
+  function fit(box, side) {
+    const bw = box.x1 - box.x0;
+    const bh = box.y1 - box.y0;
+    const k = side / Math.max(bw, bh);
+    return { bw, bh, k, w: Math.round(bw * k), h: Math.round(bh * k) };
+  }
+
+  /** The work canvas cut to box and fitted to `side` pixels on its longer side. */
+  function picture(box, side) {
+    const { bw, bh, w, h } = fit(box, side);
+    const [out, ox] = canvas2d(w, h);
+    ox.imageSmoothingEnabled = true;
+    ox.imageSmoothingQuality = 'high';
+    ox.drawImage(work, box.x0, box.y0, bw, bh, 0, 0, w, h);
+    return out;
+  }
+
+  const webp = (c, quality) => c.toDataURL('image/webp', quality).split(',')[1];
+
+  /** The box round everything that isn't see-through, in canvas pixels. */
+  window.measure = (breed, coat, stage) => opaqueBox(draw(breed, coat, stage, LOOKS[0]));
+
+  /**
+   * The box round every pixel that another look changes from the first one, in canvas pixels: the face,
+   * as far as the eyes, brows, mouth and blush reach.
+   */
+  window.faceBox = (breed, coat, stage) => {
+    const base = draw(breed, coat, stage, LOOKS[0]).slice();
+    const box = emptyBox();
+    for (const look of LOOKS.slice(1)) {
+      const data = draw(breed, coat, stage, look);
+      for (let i = 0; i < data.length; i += 4) {
+        const d = Math.abs(data[i] - base[i]) + Math.abs(data[i + 1] - base[i + 1]) + Math.abs(data[i + 2] - base[i + 2]) + Math.abs(data[i + 3] - base[i + 3]);
+        if (d > 6) grow(box, (i / 4) % SIZE, Math.floor(i / 4 / SIZE));
+      }
+    }
+    return box;
+  };
+
+  /** Where a box on the canvas lands in the picture of `box`, in whole picture pixels, with room round it. */
+  window.placeFace = (face, box, side, margin) => {
+    const { k, w, h } = fit(box, side);
+    const x0 = Math.max(0, Math.floor((face.x0 - box.x0) * k) - margin);
+    const y0 = Math.max(0, Math.floor((face.y0 - box.y0) * k) - margin);
+    const x1 = Math.min(w, Math.ceil((face.x1 - box.x0) * k) + margin);
+    const y1 = Math.min(h, Math.ceil((face.y1 - box.y0) * k) + margin);
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0, size: [w, h] };
+  };
+
+  /** The whole pet in one look, as WebP. */
+  window.paint = (breed, coat, stage, look, box, side, quality) => {
+    draw(breed, coat, stage, look);
+    return webp(picture(box, side), quality);
+  };
+
+  /**
+   * Just the face of a look, cut from its whole picture at `face` (picture pixels), with edges that fade
+   * out over `feather` pixels, so it sits on the first look's picture without a seam.
+   */
+  window.paintFace = (breed, coat, stage, look, box, side, quality, face, feather) => {
+    draw(breed, coat, stage, look);
+    const whole = picture(box, side);
+    const [patch, px] = canvas2d(face.w, face.h);
+    px.drawImage(whole, face.x, face.y, face.w, face.h, 0, 0, face.w, face.h);
+    const [mask, mx] = canvas2d(face.w, face.h);
+    mx.filter = `blur(${feather / 2}px)`;
+    mx.fillStyle = '#fff';
+    mx.fillRect(feather, feather, face.w - feather * 2, face.h - feather * 2);
+    px.globalCompositeOperation = 'destination-in';
+    px.drawImage(mask, 0, 0);
+    return webp(patch, quality);
+  };
+
+  /** An egg, for a widget whose pet hasn't hatched yet. */
+  window.egg = (breed, side, quality) => {
+    const c = bakeEgg(breed).canvas;
+    wx.clearRect(0, 0, SIZE, SIZE);
+    const w = (c.width * 600) / c.height;
+    const shadow = wx.createRadialGradient(SIZE / 2, FEET, 4, SIZE / 2, FEET, w * 0.62);
+    shadow.addColorStop(0, 'rgba(60,30,40,0.34)');
+    shadow.addColorStop(1, 'rgba(60,30,40,0)');
+    wx.save();
+    wx.translate(SIZE / 2, FEET);
+    wx.scale(1, 0.22);
+    wx.translate(-SIZE / 2, -FEET);
+    wx.fillStyle = shadow;
+    wx.fillRect(0, FEET - w, SIZE, w * 2);
+    wx.restore();
+    wx.drawImage(c, (SIZE - w) / 2, FEET - 600, w, 600);
+    return webp(picture(opaqueBox(wx.getImageData(0, 0, SIZE, SIZE).data), side), quality);
+  };
+
+  window.__ready = true;
+</script>
+</body>
+</html>

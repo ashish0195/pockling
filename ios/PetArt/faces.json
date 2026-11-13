@@ -1,0 +1,20 @@
+{
+  "bunling-baby": [104,218,170,93],
+  "bunling-grown": [76,180,226,119],
+  "bunling-kid": [90,198,198,107],
+  "cubling-baby": [82,186,204,111],
+  "cubling-grown": [48,140,271,142],
+  "cubling-kid": [64,162,239,127],
+  "drakling-baby": [101,164,175,96],
+  "drakling-grown": [72,126,231,122],
+  "drakling-kid": [86,145,204,109],
+  "foxling-baby": [68,181,176,99],
+  "foxling-grown": [40,143,233,125],
+  "foxling-kid": [53,161,206,113],
+  "kitling-baby": [79,190,198,108],
+  "kitling-grown": [45,146,265,138],
+  "kitling-kid": [63,167,231,124],
+  "puppling-baby": [123,101,135,75],
+  "puppling-grown": [101,72,178,96],
+  "puppling-kid": [112,86,157,86]
+}
