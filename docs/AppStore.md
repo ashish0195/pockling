@@ -207,3 +207,12 @@ Nothing has run on a real iPhone yet. TestFlight has the same build, for trying 
 Removing a version from review to swap a build goes back to the end of the queue, so anything found now ships as an update.
 
 1.2's notifications and usage data have only been built, not run: not the card, iOS's prompt, a reminder or nudge arriving, 1.1's reminder setting carrying over, or anything reaching 9io's games server, which isn't deployed yet. The web side was tried in headless Chrome with a stand-in for the app's bridge.
+
+## Next listing (proposed 14 Nov 2026, not live)
+
+`docs/ASO.md` is the App Store optimisation review: subtitle "Cozy Kitten & Puppy Games", new
+keywords and promotional text, a first caption that says "virtual pet", a six-kinds screenshot,
+larger pets, a re-cut preview, and new localisations (English (U.K.), Spanish (Mexico), Hindi;
+texts in `docs/aso/localizations.md`). It's meant for the version after 1.2. Until the user
+approves it, everything above stays the listing; when it goes into App Store Connect, record here
+what went in.
