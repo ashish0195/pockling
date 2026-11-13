@@ -129,7 +129,9 @@ The 29-second preview stays, re-cut so its first three seconds are the nose on t
 ## Icon
 
 The kitten face is the right icon: big eyes, readable small, unlike anything in the results except
-Bubbu's kitten. A test of the bunny or the fox against it is worth running only with more traffic.
+Bubbu's kitten. For an icon test once alternate icons ship in the binary (and traffic allows), a
+bunny and a fox in the same style are in `docs/aso/icons/` (`candidate-bunny-a.png`, `-b.png`,
+`candidate-fox-a.png`, `-b.png`, 1024 × 1024, RGB), made with OpenArt from the current icon.
 
 ## In-app events, custom product pages, tests
 
