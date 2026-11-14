@@ -11,13 +11,16 @@ import { drive } from './drive.mjs';
 // The words in *stars* are picked out in the accent colour.
 const SHOTS = [
   { name: 'glass', title: 'Your cute\n*virtual pet*', from: '#fff4d1', to: '#ffcf8f' },
+  // 1.3's widget: a real Home Screen captured on an iPhone 17 Pro Max simulator, not by store-shots.mjs
+  // (docs/aso/store/captures/, docs/ASO.md). iPhone only: on an iPad Home Screen the widget is too small to read.
+  { name: 'widget', title: 'On your\n*Home Screen*', from: '#eaf5ff', to: '#bcd8ff', only: 'phone' },
   { name: 'love', title: 'Stroke it.\n*Feel it purr.*', from: '#ffeadf', to: '#ffb9ca' },
   { name: 'feed', title: 'Feed it.\n*It has opinions.*', from: '#f1e9ff', to: '#cbb8ff' },
   { name: 'kinds', title: 'Kitten, puppy, bunny,\n*fox, bear or dragon*', from: '#eaf5ff', to: '#bcd8ff', kinds: true },
   { name: 'bath', title: 'Bubble bath,\n*rubber duck*', from: '#e4fbf6', to: '#9fe6dc' },
   { name: 'walk', title: 'Walkies,\n*new friends*', from: '#ffdcc9', to: '#c8a4ea' },
   { name: 'talk', title: 'Say hello.\n*It says it back.*', from: '#e2fbe9', to: '#a3eac0' },
-  { name: 'hide', title: 'Hide and seek.\n*No peeking!*', from: '#ffe3e9', to: '#ff9ab6' },
+  { name: 'hide', title: 'Hide and seek.\n*No peeking!*', from: '#ffe3e9', to: '#ff9ab6', only: 'ipad' },
   { name: 'sleep', title: 'It never dies.\n*It just misses you.*', from: '#3b3070', to: '#15123a', night: true },
   { name: 'dress', title: 'Crowns, glasses,\n*tiny scarves*', from: '#fff1f7', to: '#ffc4df' },
 ];
@@ -132,10 +135,12 @@ for (const [setName, set] of Object.entries(SETS)) {
   mkdirSync(dir, { recursive: true });
   // A whole set replaces the last one, so a shot that has gone or moved doesn't linger.
   if (!names.length) for (const f of readdirSync(dir)) if (f.endsWith('.png')) rmSync(join(dir, f));
-  const shots = SHOTS.filter((s) => !names.length || names.includes(s.name));
+  // Each set is numbered by its own shots: a shot marked `only` is left out of the other device's set.
+  const setShots = SHOTS.filter((s) => !s.only || s.only === set.raw);
+  const shots = setShots.filter((s) => !names.length || names.includes(s.name));
   await drive({ width: set.W, height: set.H, dpr: 1, outDir: tmp, quiet: true, base: 'http://localhost:8651/' }, async (d) => {
     for (const shot of shots) {
-      const order = String(SHOTS.indexOf(shot) + 1).padStart(2, '0');
+      const order = String(setShots.indexOf(shot) + 1).padStart(2, '0');
       const html = join(tmp, `${setName}-${shot.name}.html`);
       writeFileSync(html, page(shot, set, shotsDir));
       await d.rawOpen(`file://${html}`);

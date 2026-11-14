@@ -109,18 +109,19 @@ Ten portrait shots from `node tools/store-frame.mjs` (headlines in that file). T
 changes are the first caption, a six-kinds lineup instead of the weak last shot, the pet larger in
 each frame, and a trust line.
 
-| # | Caption (two lines) | Scene |
-|---|---|---|
-| 1 | Your cute / virtual pet | Nose on the glass (as now) |
-| 2 | Stroke it. / Feel it purr. | As now |
-| 3 | Feed it. / It has opinions. | As now |
-| 4 | Kitten, puppy, bunny, / fox, bear or dragon | The six kinds side by side (new) |
-| 5 | Bubble bath, / rubber duck | As now |
-| 6 | Walkies, / new friends | As now |
-| 7 | Say hello. / It says it back. | As now |
-| 8 | Hide and seek. / No peeking! | As now |
-| 9 | It never dies. / It just misses you. | Tucked in under the stars |
-| 10 | Crowns, glasses, / tiny scarves | Outfits (as now) |
+| iPhone | iPad | Caption (two lines) | Scene |
+|---|---|---|---|
+| 1 | 1 | Your cute / virtual pet | Nose on the glass (as now) |
+| 2 | - | On your / Home Screen | 1.3's widget, medium and small, on a real Home Screen (new in 1.3) |
+| 3 | 2 | Stroke it. / Feel it purr. | As now |
+| 4 | 3 | Feed it. / It has opinions. | As now |
+| 5 | 4 | Kitten, puppy, bunny, / fox, bear or dragon | The six kinds side by side (new) |
+| 6 | 5 | Bubble bath, / rubber duck | As now |
+| 7 | 6 | Walkies, / new friends | As now |
+| 8 | 7 | Say hello. / It says it back. | As now |
+| - | 8 | Hide and seek. / No peeking! | As now (iPad only from 1.3) |
+| 9 | 9 | It never dies. / It just misses you. | Tucked in under the stars |
+| 10 | 10 | Crowns, glasses, / tiny scarves | Outfits (as now) |
 
 "Tap the egg. Say hi." (an almost empty phone) goes. Captions are the only text Apple may read from
 screenshots, so the first one says "virtual pet".
@@ -130,6 +131,27 @@ ten JPEGs each, RGB), the re-cut preview (`preview/pockling-preview.mp4`, 886 ×
 stereo track) and the creative images (`creative/`; the search image now reads "Your cute virtual
 pet" / "Hatch it, cuddle it, feed it. No ads, ever."). The pet is about a third of each shot's height,
 up from a fifth: a larger phone, and the game's camera zoomed in some scenes (`store-shots.mjs`).
+
+**1.3, the widget (made 14 Nov 2026 from 700fea0):**
+- **iPhone:** in both iPhone sets, shot 2 is now "On your / Home Screen". It's a real iPhone 17 Pro Max
+  simulator Home Screen with the medium and small widgets. They show Mochi, a grown peach kitten (the
+  pet in shot 1), in its happiest mood, "Over the moon". "Hide and seek" left the iPhone sets, so they
+  stay at ten.
+- **iPad:** the set is unchanged. On an iPad Home Screen the widgets fill one corner and don't read in
+  a thumbnail.
+- **Raw captures:** they're in `docs/aso/store/captures/`. There's the Home Screen, and the Lock Screen
+  with the ring, the card and "Mochi · Joyful" above the clock, kept for later use.
+- **To frame it again:** copy the Home Screen capture to `<shots>/phone/widget.png`, then run
+  `node tools/store-frame.mjs <shots> <out> phone`. `store-frame.mjs` marks the widget shot iPhone-only
+  and "Hide and seek" iPad-only, and numbers each set by its own shots.
+- **To capture it again:**
+  1. Build the version for the simulator.
+  2. Install it, and switch usage data off in its preferences (`9io.analytics` false).
+  3. Write a save with `node tools/widget-save.mjs "<app data>/Library/Application Support/pockling-save.json" kitling peach Mochi 12 tummy=97 clean=98 energy=96 fun=95 love=99`.
+  4. Launch it with `SIMCTL_CHILD_NINEIO_BASE` pointed at an unroutable address, so nothing reaches
+     the live service.
+  5. Add the widgets, medium above small, with an XCUITest runner that drives SpringBoard, or by hand.
+  6. Take `xcrun simctl io <udid> screenshot --type=png` with the status bar set to 9:41.
 
 ## App preview
 

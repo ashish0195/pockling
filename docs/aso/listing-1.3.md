@@ -19,7 +19,8 @@ by script: names and subtitles 30, keywords 100, promotional text 170, descripti
   the pet, its name, how it feels, what it needs most and whether it's asleep; small and medium on
   the Home Screen, StandBy, and a ring, a card and the line above the clock on the Lock Screen; a
   tap opens the game; nothing leaves the phone.
-- **Screenshots:** a widget shot as 02, in place of "Hide and seek" (being made from 700fea0).
+- **Screenshots:** in both iPhone sets, a widget shot is 02 and "Hide and seek" goes (made from
+  700fea0, in `docs/aso/store/`). The iPad set is unchanged.
 
 ## English (U.S.) (en-US)
 
