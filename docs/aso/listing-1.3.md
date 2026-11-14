@@ -1,10 +1,17 @@
-# Pockling 1.3: the listing to enter
+# Pockling 1.3: the listing as entered in App Store Connect
 
-Written on 14 Nov 2026 for 1.3 (5), the widget update (main 700fea0). It is docs/ASO.md's
-approved listing plus what the widget changes. Not in App Store Connect yet: the 1.3 version can
-only be made once 1.2 (4) is released. Every field is within App Store Connect's limits (checked
-by script: names and subtitles 30, keywords 100, promotional text 170, description and What's New
-4000).
+Entered on 14 Nov 2026. On the user's "push all now", 1.2 (4) was taken out of review (the
+orchestrator cancelled it with the user's OK) and the version was renamed 1.3 with build 1.3 (5)
+(main 700fea0), so What's New also tells 1.2's reminders and anonymous usage data. Draft
+submission made at 18:59 IST, release automatic on approval; the orchestrator makes the final
+Submit. Every field is within App Store Connect's limits and was checked against it by SHA-256
+after saving.
+
+Media (English (U.S.); the other languages use it): the ten `docs/aso/store/iphone-6.3/` shots with
+the widget second and `preview/pockling-preview.mp4` on iPhone, the ten `ipad-13/` shots, and the
+header and search images from `creative/` (as PNG copies). 1.1's media and creative were removed.
+App Information: the new subtitle, and English (U.K.), Spanish (Mexico) and Hindi with their
+names, subtitles and the privacy policy URL. App Privacy unchanged (published for 1.2).
 
 ## What the widget changes
 
@@ -28,6 +35,7 @@ by script: names and subtitles 30, keywords 100, promotional text 170, descripti
 - **Subtitle (25):** Cozy Kitten & Puppy Games
 - **Keywords (99):** `care,cat,dog,bunny,fox,dragon,bear,kawaii,fluffy,hatch,egg,talking,dress,up,widget,animal,baby,bath`
 - **Promotional text (165):** A tiny friend is waiting in an egg. Hatch your cute virtual pet, feed it, bathe it and tuck it in. It never dies, and now it lives on your Home Screen. No ads, ever.
+- **Support / marketing / privacy URLs:** https://bitfold.9io.ai/pockling/support/ · https://bitfold.9io.ai/pockling/ · https://bitfold.9io.ai/pockling/privacy/
 
 **Description (2288):**
 
@@ -67,7 +75,7 @@ KIND BY DESIGN
 No ads. No in-app purchases. No accounts. No timers that nag you. Nothing you say leaves your device, and the app's anonymous usage data can be switched off. And your pet can never die or run away: if you've been gone, it's just very glad to see you.
 ```
 
-**What's New (477):**
+**What's New (782):**
 
 ```
 Your Pockling has a widget now.
@@ -75,11 +83,13 @@ Your Pockling has a widget now.
 Keep your pet on your Home Screen, on your Lock Screen and in StandBy. The widget shows your Pockling and its name, how it's feeling, what it needs most and whether it's fast asleep. It gets hungry on time and wakes up when it's rested, just as it does in the app. Tap it to go straight to your pet.
 
 Small and medium sizes for the Home Screen, and a ring, a card and a line above the clock for the Lock Screen. Nothing in it leaves your phone.
+
+It can say hello, too: turn on reminders and it presses its nose to the window at 6 pm, with a little nudge if you've been away a few days. The app also shares anonymous usage data now, so we can see what Pocklings like doing most. No account, no ads, no tracking, and you can switch it off in Settings.
 ```
 
 ## English (U.K.) (en-GB)
 
-Name, subtitle, promotional text, description and What's New are the same as English (U.S.).
+Name, subtitle, promotional text, description, What's New and URLs are the same as English (U.S.).
 
 - **Keywords (99):** `care,cosy,cat,dog,bunny,rabbit,fox,dragon,bear,kawaii,fluffy,hatch,egg,talking,dress,up,widget,bath`
 
@@ -89,6 +99,7 @@ Name, subtitle, promotional text, description and What's New are the same as Eng
 - **Subtitle (28):** Gatitos y perritos adorables
 - **Keywords (97):** `mascota,gato,gatito,perro,perrito,conejo,cuidar,juegos,tierno,kawaii,widget,huevo,baño,vestir,pet`
 - **Promotional text (164):** Un amiguito te espera en un huevo. Haz que nazca tu mascota virtual y acarícialo, aliméntalo, báñalo y arrópalo. Nunca muere. Y ahora vive en tu pantalla de inicio.
+- **Support / marketing / privacy URLs:** https://bitfold.9io.ai/pockling/support/ · https://bitfold.9io.ai/pockling/ · https://bitfold.9io.ai/pockling/privacy/
 
 **Description (1727):**
 
@@ -125,7 +136,7 @@ AMABLE POR DISEÑO
 Sin anuncios. Sin compras dentro de la app. Sin cuentas. Sin temporizadores que te presionen. Tu mascota nunca muere ni se escapa: si te fuiste, solo se alegra mucho de verte. El juego está en inglés.
 ```
 
-**What's New (509):**
+**What's New (819):**
 
 ```
 Tu Pockling ahora tiene un widget.
@@ -133,6 +144,8 @@ Tu Pockling ahora tiene un widget.
 Ten a tu mascota en la pantalla de inicio, en la pantalla bloqueada y en StandBy. El widget muestra a tu Pockling con su nombre, cómo se siente, lo que más necesita y si está dormido. Le da hambre a su hora y se despierta cuando ha descansado, igual que en la app. Tócalo para ir directo con tu mascota.
 
 Tamaños pequeño y mediano para la pantalla de inicio, y un círculo, una tarjeta y una línea sobre el reloj para la pantalla bloqueada. Nada de esto sale de tu teléfono.
+
+También puede saludarte: activa los recordatorios y pegará la nariz a la ventana a las 6 pm, con un empujoncito si llevas unos días fuera. La app ahora comparte datos de uso anónimos para saber qué les gusta más hacer a los Pocklings. Sin cuenta, sin anuncios, sin rastreo, y puedes desactivarlo en Settings.
 ```
 
 ## Hindi (hi)
@@ -141,6 +154,7 @@ Tamaños pequeño y mediano para la pantalla de inicio, y un círculo, una tarje
 - **Subtitle (29):** बिल्ली और पपी वाला प्यारा गेम
 - **Keywords (83):** `पालतू,बिल्ली,पपी,खरगोश,गेम,प्यारा,पेट,cute,pet,kitten,puppy,bunny,games,care,widget`
 - **Promotional text (163):** अंडे में एक नन्हा दोस्त इंतज़ार कर रहा है। अपना प्यारा वर्चुअल पेट निकालो, फिर उसे सहलाओ, खिलाओ, नहलाओ और सुलाओ। वह कभी नहीं मरता, और अब होम स्क्रीन पर भी रहता है।
+- **Support / marketing / privacy URLs:** https://bitfold.9io.ai/pockling/support/ · https://bitfold.9io.ai/pockling/ · https://bitfold.9io.ai/pockling/privacy/
 
 **Description (1192):**
 
@@ -168,7 +182,7 @@ Pockling विजेट जोड़ो और आपका पेट होम
 कोई विज्ञापन नहीं, कोई इन-ऐप ख़रीदारी नहीं, कोई अकाउंट नहीं। आपका पेट कभी मरता या भागता नहीं: अगर आप दूर रहे, तो वह बस आपको देखकर बहुत ख़ुश होता है। गेम अंग्रेज़ी में है।
 ```
 
-**What's New (480):**
+**What's New (805):**
 
 ```
 आपके Pockling का अब एक विजेट है।
@@ -176,6 +190,16 @@ Pockling विजेट जोड़ो और आपका पेट होम
 अपने पेट को होम स्क्रीन, लॉक स्क्रीन और StandBy में रखो। विजेट में आपका Pockling और उसका नाम दिखता है, साथ ही वह कैसा महसूस कर रहा है, उसे सबसे ज़्यादा क्या चाहिए और क्या वह सो रहा है। उसे समय पर भूख लगती है और आराम करके वह जाग जाता है, बिल्कुल ऐप की तरह। टैप करो और सीधे अपने पेट के पास पहुँचो।
 
 होम स्क्रीन के लिए छोटा और मीडियम साइज़, और लॉक स्क्रीन के लिए एक रिंग, एक कार्ड और घड़ी के ऊपर एक लाइन। इसमें से कुछ भी आपके फ़ोन से बाहर नहीं जाता।
+
+वह हैलो भी कह सकता है: रिमाइंडर चालू करो और वह शाम 6 बजे खिड़की पर नाक सटा देगा, और कुछ दिन दूर रहने पर एक छोटी-सी याद दिलाएगा। ऐप अब गुमनाम उपयोग डेटा भी भेजता है, ताकि हम देख सकें कि Pocklings को सबसे ज़्यादा क्या करना पसंद है। कोई अकाउंट नहीं, कोई विज्ञापन नहीं, कोई ट्रैकिंग नहीं, और आप इसे Settings में बंद कर सकते हो।
+```
+
+## Review notes
+
+1.2's notes, with a new first paragraph (the whole stays under 4000 characters, at 3996):
+
+```
+1.3 adds a Home Screen, Lock Screen and StandBy widget (long-press the Home Screen, tap +, search Pockling). It shows the pet from a snapshot kept on the device and makes no network requests. 1.2 added optional notifications and anonymous usage data; 1.1 added sounds the app makes itself. The 1.0 notes below still apply; note 4 is updated.
 ```
 
 A native speaker should still read the Spanish and Hindi before they go live.
