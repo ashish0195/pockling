@@ -2,11 +2,11 @@
 
 Copy and settings for Pockling on the App Store.
 
-**Status:** Pockling 1.0 (build 2) went live on the App Store on 5 November 2026: https://apps.apple.com/app/id6829163472. It isn't on sale in the EU until the account's DSA trader verification clears. On the way, Apple sent it back on 1 November under Guideline 2.1, Information Needed, asking for a screen recording from a physical device and written answers, without naming a defect. It went back the same day with a recording from the iOS Simulator, labelled as one, and the answers under Review notes below.
+**Status (14 November 2026):** 1.1 is the live version (released 6 November 2026), and 1.2 (build 4) has been Waiting for Review since 13 November. Pockling 1.0 (build 2) first went live on the App Store on 5 November 2026: https://apps.apple.com/app/id6829163472. It isn't on sale in the EU until the account's DSA trader verification clears. On the way, Apple sent it back on 1 November under Guideline 2.1, Information Needed, asking for a screen recording from a physical device and written answers, without naming a defect. It went back the same day with a recording from the iOS Simulator, labelled as one, and the answers under Review notes below.
 
-**1.1:** build 3, with sounds for playing with the pet and for its idle animations, was uploaded on 6 November 2026 and reaches the Internal TestFlight group automatically. It isn't submitted for review, and the App Store version for it hasn't been created yet.
+**1.1:** build 3, with sounds for playing with the pet and for its idle animations, uploaded on 6 November 2026; live on the App Store since 6 November 2026.
 
-**1.2:** build 4 adds notifications (a daily reminder, a nudge after a few days away, and news the player opts in to) and anonymous usage data, through 9io's shared client `ios/Pockling/NineIO.swift` (a copy of `stocks-bot/games/client/NineIO.swift`). It builds, but it hasn't been uploaded, and 9io's games server at https://9io.ai/games-api/ isn't deployed yet: until it is, the app keeps its events and retries. It changes the App Privacy answers: see Version 1.2 below.
+**1.2:** build 4 adds notifications (a daily reminder, a nudge after a few days away, and news the player opts in to) and anonymous usage data, through 9io's shared client `ios/Pockling/NineIO.swift` (a copy of `stocks-bot/games/client/NineIO.swift`). Uploaded and Waiting for Review since 13 November 2026 (about 22:12 IST); 9io's games server at https://9io.ai/games-api/ is live, and the App Privacy label is published as Data Not Linked to You: see Version 1.2 below. The next version carries the ASO listing in `docs/ASO.md`.
 
 **App Store Connect:** Apple ID 6829163472
 **Name:** Pockling: Cute Virtual Pet
