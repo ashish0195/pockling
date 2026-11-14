@@ -13,7 +13,7 @@ import { Pet } from './pet.js';
 import { askForReview, haptic, isNative, loadSave, setHaptics, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
 import { clamp, dayNumber, hourOf, lerp, mixRgb, seeded } from './util.js';
-import { widgetKey, widgetSnapshot } from './widget.js';
+import { saveGame } from './widget.js';
 
 export const game = {
   g: null,
@@ -144,8 +144,9 @@ let saveTimer = 0;
 
 /** In the app, each save carries a fresh snapshot of the pet for the Home Screen widget (widget.js). */
 function write() {
-  const widget = isNative ? widgetSnapshot(game.state, game.now()) : null;
-  writeSave(game.state, widget && { snapshot: JSON.stringify(widget), key: widgetKey(widget) });
+  // A save still waiting when the player starts over mustn't write the old pet back.
+  if (game.demo || game.startingOver) return;
+  saveGame(game.state, game.now(), { native: isNative, writeSave });
 }
 
 export function save(now = false) {

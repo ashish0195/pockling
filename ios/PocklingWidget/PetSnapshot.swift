@@ -42,11 +42,23 @@ struct PetSnapshot: Decodable {
     let pet: Pet?
     let moments: [Moment]
 
-    /// nil if the app hasn't saved one: it hasn't been opened since it had a widget.
-    static func load() -> PetSnapshot? {
-        guard let file = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(fileName),
-              let data = try? Data(contentsOf: file) else { return nil }
-        return try? JSONDecoder().decode(PetSnapshot.self, from: data)
+    enum Read {
+        case snapshot(PetSnapshot)
+        /// No file: the app hasn't been opened since it had a widget. When it writes one, it asks the
+        /// widget to redraw.
+        case missing
+        /// A file that can't be read: the phone hasn't been unlocked since it started, or it's damaged.
+        case unreadable
+    }
+
+    static func read() -> Read {
+        guard let file = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(fileName) else {
+            return .unreadable
+        }
+        guard FileManager.default.fileExists(atPath: file.path) else { return .missing }
+        guard let data = try? Data(contentsOf: file),
+              let snapshot = try? JSONDecoder().decode(PetSnapshot.self, from: data) else { return .unreadable }
+        return .snapshot(snapshot)
     }
 
     /// The widget's timeline from `start`: how the pet is now, then each change still to come.

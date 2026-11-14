@@ -31,17 +31,24 @@ struct PetTimeline: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PetEntry) -> Void) {
-        let entry = PetSnapshot.load()?.entries(from: Date()).first
-        // The gallery shows the player's own pet if there is one, and Mochi if not, rather than an egg.
-        if let entry, entry.pet != nil || !context.isPreview {
-            completion(entry)
-        } else {
-            completion(context.isPreview ? .sample : PetEntry(date: Date(), state: .unknown))
+        var entry = PetEntry(date: Date(), state: .unknown)
+        if case .snapshot(let snapshot) = PetSnapshot.read(), let first = snapshot.entries(from: Date()).first {
+            entry = first
         }
+        // The gallery shows the player's own pet if there is one, and Mochi if not, rather than an egg.
+        completion(context.isPreview && entry.pet == nil ? .sample : entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetEntry>) -> Void) {
-        let entries = PetSnapshot.load()?.entries(from: Date()) ?? [PetEntry(date: Date(), state: .unknown)]
-        completion(Timeline(entries: entries, policy: .never))
+        let now = Date()
+        switch PetSnapshot.read() {
+        case .snapshot(let snapshot):
+            completion(Timeline(entries: snapshot.entries(from: now), policy: .never))
+        case .missing:
+            completion(Timeline(entries: [PetEntry(date: now, state: .unknown)], policy: .never))
+        case .unreadable:
+            // Most likely the phone hasn't been unlocked since it started: try again in a while.
+            completion(Timeline(entries: [PetEntry(date: now, state: .unknown)], policy: .after(now.addingTimeInterval(15 * 60))))
+        }
     }
 }

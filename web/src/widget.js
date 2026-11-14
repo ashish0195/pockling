@@ -3,7 +3,7 @@
 // opened: it runs the game's own clock (tick in state.js) forward from now and notes each moment the
 // picture changes. The app keeps the snapshot on the phone for the widget (ios/Pockling/WidgetShare.swift)
 // and the widget shows each moment when its time comes (ios/PocklingWidget). Nothing in it leaves the phone.
-import { BREEDS, ROOMS } from './catalog.js';
+import { BREEDS, coatOf, ROOMS } from './catalog.js';
 import { mood, NEEDS, stageOf, tick } from './state.js';
 
 export const WIDGET_VERSION = 1;
@@ -85,13 +85,32 @@ export function widgetSnapshot(s, now) {
     pet: {
       name: p.name,
       breed: p.breed,
-      coat: p.coat,
+      // The coat the game draws: an unknown one shows as the breed's first.
+      coat: coatOf(p).id,
       stage: stage.id,
       kind: `${stage.name} ${BREEDS[p.breed].name}`,
       wall: room.wall,
     },
     moments,
   };
+}
+
+/**
+ * Saves the game with writeSave (platform.js), and in the app (native) the widget's snapshot with it.
+ * The save never depends on the widget: if the snapshot can't be made, the game is saved without one.
+ */
+export function saveGame(state, now, { native, writeSave }) {
+  let widget = null;
+  if (native) {
+    try {
+      const snapshot = widgetSnapshot(state, now);
+      widget = { snapshot: JSON.stringify(snapshot), key: widgetKey(snapshot) };
+    } catch (err) {
+      console.warn('No widget snapshot this time:', err);
+      widget = null;
+    }
+  }
+  writeSave(state, widget);
 }
 
 /**

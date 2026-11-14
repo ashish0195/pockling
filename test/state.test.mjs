@@ -61,6 +61,32 @@ test('sleep refills energy, wakes when full, then normal time resumes', () => {
   assert.ok(Math.abs(s.pet.energy - (100 + RATES.awake.energy)) < 1e-6);
 });
 
+test('put to bed with almost no energy, it still wakes when rested, and the awake hours count', () => {
+  // Adding up the sleep could land a hair under 100 for these: the pet stayed asleep for good and
+  // the hours after it should have woken were lost.
+  for (const energy of [0, 0.003, 0.008, 0.016, 0.5, 2.4, 3.7]) {
+    const s = game();
+    s.pet.energy = energy;
+    goToSleep(s, T0);
+    const rested = (100 - s.pet.energy) / RATES.asleep.energy;
+    tick(s, T0 + 30 * HOUR);
+    assert.equal(s.pet.asleep, false, `energy ${energy}`);
+    // Then 30 - rested hours awake: energy and tummy run down to the floor.
+    assert.equal(s.pet.energy, Math.max(FLOOR, 100 + RATES.awake.energy * (30 - rested)), `energy ${energy}`);
+    assert.equal(s.pet.tummy, FLOOR, `energy ${energy}`);
+  }
+  // Checked in small steps too: the same answer.
+  const a = game();
+  const b = game();
+  a.pet.energy = b.pet.energy = 0.003;
+  goToSleep(a, T0);
+  goToSleep(b, T0);
+  tick(a, T0 + 10 * HOUR);
+  for (let h = 0.25; h <= 10; h += 0.25) tick(b, T0 + h * HOUR);
+  assert.equal(a.pet.asleep, b.pet.asleep);
+  for (const need of NEEDS) assert.ok(Math.abs(a.pet[need] - b.pet[need]) < 1e-6, need);
+});
+
 test('asleep, the other needs fall more slowly', () => {
   const a = game();
   const b = game();

@@ -17,9 +17,9 @@ enum WidgetShare {
     /// The game's latest snapshot, and its key for what the widget would show.
     private static var latest: String?
     private static var latestKey: String?
-    /// The key of the snapshot the widget was last given, and when.
+    /// The key of what the widget was last asked to redraw with, and when.
     private static var shownKey: String?
-    private static var handedAt = Date.distantPast
+    private static var redrawnAt = Date.distantPast
     private static var pending: DispatchWorkItem?
     /// Time asked of iOS to finish a hand-over from the background.
     private static var task = UIBackgroundTaskIdentifier.invalid
@@ -29,18 +29,23 @@ enum WidgetShare {
     }
 
     /// With each save, about once a second while the game runs. The widget gets the snapshot when what it
-    /// shows changes (the key), not every second; and right away from the background, where the game's last
-    /// save before leaving arrives. While the app is open a redraw costs the widget nothing, so it also
-    /// catches up every two minutes, in case the app is closed without leaving the screen first.
+    /// shows changes (the key), not every second; and from the background, where the game's last save before
+    /// leaving arrives. While the app is open a redraw costs the widget nothing, so it also catches up every
+    /// two minutes, in case the app is closed without leaving the screen first. From the background it
+    /// redraws only if the key changed: the reload budget is the widget's, a few dozen a day.
     static func save(_ snapshot: String, key: String, inBackground: Bool) {
         latest = snapshot
         latestKey = key
         if inBackground {
             hand(after: 0)
-        } else if pending == nil, key != shownKey || Date().timeIntervalSince(handedAt) > 120 {
+        } else if pending == nil {
             // Saves come about once a second, so this isn't put off by the next one: when it runs it
             // takes whatever the latest snapshot is by then.
-            hand(after: 1)
+            if key != shownKey {
+                hand(after: 1)
+            } else if Date().timeIntervalSince(redrawnAt) > 120 {
+                hand(after: 1, catchUp: true)
+            }
         }
     }
 
@@ -58,13 +63,14 @@ enum WidgetShare {
         }
     }
 
-    /// Leaving the screen: the widget catches up with everything since it was last handed a snapshot.
+    /// Leaving the screen: the file gets the latest snapshot, and the widget redraws if what it shows changed.
     static func appWentBackground() {
         hand(after: 0)
     }
 
-    /// Writes the latest snapshot for the widget and asks it to redraw, once for a burst of changes.
-    private static func hand(after delay: Double) {
+    /// Writes the latest snapshot to the file, and asks the widget to redraw if what it shows changed since it
+    /// last did (or to catch up, while the app is open). Once for a burst of saves.
+    private static func hand(after delay: Double, catchUp: Bool = false) {
         pending?.cancel()
         if delay == 0, task == .invalid {
             task = UIApplication.shared.beginBackgroundTask(withName: "Widget snapshot") { endTask() }
@@ -75,11 +81,14 @@ enum WidgetShare {
                 endTask()
                 return
             }
-            shownKey = latestKey
-            handedAt = Date()
+            let redraw = catchUp || latestKey != shownKey
+            if redraw {
+                shownKey = latestKey
+                redrawnAt = Date()
+            }
             queue.async {
                 if let file { try? Data(snapshot.utf8).write(to: file, options: .atomic) }
-                WidgetCenter.shared.reloadAllTimelines()
+                if redraw { WidgetCenter.shared.reloadAllTimelines() }
                 DispatchQueue.main.async { endTask() }
             }
         }

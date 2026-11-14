@@ -106,11 +106,18 @@ export function tick(s, now) {
   if (hours <= 0) return;
   let left = hours;
   if (p.asleep) {
-    const toFull = (100 - p.energy) / RATES.asleep.energy;
-    const slept = Math.min(left, Math.max(toFull, 0));
-    apply(p, RATES.asleep, slept);
-    left -= slept;
-    if (p.energy >= 100) p.asleep = false;
+    const toFull = Math.max((100 - p.energy) / RATES.asleep.energy, 0);
+    if (left >= toFull) {
+      // Rested: it wakes, and the rest of the time counts awake. Energy is set to full rather than
+      // added up, which can land a hair under 100 and leave it asleep for good.
+      apply(p, RATES.asleep, toFull);
+      p.energy = 100;
+      p.asleep = false;
+      left -= toFull;
+    } else {
+      apply(p, RATES.asleep, left);
+      left = 0;
+    }
   }
   if (left > 0 && !p.asleep) apply(p, RATES.awake, left);
 }

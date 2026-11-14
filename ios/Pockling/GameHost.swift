@@ -67,7 +67,8 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
                 // Starting over: a reload mustn't bring back the save we put into the page at launch.
                 webView.configuration.userContentController.removeAllUserScripts()
                 WidgetShare.clear()
-            } else if let widget = body["widget"] as? String {
+            } else if let widget = body["widget"] as? String, widget.utf8.count <= 256 * 1024 {
+                // A snapshot is about 10 KB; anything much bigger isn't one.
                 WidgetShare.save(widget, key: body["widgetKey"] as? String ?? "", inBackground: UIApplication.shared.applicationState == .background)
             }
         case "haptic":
