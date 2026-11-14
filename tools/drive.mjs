@@ -80,13 +80,19 @@ export async function drive(options, fn) {
   ], { stdio: 'ignore' });
 
   let page;
-  for (let i = 0; i < 100 && !page; i++) {
+  // A loaded machine can take a while to start Chrome: wait up to a minute.
+  for (let i = 0; i < 400 && !page; i++) {
     try {
       page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page');
     } catch {
       // not listening yet
     }
     if (!page) await sleep(150);
+  }
+  if (!page) {
+    proc.kill();
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    throw new Error('Chrome didn\'t start');
   }
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((r) => { ws.onopen = r; });

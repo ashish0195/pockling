@@ -57,9 +57,6 @@
     if (current?.prefix !== prefix) {
       if (current) assets.drop(current.prefix);
       current = new Pet(assets, { breed, coat, seed: 1, stage: 'grown', outfit: {} }, { prefix, bakeScale: 3 });
-      // The fur is baked the first time it's drawn, and that first frame can come out wrong: draw once
-      // to bake it all, and keep only the frames after.
-      current.fresh = true;
     }
     return current;
   }
@@ -67,10 +64,6 @@
   /** Paints one look onto the work canvas and returns its pixels. */
   function draw(breed, coat, stage, look) {
     const pet = petFor(breed, coat);
-    if (pet.fresh) {
-      pet.fresh = false;
-      draw(breed, coat, stage, look);
-    }
     pet.setStage(stage);
     pet.setFace(FACE[look]);
     pet.t = 0;

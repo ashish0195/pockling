@@ -23,8 +23,15 @@ enum PetArt {
     static func pet(_ pet: PetSnapshot.Pet, look: String, maxPixels: Int? = nil) -> CGImage? {
         let key = "\(pet.breed)-\(pet.coat)-\(pet.stage)-\(look)-\(maxPixels ?? 0)" as NSString
         if let image = cache.object(forKey: key) { return image }
-        let name = "\(pet.breed)-\(pet.coat)-\(pet.stage)"
-        guard let whole = load(name) else { return egg(maxPixels: maxPixels) }
+        // A coat newer than the pictures (tools/widget-art.mjs not run again) shows as another coat of the
+        // same breed and stage, rather than an egg next to the pet's name.
+        var name = "\(pet.breed)-\(pet.coat)-\(pet.stage)"
+        var found = load(name)
+        if found == nil, let other = anyCoat(pet) {
+            name = other
+            found = load(other)
+        }
+        guard let whole = found else { return egg(maxPixels: maxPixels) }
         var image = whole
         if look != "smile", let face = load("\(name)-\(look)"), let at = faces["\(pet.breed)-\(pet.stage)"], at.count == 4 {
             image = draw(width: whole.width, height: whole.height) { context in
@@ -40,6 +47,14 @@ enum PetArt {
 
     static func egg(maxPixels: Int? = nil) -> CGImage? {
         load("egg").map { shrink($0, to: maxPixels) }
+    }
+
+    /// The whole picture of any coat of the pet's breed and stage: "breed-coat-stage", with no look.
+    private static func anyCoat(_ pet: PetSnapshot.Pet) -> String? {
+        guard let folder, let names = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return nil }
+        let prefix = "\(pet.breed)-", suffix = "-\(pet.stage).webp"
+        let match = names.sorted().first { $0.hasPrefix(prefix) && $0.hasSuffix(suffix) && $0.split(separator: "-").count == 3 }
+        return match.map { String($0.dropLast(5)) }
     }
 
     private static func load(_ name: String) -> CGImage? {

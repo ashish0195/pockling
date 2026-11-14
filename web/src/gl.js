@@ -349,6 +349,8 @@ export class Renderer {
 
   texture(source, { mipmap = true, repeat = false, w, h } = {}) {
     const gl = this.gl;
+    // A texture baked mid-frame is bound below: draw what's waiting first, with the texture it was meant for.
+    this.flush();
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);

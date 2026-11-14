@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import WidgetKit
 
 /// Hands the Home Screen, Lock Screen and StandBy widget (PocklingWidget) what it shows. With each save
@@ -16,23 +17,27 @@ enum WidgetShare {
     /// The game's latest snapshot, and its key for what the widget would show.
     private static var latest: String?
     private static var latestKey: String?
-    /// The key of the snapshot the widget was last given.
+    /// The key of the snapshot the widget was last given, and when.
     private static var shownKey: String?
+    private static var handedAt = Date.distantPast
     private static var pending: DispatchWorkItem?
+    /// Time asked of iOS to finish a hand-over from the background.
+    private static var task = UIBackgroundTaskIdentifier.invalid
 
     private static var file: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(fileName)
     }
 
     /// With each save, about once a second while the game runs. The widget gets the snapshot when what it
-    /// shows changes (the key) and when the app leaves the screen, so the phone isn't writing it every
-    /// second; and right away from the background, where the game's last save before leaving arrives.
+    /// shows changes (the key), not every second; and right away from the background, where the game's last
+    /// save before leaving arrives. While the app is open a redraw costs the widget nothing, so it also
+    /// catches up every two minutes, in case the app is closed without leaving the screen first.
     static func save(_ snapshot: String, key: String, inBackground: Bool) {
         latest = snapshot
         latestKey = key
         if inBackground {
             hand(after: 0)
-        } else if key != shownKey, pending == nil {
+        } else if pending == nil, key != shownKey || Date().timeIntervalSince(handedAt) > 120 {
             // Saves come about once a second, so this isn't put off by the next one: when it runs it
             // takes whatever the latest snapshot is by then.
             hand(after: 1)
@@ -49,6 +54,7 @@ enum WidgetShare {
         queue.async {
             if let file { try? FileManager.default.removeItem(at: file) }
             WidgetCenter.shared.reloadAllTimelines()
+            DispatchQueue.main.async { endTask() }
         }
     }
 
@@ -60,16 +66,30 @@ enum WidgetShare {
     /// Writes the latest snapshot for the widget and asks it to redraw, once for a burst of changes.
     private static func hand(after delay: Double) {
         pending?.cancel()
+        if delay == 0, task == .invalid {
+            task = UIApplication.shared.beginBackgroundTask(withName: "Widget snapshot") { endTask() }
+        }
         let work = DispatchWorkItem {
             pending = nil
-            guard let snapshot = latest else { return }
+            guard let snapshot = latest else {
+                endTask()
+                return
+            }
             shownKey = latestKey
+            handedAt = Date()
             queue.async {
                 if let file { try? Data(snapshot.utf8).write(to: file, options: .atomic) }
                 WidgetCenter.shared.reloadAllTimelines()
+                DispatchQueue.main.async { endTask() }
             }
         }
         pending = work
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
+
+    private static func endTask() {
+        guard task != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(task)
+        task = .invalid
     }
 }

@@ -203,8 +203,12 @@ struct PetPicture: View {
     }
 
     private var image: CGImage? {
-        if let pet = entry.pet, let now = entry.now { return PetArt.pet(pet, look: now.look, maxPixels: maxPixels) }
-        return PetArt.egg(maxPixels: maxPixels)
+        switch entry.state {
+        case .pet(let pet, let now): PetArt.pet(pet, look: now.look, maxPixels: maxPixels)
+        case .egg: PetArt.egg(maxPixels: maxPixels)
+        // Not opened since the update: there may well be a pet, so the one on the app icon, not an egg.
+        case .unknown: PetEntry.sample.pet.flatMap { PetArt.pet($0, look: "smile", maxPixels: maxPixels) }
+        }
     }
 }
 
