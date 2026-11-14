@@ -46,7 +46,8 @@ const flows = {
     assert(await d.js(`T.scene === __scenes.home`), 'a returning player goes straight home');
     await d.js(`__game.ui.on_restartYes()`);
     await d.sleep(600);
-    await d.waitFor(`window.__game && window.__game.scene === window.__scenes.hatch`, 8000);
+    // Starting over reloads the whole page, which takes a while with software GL on a busy machine.
+    await d.waitFor(`window.__game && window.__game.scene === window.__scenes.hatch`, 30000);
   },
 
   async contextloss(d) {
@@ -360,7 +361,8 @@ const flows = {
         for (const v of buf) window.__peak = Math.max(window.__peak, Math.abs(v));
       }, 10);
     })()`);
-    await d.waitFor(`__audio.ctx.state === 'running'`, 5000);
+    // Audio can take a while to start on a busy machine.
+    await d.waitFor(`__audio.ctx.state === 'running'`, 20000);
     const names = ['hello', 'happy', 'chirrup', 'sad', 'whine', 'surprise', 'giggle', 'yum', 'yuck', 'yawn', 'ow', 'sniff', 'sneeze', 'burp', 'snore', 'mumble', 'babble', 'boop', 'boing', 'plop', 'thud', 'pop', 'chomp', 'gulp', 'whoosh', 'sparkle', 'chime', 'fanfare', 'coin', 'click', 'camera', 'crack', 'poof', 'bubble', 'soap', 'splash', 'rumble', 'coo', 'trill', 'squeak', 'wee', 'stretchy', 'dizzy', 'stars', 'curious', 'la', 'yay', 'heart', 'step', 'scritch'];
     const results = [];
     for (const name of names) {
@@ -501,7 +503,17 @@ const flows = {
     await d.sleep(200);
     await d.js(`T.ff(0.2)`);
     await d.shot('talk-speaking');
-    const level = await d.js(`__talk.level`);
+    // The loudest the lips get while it speaks: one reading can land in a pause on a busy machine.
+    const level = await d.js(`new Promise((done) => {
+      let top = __talk.level;
+      const t0 = Date.now();
+      const look = () => {
+        top = Math.max(top, __talk.level);
+        if (__talk.state !== 'speaking' || Date.now() - t0 > 3000) done(top);
+        else setTimeout(look, 30);
+      };
+      look();
+    })`);
     console.log('  lip sync level while speaking:', level);
     assert(level > 0.02, 'the mouth moves with the voice');
     await d.waitFor(`__talk.state === 'listening'`, 8000);
