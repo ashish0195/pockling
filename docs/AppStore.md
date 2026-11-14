@@ -213,6 +213,6 @@ Removing a version from review to swap a build goes back to the end of the queue
 `docs/ASO.md` is the App Store optimisation review: subtitle "Cozy Kitten & Puppy Games", new
 keywords and promotional text, a first caption that says "virtual pet", a six-kinds screenshot,
 larger pets, a re-cut preview, and new localisations (English (U.K.), Spanish (Mexico), Hindi;
-texts in `docs/aso/localizations.md`). It's meant for the version after 1.2. Until the user
-approves it, everything above stays the listing; when it goes into App Store Connect, record here
-what went in.
+texts in `docs/aso/localizations.md`). It's meant for the version after 1.2. The user
+approved it (14 Nov 2026); it goes in with 1.3, the widget version, and `docs/aso/listing-1.3.md`
+has every field as it will be entered.

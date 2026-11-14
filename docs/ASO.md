@@ -48,8 +48,8 @@ What that says:
 3. Weak results we fit: **cozy pet** (Cozy Pets 1.8K, then apps with 0–1 ratings), **virtual pet
    games** in India, **bunny games** in India, **hatch egg** (apps with 2–83 ratings).
 4. Widget pets win a big share of "virtual pet" and "cute pet" (Pixel Pals, Widgetable, Mochi Pets,
-   "Cute pet: Self care pet widget"). Pockling has no widget; that's a product idea, in the
-   competitor learnings note.
+   "Cute pet: Self care pet widget"). Pockling 1.3 has one (Home Screen, Lock Screen and StandBy), so
+   1.3's listing adds "widget" to the keywords and a widget screenshot (`docs/aso/listing-1.3.md`).
 5. Several competitors show the pet much bigger than ours: Pokipet's pets spill out of the phone.
    Ours sit inside a phone frame at about a third of the shot's height.
 
@@ -76,6 +76,9 @@ pet games", "virtual pet games" and "cozy pet" name-and-subtitle matches.
 - **es-MX:** `mascota,gato,gatito,perro,perrito,conejo,cuidar,juegos,tierno,kawaii,bebe,huevo,baño,vestir,pet`
 - **Hindi:** `पालतू,बिल्ली,पपी,खरगोश,गेम,प्यारा,पेट,cute,pet,kitten,puppy,bunny,games,care`
 
+For 1.3, "widget" replaces "raise" in both English fields and "bebe" in Spanish, and joins the Hindi
+field (`docs/aso/listing-1.3.md`).
+
 No other company's product names (Tamagotchi, Pou, Talking Tom): Apple rejects them. "talking" is
 for Pockling's talk-back; "dress" and "up" for the outfits.
 
@@ -97,7 +100,8 @@ for Pockling's talk-back; "dress" and "up" for the outfits.
 
 ### What's New (next version)
 
-To write when the version's changes are known.
+Written for 1.3, the widget, in every language: `docs/aso/listing-1.3.md`, with the rest of 1.3's
+listing (the keywords, promotional text and description with the widget in them).
 
 ## Screenshots
 
@@ -158,11 +162,11 @@ user picked all four, and they're in the app as alternate icons `AppIcon-bunny-a
 2. Next version: the new first caption, the six-kinds shot, the pet larger; the re-cut preview.
 3. Next version: es-MX and Hindi.
 4. Next build: the rating prompt.
-5. Later: a widget (competitor learnings), then "First Snow".
+5. The widget ships in 1.3: "widget" in the keywords, its What's New and a widget screenshot
+   (`docs/aso/listing-1.3.md`). Then "First Snow".
 
-1.2 is Waiting for Review. Either it goes out as is and these changes ride on 1.3, or 1.2 is
-removed from review, given the new listing and resubmitted (updates are reviewed in about a day,
-but it goes to the back of the queue). The user decides.
+1.2 went to review with 1.1's listing, and these changes ride on 1.3 with the widget. After the
+user's release go (14 Nov 2026), 1.3 is entered in App Store Connect as soon as 1.2 is released.
 
 ## How to tell if it worked
 
