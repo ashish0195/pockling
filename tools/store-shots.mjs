@@ -119,6 +119,16 @@ const open = async (d, query) => {
 /** The camera in z times, about the pet's feet unless at (page code) works out another point. */
 const zoom = (d, z, at = '__feet()') => d.js(`__zoom(${z}, ...${at})`);
 
+/** A moment with the pet (breed and coat, as a query) pressing its nose to the glass. */
+const pressGlass = (pet) => async (d) => {
+  await open(d, `demo=home&${pet}&hour=11&days=12&tummy=80&love=90&fun=80&energy=90&clean=95`);
+  await d.js(`(() => {
+    T.scene.idleIn = 1e9;
+    __game.actor.play(T.scene.pressGlass());
+    __run(1.05);
+  })()`);
+};
+
 const MOMENTS = {
   /** Stroking the head: purring, hearts all over. */
   async love(d) {
@@ -138,14 +148,10 @@ const MOMENTS = {
   },
 
   /** Nose on the glass, fogging it up. */
-  async glass(d) {
-    await open(d, 'demo=home&breed=kitling&coat=peach&hour=11&days=12&tummy=80&love=90&fun=80&energy=90&clean=95');
-    await d.js(`(() => {
-      T.scene.idleIn = 1e9;
-      __game.actor.play(T.scene.pressGlass());
-      __run(1.05);
-    })()`);
-  },
+  glass: pressGlass('breed=kitling&coat=peach'),
+  // The same for the custom product pages that lead with another pet (docs/ASO.md).
+  'glass-bunny': pressGlass('breed=bunling&coat=lilac'),
+  'glass-dragon': pressGlass('breed=drakling&coat=mint'),
 
   /** Its favourite snack, by hand, with the tray open. */
   async feed(d) {

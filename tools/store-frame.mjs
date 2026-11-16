@@ -2,7 +2,7 @@
 // Connect takes. The device is as big as the shot allows, so the pet reads at the size of a search result,
 // and runs off the bottom edge. The kinds shot has no device: the six pets stand together under it.
 // The PNGs come out with no alpha channel, because it rejects them otherwise.
-//   node tools/store-frame.mjs <shots dir> <out dir> [phone|ipad|all] [names...]
+//   [PAGE=kitten|bunny|dragon] node tools/store-frame.mjs <shots dir> <out dir> [phone|ipad|all] [names...]
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -24,6 +24,20 @@ const SHOTS = [
   { name: 'sleep', title: 'It never dies.\n*It just misses you.*', from: '#3b3070', to: '#15123a', night: true },
   { name: 'dress', title: 'Crowns, glasses,\n*tiny scarves*', from: '#fff1f7', to: '#ffc4df' },
 ];
+
+// The custom product pages (docs/ASO.md), each led by one kind of pet: PAGE=<name> frames a page's set
+// in place of the default one. A page lists the shots in its order; an object is a shot of its own, here
+// the nose on the glass with that page's pet and headline. The widget and Hide and seek keep their
+// `only`, so each set still has ten.
+const GLASS = SHOTS[0];
+const PAGES = {
+  kitten: [{ ...GLASS, title: 'Your cute\n*virtual kitten*' }, 'walk', 'widget', 'hide', 'love', 'feed', 'kinds', 'bath', 'talk', 'sleep', 'dress'],
+  bunny: [{ ...GLASS, name: 'glass-bunny', title: 'Your cute\n*virtual bunny*' }, 'feed', 'dress', 'kinds', 'widget', 'love', 'bath', 'walk', 'talk', 'hide', 'sleep'],
+  dragon: [{ ...GLASS, name: 'glass-dragon', title: 'Your cute\n*virtual dragon*' }, 'talk', 'bath', 'kinds', 'widget', 'love', 'feed', 'walk', 'hide', 'sleep', 'dress'],
+};
+const PAGE = process.env.PAGE;
+if (PAGE && !PAGES[PAGE]) throw new Error(`no page ${PAGE}: ${Object.keys(PAGES).join(', ')}`);
+const LIST = PAGE ? PAGES[PAGE].map((s) => (typeof s === 'string' ? SHOTS.find((x) => x.name === s) : s)) : SHOTS;
 
 // The kinds, as tools/store-shots.mjs draws them (kinds-<breed>.png), in the headline's order, each with
 // its feet at KIND_FEET of the picture's width across and down and its body KIND_BODY of it wide.
@@ -136,7 +150,7 @@ for (const [setName, set] of Object.entries(SETS)) {
   // A whole set replaces the last one, so a shot that has gone or moved doesn't linger.
   if (!names.length) for (const f of readdirSync(dir)) if (f.endsWith('.png')) rmSync(join(dir, f));
   // Each set is numbered by its own shots: a shot marked `only` is left out of the other device's set.
-  const setShots = SHOTS.filter((s) => !s.only || s.only === set.raw);
+  const setShots = LIST.filter((s) => !s.only || s.only === set.raw);
   const shots = setShots.filter((s) => !names.length || names.includes(s.name));
   await drive({ width: set.W, height: set.H, dpr: 1, outDir: tmp, quiet: true, base: 'http://localhost:8651/' }, async (d) => {
     for (const shot of shots) {

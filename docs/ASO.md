@@ -174,6 +174,9 @@ user picked all four, and they're in the app as alternate icons `AppIcon-bunny-a
   that are the everyday care.
 - **Custom product pages** (after the new keywords are approved): "Kitten" (cat; leads with the
   Kitling shots), "Bunny" (bunny, rabbit), "Dragon" (dragon, fox), each with its pet first.
+  Entered on 17 Nov 2026 and in a draft review submission, not yet submitted. Each page leads with
+  its pet's nose on the glass ("Your cute virtual kitten / bunny / dragon"). Everything as entered,
+  and how to make the art again, is in `docs/aso/custom-pages-1.3.md`.
 - **Product page optimisation:** not at ~21 downloads a month.
 - **Ratings:** the app never asks. Ask with Apple's prompt when the pet grows up or on a
   stamp-book day from the second day on, once per version (the improvements session is building it).
