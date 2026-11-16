@@ -4,9 +4,10 @@ Entered on 17 Nov 2026, finished by 03:55 IST, after 1.3 (5) went live on 16 Nov
 `docs/ASO.md` ("In-app events, custom product pages, tests"). Each page was copied from the live 1.3
 product page, so it has 1.3's four languages.
 
-**Not submitted yet.** The three pages are in draft review submission
-`e5291bba-8bf2-4b91-a5c4-5f43ccc12058` (Ready for Review). The orchestrator session checks it and
-clicks Submit for Review, with the user's go-ahead.
+**Submitted for review** on 17 Nov 2026 at 03:59 IST, in review submission
+`e5291bba-8bf2-4b91-a5c4-5f43ccc12058`. The orchestrator session clicked Submit after checking the
+pages: all 60 uploaded screenshots match the files here by MD5, in the order below. Each page version
+is Waiting for Review.
 
 **How it was checked.** After saving, everything was read back from App Store Connect: the
 promotional texts by SHA-256, the keywords, and the order of every screenshot set.
