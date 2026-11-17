@@ -3,7 +3,7 @@
 import { audio } from '../audio.js';
 import { drawSky, roomLayout } from '../bake/room.js';
 import { FOODS, TASTES } from '../catalog.js';
-import { ambient, defineRoomArt, game, petLight, refreshLight } from '../game.js';
+import { ambient, defineRoomArt, feetOnStage, game, onStageX, petLight, refreshLight } from '../game.js';
 import { haptic } from '../platform.js';
 import { clamp, pick, rand } from '../util.js';
 import { endGame, gameBar, setHint, setScore, setSide } from './gameui.js';
@@ -21,8 +21,8 @@ export const snackGame = {
     actor.relax('drool');
     actor.scale = 0.78;
     actor.air = 0;
-    actor.x = view.w / 2;
-    actor.y = view.floorY + 30 * view.u;
+    actor.x = view.stage.cx;
+    actor.y = feetOnStage(view.floorY + 30 * view.u, 0.78 * view.u);
     pet.settle();
     pet.wag(1, 13);
     this.targetX = actor.x;
@@ -50,7 +50,16 @@ export const snackGame = {
   resize() {
     defineRoomArt();
     this.layoutRoom = roomLayout(game.view);
-    game.actor.y = game.view.floorY + 30 * game.view.u;
+    game.actor.y = feetOnStage(game.view.floorY + 30 * game.view.u, 0.78 * game.view.u);
+    game.actor.x = this.clampX(game.actor.x);
+    this.targetX = this.clampX(this.targetX);
+  },
+
+  /** Where the pet can run: the whole width, or on an iPhone Duo held like a book, its own page. */
+  clampX(x) {
+    const { view } = game;
+    if (view.crease?.vertical) return onStageX(x, 0.78 * view.u);
+    return clamp(x, 56 * view.u, view.w - 56 * view.u);
   },
 
   side() {
@@ -85,7 +94,7 @@ export const snackGame = {
     // The pet runs after your finger.
     const dx = this.targetX - actor.x;
     actor.x += dx * Math.min(1, dt * 12);
-    actor.x = clamp(actor.x, 56 * u, w - 56 * u);
+    actor.x = this.clampX(actor.x);
     const moving = Math.abs(dx) > 8;
     pet.walking = moving ? 1.4 : 0;
     pet.r.yaw.target = clamp(dx / (120 * u), -0.7, 0.7);
@@ -101,7 +110,8 @@ export const snackGame = {
       const r = Math.random();
       const kind = r < 0.2 + this.t * 0.002 ? 'bad' : r < 0.27 ? 'star' : 'good';
       const food = kind === 'bad' ? this.bad : kind === 'good' ? pick(this.good) : null;
-      this.items.push({ kind, food, x: rand(36 * u, w - 36 * u), y: -40 * u, vy: rand(190, 260) * u * pace, r: rand(-1, 1), spin: rand(-3, 3), wob: rand(6.28) });
+      const st = view.crease?.vertical ? view.stage : { x: 0, w };
+      this.items.push({ kind, food, x: rand(st.x + 36 * u, st.x + st.w - 36 * u), y: -40 * u, vy: rand(190, 260) * u * pace, r: rand(-1, 1), spin: rand(-3, 3), wob: rand(6.28) });
     }
 
     const m = pet.anchors.mouth ?? [actor.x, actor.y - 60];

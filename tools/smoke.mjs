@@ -522,20 +522,117 @@ const flows = {
   },
 };
 
-/** Every main screen at a size. */
-async function layout(d, tag) {
-  for (const [scene, q] of [['home', 'breed=kitling&hour=11'], ['home', 'breed=bunling&hour=21&room=night'], ['bath', 'breed=foxling&hour=15'], ['walk', 'breed=puppling&hour=9'], ['fetch', 'breed=cubling&hour=10'], ['snack', 'breed=drakling&hour=13'], ['hide', 'breed=kitling&hour=16']]) {
+/**
+ * Every main screen at a size. With a fold, as the iPhone Duo's app reports its crease (web/src/fold.js), each
+ * pet has to stay clear of it: on its own page held like a book, wholly below it standing like a laptop.
+ */
+async function layout(d, tag, fold = null) {
+  const scenes = [['home', 'breed=kitling&hour=11'], ['home', 'breed=bunling&hour=21&room=night'], ['bath', 'breed=foxling&hour=15'], ['walk', 'breed=puppling&hour=9'], ['fetch', 'breed=cubling&hour=10'], ['snack', 'breed=drakling&hour=13'], ['hide', 'breed=kitling&hour=16']];
+  // On the Duo, the tallest and the widest pets too.
+  if (fold) scenes.push(['home', 'breed=bunling&hour=11'], ['home', 'breed=puppling&hour=11'], ['bath', 'breed=bunling&hour=15'], ['snack', 'breed=puppling&hour=13']);
+  for (const [scene, q] of scenes) {
     await d.open(`web/?demo=${scene}&${q}`, 2200);
+    if (fold) await d.js(`window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
     await d.js(`T.ff(0.4)`);
-    await d.shot(`${tag}-${scene}${q.includes('night') ? '-night' : ''}`);
+    if (fold) {
+      const clear = await d.js(`(async () => {
+        const { reachOf } = await import('./src/fold.js');
+        const g = __game, c = g.view.crease, a = g.actor;
+        const r = reachOf(g.state.pet.breed);
+        const s = a.scale * (g.scene.view ?? g.view).u;
+        if (!c) return 'no crease';
+        if (c.vertical) return a.x + r.side * s <= c.a + 1 && a.x - r.side * s >= -1 ? true : 'on the crease at x ' + Math.round(a.x);
+        return a.y - r.up * s >= c.b - 1 ? true : 'on the crease at y ' + Math.round(a.y - r.up * s);
+      })()`);
+      assert(clear === true, `${tag} ${scene} ${q}: ${clear}`);
+    }
+    await d.shot(`${tag}-${scene}${q.includes('night') ? '-night' : ''}${fold ? `-${q.split('&')[0].split('=')[1]}` : ''}`);
   }
   await d.open('web/', 1500);
+  if (fold) await d.js(`window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
   await d.shot(`${tag}-hatch`);
 }
 const SIZES = { small: [320, 568], tablet: [820, 1180], wide: [844, 390], ipadwide: [1180, 820] };
 for (const [tag, [width, height]] of Object.entries(SIZES)) {
   flows[`layout-${tag}`] = (d) => layout(d, tag);
   flows[`layout-${tag}`].size = { width, height };
+}
+// The iPhone Duo (points, as its simulator reports them): open like a book, standing like a laptop, and closed.
+const DUO = {
+  'duo-book': [951, 669, { y: 475.5, vertical: true, start: 455.5, end: 495.5 }],
+  'duo-laptop': [669, 951, { y: 475.5, vertical: false, start: 455.5, end: 495.5 }],
+  'duo-closed': [466, 678, null],
+};
+for (const [tag, [width, height, fold]] of Object.entries(DUO)) {
+  flows[`layout-${tag}`] = (d) => layout(d, tag, fold);
+  flows[`layout-${tag}`].size = { width, height, safe: [0, 34] };
+}
+
+/**
+ * On an open iPhone Duo, the moments that move the pet furthest stay off the crease too, for every kind:
+ * its face on the glass and the lick (held like a book, on its page; standing like a laptop, up on the
+ * glass's half), and in hide-and-seek, found behind each hiding place.
+ */
+async function duoMoments(d, tag, fold) {
+  const breeds = ['kitling', 'bunling', 'puppling', 'cubling', 'foxling', 'drakling'];
+  const check = `(async () => {
+    const { reachOf, SWAY, CREASE_GAP } = await import('./src/fold.js');
+    const g = __game, c = g.view.crease, a = g.actor, r = reachOf(g.state.pet.breed);
+    const s = a.scale * g.view.u;
+    if (c.vertical) {
+      const half = r.side * SWAY * s;
+      return a.x + half <= c.a + 1 || a.x - half >= c.b - 1 ? true : 'x ' + Math.round(a.x - half) + '..' + Math.round(a.x + half);
+    }
+    // Feet above the crease, up on the glass's half, or the whole pet below it.
+    return a.y <= c.a - CREASE_GAP + 1 || a.y - r.up * SWAY * s >= c.b + CREASE_GAP - 1 ? true : 'y ' + Math.round(a.y);
+  })()`;
+  for (const breed of breeds) {
+    await d.open(`web/?demo=home&breed=${breed}&hour=11`, 1500);
+    await d.js(`window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
+    for (const moment of ['pressGlass', 'lickGlass']) {
+      await d.js(`T.ff(0.2); T.scene.idleIn = 1e9; __game.actor.stop(); __game.actor.relax(); __game.actor.x = T.scene.layout ? __game.view.stage.cx : __game.actor.x; __game.actor.y = __game.view.floorY; __game.actor.scale = 1; __game.actor.play(T.scene.${moment}())`);
+      // Up to the glass (moving there may cross), then held there: every step of that has to be clear.
+      await d.js(`T.ff(${moment === 'pressGlass' ? 0.8 : 0.45})`);
+      for (let i = 0; i < 6; i++) {
+        const ok = await d.js(check);
+        assert(ok === true, `${tag} ${breed} ${moment}: on the crease, ${ok}`);
+        await d.js('T.ff(0.1)');
+      }
+      // Back down, ready for the next.
+      await d.js('T.ff(2)');
+    }
+  }
+  for (const breed of ['bunling', 'puppling', 'foxling']) {
+    await d.open(`web/?demo=hide&breed=${breed}&hour=16`, 1500);
+    await d.js(`window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
+    for (let spot = 0; spot < 5; spot++) {
+      await d.js(`(() => {
+        const s = T.scene;
+        s.round = 0;
+        s.phase = 'seek';
+        s.lastSpot = null;
+        const spot = s.spots[${spot}];
+        s.spots.forEach((x) => { x.picked = x === spot; });
+        s.hidden = spot;
+        __game.actor.x = spot.x;
+        __game.actor.y = spot.y - 2 * __game.view.u;
+        __game.actor.scale = 0.5;
+        s.hiddenScale = 0.5;
+        s.found(spot);
+        T.ff(1.0);
+      })()`);
+      const ok = await d.js(check);
+      assert(ok === true, `${tag} ${breed} found behind spot ${spot}: on the crease, ${ok}`);
+      const on = await d.js(`__game.actor.y <= __game.view.h + 1`);
+      assert(on, `${tag} ${breed} found behind spot ${spot}: off the bottom of the screen`);
+      await d.js(`T.scene.startRound()`);
+    }
+  }
+}
+for (const tag of ['duo-book', 'duo-laptop']) {
+  const [width, height, fold] = DUO[tag];
+  flows[`moments-${tag}`] = (d) => duoMoments(d, tag, fold);
+  flows[`moments-${tag}`].size = { width, height, safe: [0, 34] };
 }
 
 const names = process.argv.slice(2);

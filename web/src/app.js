@@ -68,6 +68,7 @@ function boot() {
   if (demo) applyDemo();
 
   listen();
+  // The crease of an open iPhone Duo, from the app (web/src/fold.js), or null.
   on('fold', (fold) => {
     game.fold = fold;
     measure();
@@ -133,6 +134,18 @@ function demoScene() {
 
 // ── Frame loop ───────────────────────────────────────────────────────────────────────────────────
 
+let resizeTimer = 0;
+
+/** Lays everything out again once the screen has stopped changing size. */
+function remeasure() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    resizeTimer = 0;
+    measure();
+    game.scene?.resize?.();
+  }, 120);
+}
+
 let last = performance.now();
 let tickIn = 1;
 
@@ -155,6 +168,10 @@ function frame(now) {
     const scene = game.scene;
     if (scene === home && home.inBed && game.state.pet && !game.state.pet.asleep) home.wake();
   }
+
+  // A turn of the screen, or an iPhone Duo opening, can end without a resize event at its final size (seen
+  // as a square room on an open Duo): if the size has moved, lay out again.
+  if (!resizeTimer && (window.innerWidth !== game.view.w || window.innerHeight !== game.view.h)) remeasure();
 
   const scene = game.scene;
   if (!scene) return;
@@ -189,14 +206,7 @@ function listen() {
   window.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('gesturestart', (e) => e.preventDefault());
 
-  let resizeTimer = 0;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      measure();
-      game.scene?.resize?.();
-    }, 120);
-  });
+  window.addEventListener('resize', remeasure);
 
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => {

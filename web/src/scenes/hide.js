@@ -3,7 +3,8 @@
 import { audio } from '../audio.js';
 import { makeCanvas } from '../bake/paint.js';
 import { drawSky, roomLayout } from '../bake/room.js';
-import { ambient, defineRoomArt, game, petLight, quality, refreshLight } from '../game.js';
+import { CREASE_GAP, reachOf, SWAY } from '../fold.js';
+import { ambient, defineRoomArt, feetOnStage, game, petLight, quality, refreshLight } from '../game.js';
 import { haptic } from '../platform.js';
 import { clamp, pick, rand, smooth } from '../util.js';
 import { endGame, gameBar, setHint, setScore, setSide } from './gameui.js';
@@ -123,20 +124,15 @@ function bakeSpot(kind, w, h, Q) {
 export const hideGame = {
   mode: 'hide',
   enter() {
-    const { actor, pet, view, assets } = game;
-    defineRoomArt();
-    const { u, w } = view;
-    const Q = quality();
-    const defs = [['box', 150, 120], ['basket', 138, 116], ['cushion', 158, 104], ['pot', 120, 156]];
-    defs.forEach(([k, sw, sh]) => assets.define(`hide.${k}`, () => bakeSpot(k, sw * u, sh * u, Q)));
-    const fy = view.floorY;
+    const { actor, pet } = game;
     this.spots = [
-      { kind: 'box', x: w * 0.22, y: fy + 60 * u, wob: 0, vw: 0 },
-      { kind: 'basket', x: w * 0.76, y: fy + 66 * u, wob: 0, vw: 0 },
-      { kind: 'cushion', x: w * 0.5, y: fy + 118 * u, wob: 0, vw: 0 },
-      { kind: 'pot', x: w * 0.13, y: fy - 16 * u, wob: 0, vw: 0 },
-      { kind: 'box', x: w * 0.72, y: fy - 22 * u, wob: 0, vw: 0, small: true },
+      { kind: 'box', wob: 0, vw: 0 },
+      { kind: 'basket', wob: 0, vw: 0 },
+      { kind: 'cushion', wob: 0, vw: 0 },
+      { kind: 'pot', wob: 0, vw: 0 },
+      { kind: 'box', wob: 0, vw: 0, small: true },
     ];
+    this.place();
     this.round = 0;
     this.score = 0;
     this.wrong = 0;
@@ -147,8 +143,8 @@ export const hideGame = {
     actor.stop();
     actor.scale = 1;
     actor.air = 0;
-    actor.x = w / 2;
-    actor.y = fy + 10 * u;
+    actor.x = this.waveX;
+    actor.y = this.waveY;
     pet.alpha = 1;
     pet.settle();
     actor.relax('cheeky');
@@ -162,8 +158,48 @@ export const hideGame = {
     game.actor.scale = 1;
   },
 
+  /**
+   * Bakes the room and the hiding places for this screen and puts them on the floor. On an iPhone Duo held
+   * like a book (web/src/fold.js), the pet waves from its own page and the cushion moves off the crease.
+   */
+  place() {
+    const { view, assets } = game;
+    defineRoomArt();
+    const { u, w } = view;
+    const Q = quality();
+    const defs = [['box', 150, 120], ['basket', 138, 116], ['cushion', 158, 104], ['pot', 120, 156]];
+    defs.forEach(([k, sw, sh]) => {
+      assets.define(`hide.${k}`, () => bakeSpot(k, sw * u, sh * u, Q));
+      assets.drop(`hide.${k}`);
+    });
+    const fy = view.floorY;
+    const c = view.crease;
+    const at = c?.vertical ? [0.3, 0.86, 0.64, 0.12, 0.74] : [0.22, 0.76, 0.5, 0.13, 0.72];
+    const down = [60, 66, 118, -16, -22];
+    // Standing like a laptop the floor is lower (fold.js), so the spots in front come closer together, to
+    // keep the cushion on the screen.
+    const close = c && !c.vertical ? clamp((view.h - view.safeBottom - 8 - fy - 4 * u) / (118 * u), 0.3, 1) : 1;
+    this.spots.forEach((s, i) => {
+      s.x = w * at[i];
+      s.y = fy + down[i] * u * (down[i] > 0 ? close : 1);
+    });
+    this.waveX = view.stage.cx;
+    this.waveY = feetOnStage(fy + 10 * u);
+  },
+
+  /** A new screen size (a phone turning, or an iPhone Duo opening) carries on with the round as it was. */
   resize() {
-    this.enter();
+    const { actor } = game;
+    const hidden = this.hidden;
+    const was = hidden ? [hidden.x, hidden.y] : null;
+    this.place();
+    if (hidden) {
+      actor.x += hidden.x - was[0];
+      actor.y += hidden.y - was[1];
+    } else {
+      actor.x = this.waveX;
+      actor.y = this.waveY;
+    }
   },
 
   side() {
@@ -178,8 +214,8 @@ export const hideGame = {
     this.showPet = false;
     this.hidden = null;
     game.actor.scale = 1;
-    game.actor.x = game.view.w / 2;
-    game.actor.y = game.view.floorY + 10 * game.view.u;
+    game.actor.x = this.waveX;
+    game.actor.y = this.waveY;
     this.side();
     setHint(`${game.state.pet.name} wants to hide!`);
     actor.play((function* () {
@@ -247,6 +283,24 @@ export const hideGame = {
   move() {},
   up() {},
 
+  /**
+   * Where it stands once found: in front of its hiding place, on an iPhone Duo held like a book on that side of
+   * the crease, and standing like a laptop, on the screen.
+   */
+  foundAt(spot) {
+    const { view, actor } = game;
+    const c = view.crease;
+    let x = actor.x;
+    let y = spot.y + 24 * view.u;
+    if (c?.vertical) {
+      const half = reachOf(game.state.pet.breed).side * SWAY * 0.92 * view.u;
+      x = spot.x < c.a ? Math.min(x, c.a - CREASE_GAP - half) : Math.max(x, c.b + CREASE_GAP + half);
+    } else if (c) {
+      y = Math.min(y, view.h - view.safeBottom - 8);
+    }
+    return [x, y];
+  },
+
   found(spot) {
     const { actor, pet, fx } = game;
     this.phase = 'found';
@@ -260,8 +314,9 @@ export const hideGame = {
     actor.play((function* () {
       pet.setFace('joy');
       pet.wag(1.3, 18);
+      const startX = actor.x;
       const startY = actor.y;
-      const endY = spot.y + 24 * game.view.u;
+      const [endX, endY] = hideGame.foundAt(spot);
       const from = hideGame.hiddenScale;
       let t = 0;
       audio.boing();
@@ -269,6 +324,7 @@ export const hideGame = {
         t += actor.dt;
         const p = smooth(t / 0.36);
         actor.scale = from + p * (0.92 - from);
+        actor.x = startX + (endX - startX) * p;
         actor.y = startY + (endY - startY) * p;
         actor.air = Math.sin(p * Math.PI) * 120 * game.view.u;
         if (p > 0.45) hideGame.front = true;

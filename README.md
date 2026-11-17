@@ -99,6 +99,29 @@ codesign --force --sign - --entitlements ios/PocklingWidget/PocklingWidget.entit
 Then sign the app as `docs/AppStore.md` says. The App Group has to exist on the developer portal, and both
 App IDs need it.
 
+### iPhone Duo
+
+Closed, an iPhone Duo is a phone with a squarer screen (466 × 678 points), and Pockling lays out as on any
+phone. Open, its inner screen (951 × 669, or 669 × 951 standing up) has a crease across the middle, a band
+40 points wide that iOS 27.1+ reports even while the phone lies flat. `GameScreen.swift` sends it to the
+game, and `web/src/fold.js` keeps everything off it:
+
+- **Held like a book** (the crease down the middle): the pet, the need rings, the dock, the food tray and the
+  games are on the left page; menus, cards and the bedtime strip open on the right one, with the bed.
+- **Standing like a laptop** (across the middle): the wall is the upright half and the floor the flat one.
+  The pet, the dock and the menus are on the floor, and the pet is drawn small enough to stand there whole.
+
+How big the pet can be depends on its kind: the bunny's ears are the tallest and the puppy's the widest
+(`REACH` in `fold.js`, measured from the drawn pets). `test/fold.test.mjs` checks every kind fits, and
+`node tools/smoke.mjs layout-duo-book layout-duo-laptop layout-duo-closed` checks every scene.
+
+The simulator needs the iPhone Duo runtime (iOS 27.2, 24B91016s, from `xcodebuild -downloadPlatform iOS`); the
+general 27.2 runtime can't run that device. `duo_pose` in the simulator tools, or Device Hub, opens it.
+
+Debug builds also have a driver for staging screens from the Mac (`tools/sim-drive.mjs`): JavaScript written
+into the app's `Library/Caches/driver/` runs in the game. `tools/store-shots.mjs` and `tools/store-preview.mjs`
+use it for the iPhone Duo's App Store media (`docs/AppStore.md`). Release builds don't have it.
+
 ## Deploying the website
 
 ```bash

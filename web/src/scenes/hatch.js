@@ -4,6 +4,7 @@ import { Actor } from '../actor.js';
 import { audio } from '../audio.js';
 import { bakeCrack, bakeEgg } from '../bake/props.js';
 import { BREEDS, BREED_IDS } from '../catalog.js';
+import { CREASE_GAP, reachOf } from '../fold.js';
 import { adoptPet, bakeScale, fadeTo, game, save } from '../game.js';
 import { Pet } from '../pet.js';
 import { haptic } from '../platform.js';
@@ -51,11 +52,13 @@ export const hatch = {
   },
 
   layoutEggs() {
-    const { w, h, u } = game.view;
+    const { w, h, u, crease, stage } = game.view;
     const short = w > h && h < 560;
     const cols = short ? 6 : 3;
-    const cellW = Math.min(w, (short ? 720 : 520) * u) / cols;
-    const startX = (w - cellW * cols) / 2;
+    // On an iPhone Duo held like a book, the eggs are on the pet's page (web/src/fold.js).
+    const across = crease?.vertical ? stage : { x: 0, w };
+    const cellW = Math.min(across.w, (short ? 720 : 520) * u) / cols;
+    const startX = across.x + (across.w - cellW * cols) / 2;
     const top = h * (short ? 0.4 : 0.3);
     const cellH = short ? h * 0.3 : Math.min(h * 0.235, 190 * u);
     for (const e of this.eggs) {
@@ -63,8 +66,22 @@ export const hatch = {
       const row = Math.floor(e.i / cols);
       e.x = startX + cellW * (col + 0.5);
       e.y = top + cellH * (row + 0.5);
+      // Standing like a laptop, a row on each side of the crease.
+      if (crease && !crease.vertical && !short) e.y = row ? crease.b + CREASE_GAP + cellH / 2 : crease.a - CREASE_GAP - cellH / 2;
     }
     this.eggW = Math.min(cellW * 0.74, cellH * 0.62);
+  },
+
+  /**
+   * Where the chosen egg cracks and the pet first stands: the middle of the screen. On an iPhone Duo held like
+   * a book, the middle of the pet's page; standing like a laptop, the upright half, so the name goes in below
+   * it, where the keyboard comes up.
+   */
+  spot() {
+    const { w, h, crease, stage, ui } = game.view;
+    if (crease?.vertical) return [stage.cx, h * 0.46];
+    if (crease) return [w / 2, (crease.a + 110 * ui) / 2];
+    return [w / 2, h * 0.46];
   },
 
   showPick() {
@@ -137,8 +154,7 @@ export const hatch = {
 
   tapEgg(x, y) {
     const { view, fx } = game;
-    const cx = view.w / 2;
-    const cy = view.h * 0.46;
+    const [cx, cy] = this.spot();
     if (Math.hypot(x - cx, y - cy) > 170 * view.u) return;
     this.taps += 1;
     this.shake = 1;
@@ -155,8 +171,7 @@ export const hatch = {
     const { view, fx, assets } = game;
     this.phase = 'meet';
     this.t = 0;
-    const cx = view.w / 2;
-    const cy = view.h * 0.46;
+    const [cx, cy] = this.spot();
     audio.poof();
     audio.fanfare();
     haptic('success');
@@ -176,6 +191,12 @@ export const hatch = {
     const room = view.h - 232 - view.safeBottom;
     a.y = Math.min(view.h * 0.66, room);
     a.scale = Math.min(1.32 * view.u, room / 215);
+    if (view.crease) {
+      // On an open iPhone Duo, it stands between the title and the name (the HUD is zoomed there), and standing
+      // like a laptop, on the upright half (see spot()). Its ears stay under the title.
+      a.y = view.crease.vertical ? Math.min(view.h * 0.66, view.h - 232 * view.ui - view.safeBottom) : view.crease.a - CREASE_GAP - 16 * view.u;
+      a.scale = Math.min(1.32 * view.u, (a.y - 120 * view.ui) / (reachOf(this.spec.breed).up * 1.06));
+    }
     pet.setFace('sleep');
     pet.settle();
     pet.squash(0.28);
@@ -306,6 +327,7 @@ export const hatch = {
   draw(g) {
     const { assets, view, fx } = game;
     const { w, h, u } = view;
+    const spot = this.spot();
     g.sprite(assets.get('hatch.bg'), 0, 0, { ax: 0, ay: 0, w, h });
 
     if (this.phase === 'pick' || this.phase === 'moving') {
@@ -321,8 +343,8 @@ export const hatch = {
         let alpha = this.selected && !isSel ? 0.62 : 1;
         if (moving) {
           if (isSel) {
-            x = lerp(e.x, w / 2, moving);
-            y = lerp(e.y, h * 0.46, moving);
+            x = lerp(e.x, spot[0], moving);
+            y = lerp(e.y, spot[1], moving);
             scale = lerp(scale, (230 * u) / tex.w, moving);
           } else {
             alpha *= 1 - moving;
@@ -338,14 +360,14 @@ export const hatch = {
       const tex = assets.get(`egg.${this.selected.id}`);
       const scale = (230 * u) / tex.w;
       const sway = Math.sin(game.time * 34) * this.shake * 0.11;
-      const cy = h * 0.46;
+      const [cx, cy] = spot;
       const bottom = cy + (tex.h * scale) / 2;
-      g.sprite(assets.get('fx.shadow'), w / 2, bottom - 2, { w: tex.w * scale * 1.06, h: 34 * scale, alpha: 0.85 });
+      g.sprite(assets.get('fx.shadow'), cx, bottom - 2, { w: tex.w * scale * 1.06, h: 34 * scale, alpha: 0.85 });
       const glow = clamp(this.taps / 6);
-      g.sprite(assets.get('fx.glow'), w / 2, cy, { w: 460 * u, h: 460 * u, tint: [1, 0.86, 0.55], alpha: 0.22 + glow * 0.5 + Math.sin(game.time * 6) * 0.05, add: 1 });
-      g.sprite(tex, w / 2, bottom, { w: tex.w * scale, h: tex.h * scale, ay: 1, rot: sway });
+      g.sprite(assets.get('fx.glow'), cx, cy, { w: 460 * u, h: 460 * u, tint: [1, 0.86, 0.55], alpha: 0.22 + glow * 0.5 + Math.sin(game.time * 6) * 0.05, add: 1 });
+      g.sprite(tex, cx, bottom, { w: tex.w * scale, h: tex.h * scale, ay: 1, rot: sway });
       const stage = this.taps >= 5 ? 3 : this.taps >= 3 ? 2 : this.taps >= 1 ? 1 : 0;
-      if (stage) g.sprite(assets.get(`egg.crack${stage}`), w / 2, bottom, { w: tex.w * scale, h: tex.h * scale, ay: 1, rot: sway });
+      if (stage) g.sprite(assets.get(`egg.crack${stage}`), cx, bottom, { w: tex.w * scale, h: tex.h * scale, ay: 1, rot: sway });
     }
 
     if (this.phase === 'meet') {
@@ -357,7 +379,7 @@ export const hatch = {
       if (this.bottomShell.alpha > 0.01) {
         const tex = assets.get(`egg.${this.selected.id}.bottom`);
         const scale = (230 * u) / tex.w;
-        g.sprite(tex, w / 2, h * 0.46, { w: tex.w * scale, h: tex.h * scale, alpha: this.bottomShell.alpha });
+        g.sprite(tex, spot[0], spot[1], { w: tex.w * scale, h: tex.h * scale, alpha: this.bottomShell.alpha });
       }
       pet.draw(g, a.x, a.y, s);
       if (this.topShell.alpha > 0.01) {

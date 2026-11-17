@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The whole app is one screen: the game, edge to edge. This view also tells the game where
-/// a foldable's crease is, so the room's floor can start exactly on the fold.
+/// The whole app is one screen: the game, edge to edge. This view also tells the game where an
+/// iPhone Duo's crease is, so it can keep the pet, its buttons and its menus off it (web/src/fold.js).
 struct GameScreen: View {
     @StateObject private var host = GameHost()
 
@@ -18,9 +18,13 @@ struct GameScreen: View {
     }
 }
 
-/// Where a foldable's crease runs, in the game's coordinates.
+/// Where a foldable's crease runs, in the game's coordinates: the middle of its band, where the band
+/// starts and ends across the screen, and whether it runs down the screen (an iPhone Duo held like a
+/// book) or across it (standing like a laptop).
 struct Fold: Equatable {
     var position: Double
+    var start: Double
+    var end: Double
     var isVertical: Bool
 }
 
@@ -28,11 +32,15 @@ enum FoldReader {
     static func fold(in proxy: GeometryProxy) -> Fold? {
         if #available(iOS 27.1, *) {
             let insets = proxy.safeAreaInsets
+            // Inactive too: the crease is there while the phone lies flat, and the game keeps off it then
+            // as well, so nothing moves as the hinge opens and closes.
             let regions = proxy.reservedRegions(kind: .division, options: .includeInactive, layoutDirectionBehavior: .fixed)
             if let region = regions.first {
                 let frame = region.frame.offsetBy(dx: insets.leading, dy: insets.top)
-                let vertical = frame.height > frame.width
-                return Fold(position: vertical ? frame.midX : frame.midY, isVertical: vertical)
+                if frame.height > frame.width {
+                    return Fold(position: frame.midX, start: frame.minX, end: frame.maxX, isVertical: true)
+                }
+                return Fold(position: frame.midY, start: frame.minY, end: frame.maxY, isVertical: false)
             }
         }
         return nil

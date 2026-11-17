@@ -3,7 +3,7 @@
 import { audio } from '../audio.js';
 import { definePark, drawPark } from '../bake/park.js';
 import { drawSky } from '../bake/room.js';
-import { ambient, game, petLight, quality, refreshLight } from '../game.js';
+import { ambient, feetOnStage, game, petLight, quality, refreshLight } from '../game.js';
 import { haptic } from '../platform.js';
 import { clamp, lerp } from '../util.js';
 import { endGame, gameBar, setHint, setScore, setSide } from './gameui.js';
@@ -28,9 +28,9 @@ export const fetchGame = {
     this.phase = 'ready';
     this.ball = { x: 0, z: 0, h: 0, vx: 0, vz: 0, vh: 0, spin: 0, held: true, out: false };
     this.petZ = HOME_Z;
-    this.petX = view.w * 0.5;
     this.touch = null;
     this.layout();
+    this.petX = this.laneX;
     gameBar('0 m');
     setSide(`🎾 ${THROWS}`);
     setHint(`Flick the ball up the screen`);
@@ -43,8 +43,11 @@ export const fetchGame = {
   },
 
   resize() {
+    const from = this.laneX;
     definePark(game.assets, quality());
     this.layout();
+    this.petX += this.laneX - from;
+    this.ball.x += this.laneX - from;
   },
 
   layout() {
@@ -53,16 +56,22 @@ export const fetchGame = {
     this.groundY = h - 300 * u * 0.92;
     this.nearY = h - 150 * u;
     this.farY = this.groundY + 26 * u;
-    this.ballHome = [view.w / 2, h - 86 * u];
+    // The lawn runs up the middle of the pet's stage: on an iPhone Duo held like a book, its own page.
+    this.laneX = view.stage.cx;
+    // Standing like a laptop, it starts low enough for the pet waiting at home to be clear of the crease.
+    const [, homeY, homeScale] = this.project(this.laneX, HOME_Z);
+    const down = feetOnStage(homeY, homeScale * u) - homeY;
+    this.nearY += down;
+    this.farY += down;
+    this.ballHome = [this.laneX, h - 86 * u];
   },
 
   /** Screen position for a point on the lawn: z 0 is at your feet, 1 is far away. */
   project(x, z) {
-    const { view } = game;
     const t = 1 - (1 - clamp(z)) ** 1.8;
     const y = lerp(this.nearY, this.farY, t);
     const scale = lerp(1, 0.3, t);
-    const sx = view.w / 2 + (x - view.w / 2) * scale;
+    const sx = this.laneX + (x - this.laneX) * scale;
     return [sx, y, scale];
   },
 
@@ -108,7 +117,7 @@ export const fetchGame = {
     const { u } = view;
     const power = clamp(vy / (2400 * u), 0.12, 1);
     const b = this.ball;
-    b.x = view.w / 2 + (this.touchX ?? 0);
+    b.x = this.laneX + (this.touchX ?? 0);
     b.z = 0;
     b.h = 60 * u;
     b.vz = 0.3 + power * 0.48;
@@ -148,8 +157,8 @@ export const fetchGame = {
       b.h += b.vh * dt;
       b.vh -= 1000 * u * dt;
       b.vx *= Math.exp(-0.3 * dt);
-      const margin = view.w * 0.8;
-      b.x = clamp(b.x, view.w / 2 - margin, view.w / 2 + margin);
+      const margin = view.crease?.vertical ? view.stage.w * 0.36 : view.w * 0.8;
+      b.x = clamp(b.x, this.laneX - margin, this.laneX + margin);
       if (b.h <= 0) {
         b.h = 0;
         b.bounces += 1;
@@ -178,7 +187,7 @@ export const fetchGame = {
         }
       }
     } else if (this.phase === 'return') {
-      const done = this.runTo(view.w / 2, HOME_Z, dt, 0.6);
+      const done = this.runTo(this.laneX, HOME_Z, dt, 0.6);
       b.x = this.petX;
       b.z = this.petZ;
       if (done) this.dropBall();

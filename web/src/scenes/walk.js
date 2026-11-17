@@ -5,7 +5,7 @@ import { audio } from '../audio.js';
 import { drawPark, definePark, strip } from '../bake/park.js';
 import { drawSky } from '../bake/room.js';
 import { BREEDS, BREED_IDS } from '../catalog.js';
-import { ambient, celebrate, fadeTo, game, petLight, quality, refreshLight, roundDone, save } from '../game.js';
+import { ambient, celebrate, fadeTo, game, onStageX, petLight, quality, refreshLight, roundDone, save } from '../game.js';
 import { Pet } from '../pet.js';
 import { haptic } from '../platform.js';
 import { walked } from '../state.js';
@@ -73,7 +73,9 @@ export const walk = {
     this.groundY = view.h - 300 * view.u * 0.92;
     this.pathY = this.groundY + 128 * view.u;
     actor.y = this.pathY;
-    actor.x = view.w * 0.42;
+    // Held like a book (web/src/fold.js), on the pet's own page, far enough left that a friend met on the way
+    // stops on that page too.
+    actor.x = view.crease?.vertical ? onStageX(view.stage.w * 0.3, view.u * WALK_SCALE) : view.w * 0.42;
   },
 
   layer() {

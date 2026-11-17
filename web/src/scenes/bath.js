@@ -1,5 +1,6 @@
 // Bath time. Soap it up, rinse it off, towel it dry until it poofs up twice its size.
 import { audio } from '../audio.js';
+import { CREASE_GAP, reachOf } from '../fold.js';
 import { celebrate, fadeTo, game, quality, roundDone, save } from '../game.js';
 import { makeCanvas } from '../bake/paint.js';
 import { GROUND } from '../pet.js';
@@ -80,8 +81,8 @@ function tubPath(x, W, H, u) {
 }
 
 function bakeTub(view, Q) {
-  const { w, u } = view;
-  const W = Math.min(w * 0.92, 380 * u);
+  const { u } = view;
+  const W = Math.min(view.stage.w * 0.92, 380 * u);
   const H = 150 * u;
   const [c, x] = makeCanvas(W * Q, (H + 24 * u) * Q);
   x.scale(Q, Q);
@@ -115,8 +116,8 @@ function bakeTub(view, Q) {
 
 /** The bubble bath: foam heaped up behind the rim, highest in the middle. */
 function bakeWater(view, Q) {
-  const { w, u } = view;
-  const W = Math.min(w * 0.92, 380 * u) - 6 * u;
+  const { u } = view;
+  const W = Math.min(view.stage.w * 0.92, 380 * u) - 6 * u;
   const H = 86 * u;
   const [c, x] = makeCanvas(W * Q, H * Q);
   x.scale(Q, Q);
@@ -186,25 +187,39 @@ function bakeDuck(view) {
   return { canvas: c, w: size, h: size };
 }
 
+// How far a pet in the tub reaches above the water line (tubY), in units of u, with room for the poof at
+// the end, which makes it 16% bigger.
+const POOF = 1.16;
+const IN_TUB = 34;
+// The tub reaches 134 units below the water line.
+const TUB_BELOW = 134;
+
+/**
+ * The bath's own view. On an iPhone Duo standing like a laptop, the tub and the pet are drawn a little
+ * smaller, so the whole pet fits on the floor's half below the crease (web/src/fold.js); on a book, the
+ * bath is on the pet's page.
+ */
+function bathView() {
+  const view = game.view;
+  if (!view.crease || view.crease.vertical) return view;
+  const above = reachOf(game.state.pet.breed).up * 1.06 * POOF + IN_TUB;
+  const k = Math.min(1, (view.stage.h - CREASE_GAP - 16) / ((above + TUB_BELOW) * view.u));
+  return { ...view, u: view.u * k, above };
+}
+
 const TOWEL_SVG = `<svg viewBox="0 0 60 50" width="30" height="26" aria-hidden="true"><rect y="6" width="60" height="44" rx="9" fill="#ff9fbc"/><rect y="34" width="60" height="5" fill="#fff" opacity=".85"/><rect y="42" width="60" height="3" fill="#fff" opacity=".85"/><rect width="60" height="24" rx="9" fill="#ffc9da"/></svg>`;
 
 export const bath = {
   mode: 'bath',
   enter() {
-    const { assets, view, pet, actor } = game;
-    const Q = quality();
-    assets.define('bath.wall', () => bakeWall(view, Q), { mipmap: false });
-    assets.define('bath.tub', () => bakeTub(view, Q));
-    assets.define('bath.water', () => bakeWater(view, Q));
-    assets.define('bath.duck', () => bakeDuck(view));
+    const { pet, actor } = game;
+    const view = this.place();
     actor.stop();
     actor.relax('smile');
     actor.scale = 1;
     actor.air = 0;
-    this.tubY = view.floorY + 6 * view.u;
-    this.cx = game.stageX ?? view.w / 2;
     actor.x = this.cx;
-    actor.y = this.tubY - 34 * view.u;
+    actor.y = this.tubY - IN_TUB * view.u;
     pet.dirt = game.state.pet.bathDirt ? 1 : clamp((60 - game.state.pet.clean) / 60);
     pet.settle();
     this.foam = [];
@@ -218,7 +233,7 @@ export const bath = {
     this.touch = null;
     this.drops = [];
     this.done = false;
-    this.duck = { x: this.cx + view.w * 0.2, bob: 0, squeak: 0 };
+    this.duck = { x: this.cx + view.stage.w * 0.2, bob: 0, squeak: 0 };
     this.rainbow = 0;
     this.lastFoam = [999, 999];
     this.pointer = null;
@@ -236,8 +251,34 @@ export const bath = {
     game.pet.sizeBoost = 0;
   },
 
+  /**
+   * Bakes the bathroom for this screen and puts the tub on the pet's stage: the water line on the floor,
+   * or on an open Duo, just low enough for the pet to be clear of the crease. Returns the bath's view.
+   */
+  place() {
+    const view = (this.view = bathView());
+    const { assets } = game;
+    const Q = quality();
+    assets.define('bath.wall', () => bakeWall(view, Q), { mipmap: false });
+    assets.define('bath.tub', () => bakeTub(view, Q));
+    assets.define('bath.water', () => bakeWater(view, Q));
+    assets.define('bath.duck', () => bakeDuck(view));
+    for (const key of ['bath.wall', 'bath.tub', 'bath.water']) assets.drop(key);
+    // tools/record-clips.mjs moves it beside the words on 9io.ai/games with stageX.
+    this.cx = game.stageX ?? view.stage.cx;
+    this.tubY = view.above ? view.crease.b + CREASE_GAP + view.above * view.u : view.floorY + 6 * view.u;
+    return view;
+  },
+
+  /** A new screen size (a phone turning, or an iPhone Duo opening) carries on with the bath as it was. */
   resize() {
-    fadeTo(bath);
+    const { actor } = game;
+    const from = this.cx;
+    const view = this.place();
+    actor.x += this.cx - from;
+    actor.y = this.tubY - IN_TUB * view.u;
+    this.duck.x = this.cx + view.stage.w * 0.2;
+    this.drops.length = 0;
   },
 
   layer() {
@@ -332,7 +373,7 @@ export const bath = {
     haptic('success');
     const c = pet.anchors.center;
     if (c) {
-      fx.poof(c[0], c[1], 22, 90, 62 * game.view.u);
+      fx.poof(c[0], c[1], 22, 90, 62 * this.view.u);
       fx.sparkles(c[0], c[1], 20, 130);
       fx.heartBurst(c[0], c[1], 12);
     }
@@ -358,7 +399,7 @@ export const bath = {
     this.pointer = [x, y];
     if (this.tool === 'shower') audio.water(true);
     const d = this.duck;
-    if (Math.hypot(x - d.x, y - (this.tubY - 54 * game.view.u)) < 40 * game.view.u) {
+    if (Math.hypot(x - d.x, y - (this.tubY - 54 * this.view.u)) < 40 * this.view.u) {
       d.squeak = 1;
       audio.chirp(1300, 0.14, { contour: [[0, 0.8], [1, 1.25]], type: 'square', vol: 0.14, vowel: 2400 });
       haptic('light');
@@ -410,7 +451,8 @@ export const bath = {
   },
 
   rinse(dt) {
-    const { pet, view, fx } = game;
+    const { pet, fx } = game;
+    const view = this.view;
     const p = this.pointer;
     if (!p) return;
     const c = pet.anchors.center;
@@ -463,7 +505,8 @@ export const bath = {
   },
 
   update(dt) {
-    const { actor, pet, fx, view } = game;
+    const { actor, pet, fx } = game;
+    const view = this.view;
     actor.update(dt);
     fx.update(dt);
     this.fluff.step(dt);
@@ -501,7 +544,8 @@ export const bath = {
   },
 
   draw(g) {
-    const { assets, actor, pet, view, fx } = game;
+    const { assets, actor, pet, fx } = game;
+    const view = this.view;
     const { w, h, u } = view;
     const shade = 1 - this.wet * 0.13;
     const light = [shade, shade, shade];

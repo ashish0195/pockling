@@ -4,7 +4,8 @@ import { idleScene } from '../actor.js';
 import { audio } from '../audio.js';
 import { drawSky, roomLayout } from '../bake/room.js';
 import { FOODS, STAGES } from '../catalog.js';
-import { ambient, petLight, bakeScale, celebrate, checkDaily, defineRoomArt, game, refreshLight, save, setPetStage } from '../game.js';
+import { ambient, petLight, bakeScale, celebrate, checkDaily, defineRoomArt, game, onStageX, refreshLight, save, setPetStage } from '../game.js';
+import { CREASE_GAP, reachOf, SWAY } from '../fold.js';
 import { GROUND } from '../pet.js';
 import { haptic, purr as hapticPurr, setKeepAwake, track } from '../platform.js';
 import { cuddle, feed, goToSleep, levelOf, mood, stageOf, tasteOf, talked, wakeUp } from '../state.js';
@@ -12,6 +13,39 @@ import { talkMode } from '../talk.js';
 import { clamp, lerp, pick, rand, smooth, Spring, TAU } from '../util.js';
 
 const THOUGHTS = { hungry: '🍎', sleepy: '🌙', dirty: '🫧', lonely: '💗', bored: '🎾' };
+
+/**
+ * Where the pet goes to press its face to the glass, and how big: `share` of the screen wide, its middle
+ * `at` of the way down. `dip` is how far below that the animation takes its feet, in units of view.u.
+ * On an iPhone Duo held like a book, it stays on its own page (web/src/fold.js): as big as fits with its ears
+ * on the screen, and moved over from the crease as far as its widest side needs. Standing like a laptop, the
+ * upright half is the glass and the floor is in front of it, so it comes up onto that half: its face in the
+ * middle of it, its feet clear of the crease, and its ears free to run off the top, as on a phone.
+ */
+function glassAt(share, at, lo, hi, dip = 0) {
+  const { view, pet } = game;
+  const s = view.u * pet.stage.scale;
+  const c = view.crease;
+  if (!c) {
+    const big = clamp((view.w * share) / (200 * s), lo, hi);
+    // tools/record-clips.mjs moves it beside the words on 9io.ai/games with stageX.
+    return { cx: game.stageX ?? view.w / 2, big, targetY: view.h * at + GROUND * big * s };
+  }
+  const reach = reachOf(game.state.pet.breed);
+  if (!c.vertical) {
+    // Its face a little above its middle, and its feet GROUND below that.
+    const face = c.a * 0.45;
+    const room = Math.min((view.w * share) / 200, (c.a - CREASE_GAP - dip * view.u - face) / (GROUND + 20));
+    const big = clamp(room / s, 1, hi);
+    return { cx: view.w / 2, big, targetY: face + (GROUND + 20) * big * s };
+  }
+  const st = view.stage;
+  const middle = st.h * at;
+  // Its widest half at big 1. Its face stays at least 40% of the way across the page.
+  const side = reach.side * SWAY * view.u;
+  const big = clamp(Math.min((st.w * share) / (200 * s), (middle - CREASE_GAP) / ((reach.up - GROUND) * s), (c.a - CREASE_GAP - st.w * 0.4) / side), 1, hi);
+  return { cx: Math.min(st.cx, c.a - CREASE_GAP - side * big), big, targetY: middle + GROUND * big * s };
+}
 
 export const home = {
   talkable: true,
@@ -23,7 +57,7 @@ export const home = {
     defineRoomArt();
     this.layout = roomLayout(game.view);
     actor.scale = 1;
-    actor.x = game.view.w / 2;
+    actor.x = game.view.stage.cx;
     actor.y = game.view.floorY;
     actor.air = 0;
     actor.relax();
@@ -35,7 +69,7 @@ export const home = {
     this.zoom = new Spring(1, 60, 11);
     this.lift = new Spring(0, 42, 11);
     this.pan = new Spring(0, 42, 11);
-    this.focus = [game.view.w / 2, game.view.h * 0.6];
+    this.focus = [game.view.stage.cx, game.view.h * 0.6];
     this.touch = null;
     this.drag = null;
     this.falling = null;
@@ -84,7 +118,9 @@ export const home = {
       this.pan.target = Math.max(0, actor.x - (outer.width - box.width) / 2);
       return;
     }
-    const top = outer.bottom - box.height;
+    let top = outer.bottom - box.height;
+    // Standing like a laptop, the menus are on the floor's half, so the pet goes up onto the wall's.
+    if (view.crease && !view.crease.vertical) top = Math.min(top, view.crease.a - CREASE_GAP);
     // On a small screen the sheet wins over the feet, not the face.
     const headroom = actor.y - 250 * view.u * pet.stage.scale - 60;
     this.lift.target = clamp(actor.y + 14 * view.u - top, 0, Math.max(0, headroom));
@@ -93,9 +129,15 @@ export const home = {
   resize() {
     defineRoomArt();
     this.layout = roomLayout(game.view);
-    game.actor.y = game.state.pet.asleep ? this.bedY : game.view.floorY;
-    if (game.state.pet.asleep) game.actor.x = this.layout.bed.x;
-    else game.actor.x = clamp(game.actor.x, game.view.w * 0.2, game.view.w * 0.8);
+    // The bed moves with the room, so a pet in it (or on its way) goes with it.
+    this.bedY = this.layout.bed.y;
+    if (game.state.pet.asleep || this.inBed) {
+      game.actor.x = this.layout.bed.x;
+      game.actor.y = this.bedY + 6 * game.view.u;
+    } else {
+      game.actor.y = game.view.floorY;
+      game.actor.x = onStageX(clamp(game.actor.x, game.view.w * 0.2, game.view.w * 0.8));
+    }
   },
 
   // ── Every frame ──
@@ -172,7 +214,7 @@ export const home = {
     }
     if (Math.random() < 0.3) {
       const { w, u } = game.view;
-      const x = clamp(actor.x + rand(-140, 140) * u, Math.max(w * 0.2, 125 * u), Math.min(w * 0.8, w - 125 * u));
+      const x = onStageX(clamp(actor.x + rand(-140, 140) * u, Math.max(w * 0.2, 125 * u), Math.min(w * 0.8, w - 125 * u)));
       actor.play(this.wander(x));
       return;
     }
@@ -186,12 +228,20 @@ export const home = {
     game.pet.setFace('neutral');
   },
 
+  /** Back on its feet after being dropped, and back on its own side of an open Duo's crease. */
+  *landed(from) {
+    const { actor } = game;
+    yield* actor.landed(from);
+    const x = onStageX(actor.x);
+    if (Math.abs(x - actor.x) > 2) yield* this.trot(x);
+  },
+
   // ── Fun on the glass ──
 
   /** Comes right up to the screen and squishes its nose on the glass, fogging it up. */
   *pressGlass() {
     const { actor, pet, view } = game;
-    const cx = game.stageX ?? view.w / 2;
+    const { cx, big, targetY } = glassAt(0.92, 0.5, 1.6, 3.4);
     const startX = actor.x;
     const startY = actor.y;
     pet.setFace('starry');
@@ -199,8 +249,6 @@ export const home = {
     audio.hello();
     yield 0.25;
     pet.setFace('cheeky');
-    const big = clamp((view.w * 0.92) / (200 * view.u * pet.stage.scale), 1.6, 3.4);
-    const targetY = view.h * 0.5 + GROUND * big * view.u * pet.stage.scale;
     let t = 0;
     while (t < 0.5) {
       t += actor.dt;
@@ -248,11 +296,10 @@ export const home = {
   /** A big wet lick right across the screen. */
   *lickGlass() {
     const { actor, pet, view } = game;
-    const cx = game.stageX ?? view.w / 2;
+    // The lick starts 40 units lower (below).
+    const { cx, big, targetY } = glassAt(0.95, 0.46, 1.6, 3.2, 40);
     const startX = actor.x;
     const startY = actor.y;
-    const big = clamp((view.w * 0.95) / (200 * view.u * pet.stage.scale), 1.6, 3.2);
-    const targetY = view.h * 0.46 + GROUND * big * view.u * pet.stage.scale;
     pet.setFace('cheeky');
     let t = 0;
     while (t < 0.42) {
@@ -490,7 +537,7 @@ export const home = {
       audio.chirrup();
       return;
     }
-    const tx = clamp(x, view.w * 0.14, view.w * 0.86);
+    const tx = onStageX(clamp(x, view.w * 0.14, view.w * 0.86));
     actor.play(this.trot(tx));
   },
 
@@ -702,7 +749,7 @@ export const home = {
       pet.r.sx.target = 1;
       pet.r.footL.target = 0;
       pet.r.footR.target = 0;
-      actor.play(actor.landed(f.from));
+      actor.play(this.landed(f.from));
     }
   },
 
@@ -772,11 +819,11 @@ export const home = {
     audio.unlock();
     audio.whoosh();
     const m = pet.anchors.mouth ?? [view.w / 2, view.h / 2];
-    this.thrown = { food: foodId, x0: view.w / 2, y0: view.h - 60 * view.u, x1: m[0], y1: m[1], t: 0, dur: 0.46 };
+    this.thrown = { food: foodId, x0: view.stage.cx, y0: view.h - 60 * view.u, x1: m[0], y1: m[1], t: 0, dur: 0.46 };
     game.actor.stop();
     pet.setFace('drool');
     pet.mouthExtra = 0.3;
-    pet.lookAt([view.w / 2, view.h]);
+    pet.lookAt([view.stage.cx, view.h]);
   },
 
   updateThrown(dt) {
@@ -1089,7 +1136,7 @@ export const home = {
     actor.air = 0;
     actor.scale = 1;
     pet.squash(0.14);
-    yield* actor.walkTo(view.w / 2, 130 * view.u);
+    yield* actor.walkTo(view.stage.cx, 130 * view.u);
     yield* actor.stretch();
     actor.relax('smile');
     yield 0.2;

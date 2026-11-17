@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const HELPERS = `
+export const HELPERS = `
 window.T = {
   get g() { return window.__game; },
   get scene() { return window.__game.scene; },

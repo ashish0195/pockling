@@ -784,3 +784,32 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 .hint:empty {
   display: none;
 }
+
+/* ── An open iPhone Duo ──────────────────────────────────────────────────────────────────────────
+   Nothing sits on the crease (web/src/fold.js). --fold-a and --fold-b are where its band starts and ends,
+   in the HUD's own pixels. Held like a book, the pet and everything you do with it are on the left page,
+   and menus, cards and the bed's strip open on the right one. Standing like a laptop, the wall is on the
+   top half and the floor on the bottom, where the pet, the dock and the menus are. */
+[data-fold="book"] #needs { right: calc(100% - var(--fold-a)); }
+[data-fold="book"] #dock { right: calc(100% - var(--fold-a) + 10px); }
+[data-fold="book"] #tray { right: calc(100% - var(--fold-a)); }
+[data-fold="book"] #toasts { right: calc(100% - var(--fold-a) + 12px); }
+[data-fold="book"] .hint, [data-fold="book"] #tools { left: calc(var(--fold-a) / 2); }
+[data-fold="book"] .hint { max-width: calc(var(--fold-a) - 36px); }
+[data-fold="book"] #hatch { right: calc(100% - var(--fold-a)); }
+[data-fold="book"] #hatch-top { right: calc(100% - var(--fold-a) + 18px); }
+[data-fold="book"] #sheet-wrap { align-items: flex-end; }
+[data-fold="book"] #sheet-wrap .sheet,
+[data-fold="book"] #sheet-wrap.see-pet .sheet { width: calc(100% - var(--fold-b)); }
+[data-fold="book"] .banner {
+  left: calc((100% + var(--fold-b)) / 2);
+  width: min(calc(100% - var(--fold-b) - 32px), 330px);
+}
+[data-fold="book"] #bedtime { left: calc(var(--fold-b) + 16px); }
+
+[data-fold="laptop"] .sheet { max-height: calc(100% - var(--fold-b) - 6px); }
+[data-fold="laptop"] .banner {
+  top: calc(var(--fold-b) + 10px);
+  max-height: calc(100% - var(--fold-b) - 20px - var(--safe-b));
+  overflow-y: auto;
+}

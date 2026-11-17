@@ -7,6 +7,7 @@ import { defineFx } from './bake/fx.js';
 import { defineOutfits } from './bake/outfits.js';
 import { defineRoom, defineSky, lightAt } from './bake/room.js';
 import { BREEDS, ROOMS, STAGES } from './catalog.js';
+import { frameFor, minFeetY, onStage } from './fold.js';
 import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
@@ -23,7 +24,7 @@ export const game = {
   pet: null,
   actor: null,
   scene: null,
-  view: { w: 390, h: 844, u: 1, horizon: 500, floorY: 640, dpr: 2, safeTop: 0, safeBottom: 0 },
+  view: { w: 390, h: 844, u: 1, ui: 1, horizon: 500, floorY: 640, dpr: 2, safeTop: 0, safeBottom: 0, crease: null, stage: { x: 0, y: 0, w: 390, h: 844, cx: 195, cy: 422 } },
   fold: null,
   time: 0,
   light: lightAt(12),
@@ -65,7 +66,10 @@ export function bakeScale() {
   return game.view.dpr >= 2 ? 4 : 3;
 }
 
-/** Works out where everything goes for this screen. */
+/**
+ * Works out where everything goes for this screen. On an open iPhone Duo that keeps the pet off the crease
+ * (web/src/fold.js): view.crease is the band, and view.stage the part of the screen the pet has to itself.
+ */
 export function measure() {
   const w = window.innerWidth;
   const h = window.innerHeight;
@@ -74,14 +78,30 @@ export function measure() {
   const css = probe ? getComputedStyle(probe) : null;
   const safeTop = css ? parseFloat(css.paddingTop) || 0 : 0;
   const safeBottom = css ? parseFloat(css.paddingBottom) || 0 : 0;
-  const u = clamp(Math.min(w, h * (w > h ? 0.78 : 0.6)) / 390, 0.62, 2.4);
-  const foldY = game.fold && !game.fold.vertical ? game.fold.y : null;
-  const horizon = foldY ?? Math.round(h * (w > h ? 0.56 : 0.6));
-  const room = h - horizon;
-  const floorY = horizon + Math.min(room * 0.44, 150 * u);
-  game.view = { w, h, u, horizon, floorY, dpr, safeTop, safeBottom, landscape: w > h };
-  document.documentElement.style.setProperty('--ui', String(clamp(Math.min(w, h) / 560, 1, 1.75)));
+  const ui = clamp(Math.min(w, h) / 560, 1, 1.75);
+  const { u, horizon, floorY, crease, stage } = frameFor(w, h, { fold: game.fold, breed: game.state?.pet?.breed, safeBottom, ui });
+  game.view = { w, h, u, horizon, floorY, dpr, safeTop, safeBottom, landscape: w > h, crease, stage, ui };
+  const root = document.documentElement;
+  root.style.setProperty('--ui', String(ui));
+  // The crease for the HUD (style.css), in the HUD's own pixels: it's zoomed by --ui.
+  if (crease) {
+    root.dataset.fold = crease.vertical ? 'book' : 'laptop';
+    root.style.setProperty('--fold-a', `${crease.a / ui}px`);
+    root.style.setProperty('--fold-b', `${crease.b / ui}px`);
+  } else {
+    delete root.dataset.fold;
+  }
   game.g.resize(w, h, dpr);
+}
+
+/** x kept on the pet's stage, for a pet drawn at this scale (actor.scale × view.u). */
+export function onStageX(x, scale = game.view.u) {
+  return onStage(game.view, game.state?.pet?.breed, x, scale);
+}
+
+/** y for the pet's feet that keeps a pet drawn at this scale on its stage: below a laptop's crease. */
+export function feetOnStage(y, scale = game.view.u) {
+  return Math.max(y, minFeetY(game.view, game.state?.pet?.breed, scale));
 }
 
 export function quality() {
@@ -124,6 +144,8 @@ export function setPetStage() {
 
 export function adoptPet(spec) {
   adopt(game.state, spec, game.now());
+  // How big the room is drawn on an open Duo depends on the kind of pet (web/src/fold.js).
+  if (game.fold) measure();
   save(true);
   // The name is for the reminders' text on the phone; the event only says which egg it was.
   setPetName(game.state.pet.name);

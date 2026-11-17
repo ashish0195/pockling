@@ -50,6 +50,9 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         NotificationCenter.default.addObserver(self, selector: #selector(wentBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(cameForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
         webView.load(URLRequest(url: BundleSchemeHandler.start))
+        #if DEBUG
+        startDriver()
+        #endif
     }
 
     // MARK: Messages from the game
@@ -60,6 +63,8 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         case "ready":
             isReady = true
             flush()
+            // Each time the page loads (starting over loads it again), it hears where the crease is.
+            if fold != nil { sendFold() }
         case "save":
             let json = body["json"] as? String ?? ""
             store.write(json)
@@ -107,6 +112,11 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
 
     private func emit(_ event: String, _ payload: [String: Any]) {
         guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
+        emit(event, json: json)
+    }
+
+    /// Sends the game an event with a payload already in JSON, or queues it until the game is ready.
+    private func emit(_ event: String, json: String) {
         let script = "window.__pockling && window.__pockling.emit('\(event)', \(json));"
         if isReady {
             webView.evaluateJavaScript(script, completionHandler: nil)
@@ -120,13 +130,18 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         queued.removeAll()
     }
 
+    /// An iPhone Duo's crease moved, appeared or went (GameScreen.swift). The game hears of it once it's ready.
     func setFold(_ newFold: Fold?) {
         guard newFold != fold else { return }
         fold = newFold
-        if let newFold {
-            emit("fold", ["y": newFold.position, "vertical": newFold.isVertical])
+        if isReady { sendFold() }
+    }
+
+    private func sendFold() {
+        if let fold {
+            emit("fold", ["y": fold.position, "start": fold.start, "end": fold.end, "vertical": fold.isVertical])
         } else {
-            webView.evaluateJavaScript("window.__pockling && window.__pockling.emit('fold', null);", completionHandler: nil)
+            emit("fold", json: "null")
         }
     }
 
@@ -254,6 +269,33 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         }
         webView.reload()
     }
+
+    #if DEBUG
+    // MARK: Driving the game from the Mac (Debug builds only)
+
+    /// For staging the App Store's iPhone Duo screens on the simulator (tools/sim-drive.mjs): JavaScript written
+    /// to Library/Caches/driver/in.js runs in the page as the body of an async function, and what it returns
+    /// lands in out.json. Release builds don't have this.
+    private func startDriver() {
+        let folder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("driver", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let input = folder.appendingPathComponent("in.js")
+        let output = folder.appendingPathComponent("out.json")
+        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self, let body = try? String(contentsOf: input, encoding: .utf8) else { return }
+            try? FileManager.default.removeItem(at: input)
+            self.webView.callAsyncJavaScript(body, arguments: [:], in: nil, in: .page) { result in
+                var answer: [String: Any] = ["ok": true]
+                switch result {
+                case .success(let value): answer["value"] = JSONSerialization.isValidJSONObject(["v": value]) ? value : String(describing: value)
+                case .failure(let error): answer = ["ok": false, "error": String(describing: error)]
+                }
+                let data = (try? JSONSerialization.data(withJSONObject: answer)) ?? Data(#"{"ok":false,"error":"no answer"}"#.utf8)
+                try? data.write(to: output, options: .atomic)
+            }
+        }
+    }
+    #endif
 
     private static func jsLiteral(_ text: String) -> String? {
         guard let data = try? JSONEncoder().encode(text) else { return nil }

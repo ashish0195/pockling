@@ -1,6 +1,7 @@
 // The Pockling's room, painted to fit the screen: a wall with a window (the real sky shows through it),
 // a wooden floor with a rug, a bed, a plant, a shelf. Also the sky pieces and the light for each hour.
 import { ROOMS } from '../catalog.js';
+import { CREASE_GAP, reachOf } from '../fold.js';
 import { clamp, css, darken, lerp, lighten, mixRgb, rgb, seeded, smooth, TAU } from '../util.js';
 import { makeCanvas, softDot } from './paint.js';
 
@@ -165,13 +166,19 @@ export function drawSky(g, assets, light, x, y, w, h) {
 
 /** Where things stand in a room of this size. Shared by the painter and the game. */
 export function roomLayout(view) {
-  const { w, horizon, floorY, u } = view;
+  const { w, horizon, floorY, u, crease, stage } = view;
+  // On an iPhone Duo standing like a laptop, the bed comes forward from the wall far enough for a sleeping
+  // pet (drawn at 0.66, 6 units into the bed) to be clear of the crease; held like a book, the rug is under
+  // the pet on its page (web/src/fold.js).
+  const bedY = crease && !crease.vertical ? Math.max(horizon + 46 * u, crease.b + CREASE_GAP + reachOf(null).up * 1.06 * 0.66 * u - 6 * u) : horizon + 46 * u;
+  const rugX = crease?.vertical ? stage.cx : w * 0.5;
+  const rugR = crease?.vertical ? stage.w * 0.46 : w * 0.44;
   return {
     window: { x: w * 0.29, y: Math.max(horizon - 340 * u, 118 * u), w: 132 * u, h: 192 * u },
-    bed: { x: Math.min(w * 0.82, w - 126 * u), y: horizon + 46 * u, w: 148 * u, h: 86 * u },
+    bed: { x: Math.min(w * 0.82, w - 126 * u), y: bedY, w: 148 * u, h: 86 * u },
     plant: { x: w * 0.09, y: horizon + 12 * u },
     shelf: { x: w * 0.74, y: Math.max(horizon - 248 * u, 150 * u), w: 124 * u },
-    rug: { x: w * 0.5, y: floorY - 6 * u, rx: Math.min(w * 0.44, 190 * u), ry: 46 * u },
+    rug: { x: rugX, y: floorY - 6 * u, rx: Math.min(rugR, 190 * u), ry: 46 * u },
   };
 }
 
