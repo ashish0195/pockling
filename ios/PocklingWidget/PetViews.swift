@@ -221,12 +221,14 @@ struct NeedRing: View {
 
     var body: some View {
         let line = size * 0.13
+        let arc = dark ? need.nightColor : need.color
         ZStack {
-            Circle().fill(dark ? Color.white.opacity(0.14) : Color.white.opacity(0.78))
-            Circle().inset(by: line / 2).stroke(need.color.opacity(0.28), lineWidth: line)
+            // By day a light disc and the game's solid track (#f6ece8); at night a darker disc with a faint track.
+            Circle().fill(dark ? Color.black.opacity(0.25) : Color.white.opacity(0.78))
+            Circle().inset(by: line / 2).stroke(dark ? Color.white.opacity(0.1) : Color(hex: "#f6ece8"), lineWidth: line)
             Circle().inset(by: line / 2)
                 .trim(from: 0, to: min(max(value / 100, 0.03), 1))
-                .stroke(need.color, style: StrokeStyle(lineWidth: line, lineCap: .round))
+                .stroke(arc, style: StrokeStyle(lineWidth: line, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text(need.icon).font(.system(size: size * 0.42))
         }
@@ -343,7 +345,8 @@ struct Theme {
     init(_ entry: PetEntry, showsBackground: Bool) {
         dark = entry.asleep || !showsBackground || Theme.isDark(entry.pet?.wall ?? [])
         ink = dark ? Color(hex: "#fff6ec") : Color(hex: "#4a3540")
-        soft = dark ? Color(hex: "#d4ccf6") : Color(hex: "#8a6775")
+        // 4.6:1 or more on every room's wall, the lilac one included (1.3.2; it was #8a6775, 3.2–4.1:1).
+        soft = dark ? Color(hex: "#d4ccf6") : Color(hex: "#6a5260")
     }
 
     static func isDark(_ wall: [String]) -> Bool {
@@ -353,21 +356,24 @@ struct Theme {
     }
 }
 
-/// The five needs as the game's rings show them (web/src/ui/hud.js).
+/// The five needs as the game's rings show them (web/src/ui/hud.js). From 1.3.2 the rings are at least 3:1
+/// against their track and the disc inside (docs/aso/accessibility.md): on a light wall in the game's deeper
+/// colours, and on the night sky in the bright ones.
 struct Need: Identifiable {
     let key: String
     let icon: String
     let label: String
     let color: Color
+    let nightColor: Color
 
     var id: String { key }
 
     static let all = [
-        Need(key: "tummy", icon: "🍎", label: "Tummy", color: Color(hex: "#ff8a5c")),
-        Need(key: "clean", icon: "🫧", label: "Clean", color: Color(hex: "#5eb8ff")),
-        Need(key: "energy", icon: "⚡", label: "Energy", color: Color(hex: "#ffc247")),
-        Need(key: "fun", icon: "🎈", label: "Fun", color: Color(hex: "#4fcfa8")),
-        Need(key: "love", icon: "💖", label: "Love", color: Color(hex: "#ff6f97")),
+        Need(key: "tummy", icon: "🍎", label: "Tummy", color: Color(hex: "#e45a26"), nightColor: Color(hex: "#ff8a5c")),
+        Need(key: "clean", icon: "🫧", label: "Clean", color: Color(hex: "#2585d4"), nightColor: Color(hex: "#5eb8ff")),
+        Need(key: "energy", icon: "⚡", label: "Energy", color: Color(hex: "#bb7708"), nightColor: Color(hex: "#ffc247")),
+        Need(key: "fun", icon: "🎈", label: "Fun", color: Color(hex: "#2c9474"), nightColor: Color(hex: "#4fcfa8")),
+        Need(key: "love", icon: "💖", label: "Love", color: Color(hex: "#e0457a"), nightColor: Color(hex: "#ff6f97")),
     ]
 
     static func named(_ key: String) -> Need {

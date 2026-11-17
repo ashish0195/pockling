@@ -1,6 +1,6 @@
 :root {
   --ink: #4a3540;
-  --soft: #7d6470;
+  --soft: #765667;
   --pink: #ff6f97;
   --paper: #fffdf9;
 }
@@ -32,7 +32,7 @@ p, li { color: var(--soft); }
 ul { padding-left: 22px; }
 li { margin: 4px 0; }
 b { color: var(--ink); }
-a { color: #c2355f; font-weight: 700; }
+a { color: #ad2c55; font-weight: 700; }
 .card {
   margin-top: 18px;
   padding: 6px 22px 18px;

@@ -6,6 +6,7 @@ import { drawSky, roomLayout } from '../bake/room.js';
 import { FOODS, STAGES } from '../catalog.js';
 import { ambient, petLight, bakeScale, celebrate, checkDaily, defineRoomArt, game, onStageX, refreshLight, save, setPetStage } from '../game.js';
 import { CREASE_GAP, reachOf, SWAY } from '../fold.js';
+import { motion } from '../particles.js';
 import { GROUND } from '../pet.js';
 import { haptic, purr as hapticPurr, setKeepAwake, track } from '../platform.js';
 import { cuddle, feed, goToSleep, levelOf, mood, stageOf, tasteOf, talked, wakeUp } from '../state.js';
@@ -209,7 +210,8 @@ export const home = {
       return;
     }
     if (m === 'joyful' && Math.random() < 0.14) {
-      actor.play(this.pressGlass());
+      // With Reduce Motion, a wave instead of coming right up to the glass.
+      actor.play(motion.reduced ? actor.wave() : this.pressGlass());
       return;
     }
     if (Math.random() < 0.3) {
@@ -635,7 +637,8 @@ export const home = {
     pet.setFace('bliss');
     pet.ears(0.28);
     pet.wag(0.8, 7);
-    this.zoom.target = 1.42;
+    // Reduce Motion: no zooming in on the cuddle.
+    this.zoom.target = motion.reduced ? 1 : 1.42;
     const c = pet.anchors.center;
     if (c) this.focus = [c[0], c[1] + 10];
     audio.purr(true);
@@ -663,7 +666,7 @@ export const home = {
     game.pet.setFace('happy');
     audio.happy();
     yield 0.3;
-    if (Math.random() < 0.5) yield* this.lickGlass();
+    if (!motion.reduced && Math.random() < 0.5) yield* this.lickGlass();
     else yield* actor.wave();
   },
 
@@ -733,7 +736,7 @@ export const home = {
         // One bounce, big and soft.
         f.bounced = true;
         const impact = f.vy;
-        f.vy = -impact * 0.34;
+        f.vy = -impact * (motion.reduced ? 0.15 : 0.34);
         pet.squash(clamp(impact / 2600, 0.14, 0.38));
         pet.jiggle(clamp(impact / 90, 6, 18));
         audio.thud();
@@ -1189,7 +1192,7 @@ export const home = {
     const light = game.light;
     const dim = this.dim.x;
     const amb = ambient(dim);
-    const [tx, ty] = game.tiltNow;
+    const [tx, ty] = motion.reduced ? [0, 0] : game.tiltNow;
     const px = tx * 9 * u;
     const py = ty * 5 * u;
 

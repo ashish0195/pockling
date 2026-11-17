@@ -53,6 +53,13 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         #if DEBUG
         startDriver()
         #endif
+        PetLinks.attach(self)
+    }
+
+    /// A reminder or a pockling:// link was opened: the game closes any menu and goes home to the pet
+    /// (web/src/app.js, the "open" event). It waits for the game to be ready, as every event does.
+    func showPet(_ key: String) {
+        emit("open", ["to": key])
     }
 
     // MARK: Messages from the game
@@ -68,6 +75,8 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         case "save":
             let json = body["json"] as? String ?? ""
             store.write(json)
+            // The reminders say how the pet is doing, from the latest save.
+            Reminders.saved(json)
             if json.isEmpty {
                 // Starting over: a reload mustn't bring back the save we put into the page at launch.
                 webView.configuration.userContentController.removeAllUserScripts()
@@ -172,8 +181,8 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
 
     @objc private func cameForeground() {
         updateMotion()
-        // Notifications may have been allowed in iOS Settings while we were away.
-        Reminders.refresh()
+        // The reminders rebuild themselves on every return (Reminders.swift): notifications may have been
+        // allowed or turned off in iOS Settings while we were away.
     }
 
     // MARK: Usage data and notifications (NineIO.swift)

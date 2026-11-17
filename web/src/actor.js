@@ -1,6 +1,7 @@
 // The pet as a character on stage: where it stands, how it walks and hops, and short acted scenes
 // written as generators. Yield a number to wait that long; yield nothing to wait a frame.
 import { audio } from './audio.js';
+import { motion } from './particles.js';
 import { haptic } from './platform.js';
 import { clamp, lerp, pick, rand } from './util.js';
 
@@ -108,6 +109,8 @@ export class Actor {
 
   /** A hop: crouch, spring up, land with a squash. */
   *hop(height = 60, dur = 0.42, { sound = true } = {}) {
+    // Reduce Motion: half as high.
+    if (motion.reduced) height *= 0.5;
     const pet = this.pet;
     pet.r.sy.target = 0.84;
     pet.r.sx.target = 1.14;
@@ -555,11 +558,13 @@ export class Actor {
 
 /** Idle behaviours, weighted by how the pet feels. */
 export function idleScene(actor, mood) {
-  const options = {
+  const all = {
     joyful: [['dance', 2], ['hum', 2], ['chaseTail', 1.5], ['wave', 1.5], ['lookAround', 3], ['scratch', 1], ['chatter', 2], ['stretch', 1], ['sneeze', 0.4]],
     content: [['lookAround', 4], ['hum', 1.5], ['wave', 1], ['scratch', 1.5], ['stretch', 1.5], ['chatter', 1.5], ['sneeze', 0.5], ['yawn', 1]],
     okay: [['lookAround', 4], ['scratch', 1], ['yawn', 1.5], ['chatter', 1], ['stretch', 1]],
   }[mood] ?? [['lookAround', 3], ['yawn', 1]];
+  // Reduce Motion: no spinning round after its tail.
+  const options = motion.reduced ? all.filter(([name]) => name !== 'chaseTail') : all;
   let total = 0;
   for (const [, w] of options) total += w;
   let r = Math.random() * total;

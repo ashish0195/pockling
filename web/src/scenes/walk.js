@@ -6,6 +6,7 @@ import { drawPark, definePark, strip } from '../bake/park.js';
 import { drawSky } from '../bake/room.js';
 import { BREEDS, BREED_IDS } from '../catalog.js';
 import { ambient, celebrate, fadeTo, game, onStageX, petLight, quality, refreshLight, roundDone, save } from '../game.js';
+import { few, motion } from '../particles.js';
 import { Pet } from '../pet.js';
 import { haptic } from '../platform.js';
 import { walked } from '../state.js';
@@ -217,7 +218,7 @@ export const walk = {
     haptic('medium');
     pet.squash(0.2);
     const col = [0.5, 0.37, 0.25];
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0, n = few(22); i < n; i++) {
       const a = rand(Math.PI, TAU);
       const s = rand(120, 300);
       fx.add({ tex: 'fx.dot', x: actor.x, y: actor.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, ay: 780, life: rand(0.5, 0.9), size: rand(6, 15), tint: col });
@@ -533,8 +534,8 @@ export const walk = {
       g.sprite(t, o.sx, o.sy, { w: t.w * u * flap, h: t.h * u, tint: amb, rot: Math.sin(o.t * 2) * 0.2 });
     }
 
-    // Close grass.
-    strip(g, assets.get('park.fore'), scroll * 1.5, h - 92 * u, 92 * u, amb);
+    // Close grass, a little faster than the path, unless Reduce Motion is on (no parallax then).
+    strip(g, assets.get('park.fore'), scroll * (motion.reduced ? 1 : 1.5), h - 92 * u, 92 * u, amb);
 
     for (const fl of this.fireflies) {
       const a = Math.sin((fl.t / fl.life) * Math.PI) * (0.6 + 0.4 * Math.sin(fl.t * 6 + fl.ph));

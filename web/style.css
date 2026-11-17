@@ -4,10 +4,13 @@
   --cream: #fff8ef;
   --paper: #fffdf9;
   --ink: #4a3540;
-  --soft: #8c7480;
+  /* Secondary text: at least 4.5:1 on every panel it sits on (docs/aso/accessibility.md). */
+  --soft: #765667;
   --line: rgba(120, 80, 90, 0.14);
   --pink: #ff6f97;
   --pink-2: #ffa6be;
+  /* The pink under white text, and the mark of what's chosen: 4.6:1 with white, 4.4:1 on cream. */
+  --pink-deep: #d13b68;
   --gold: #ffc247;
   --mint: #4fcfa8;
   --sky: #5eb8ff;
@@ -70,7 +73,7 @@ button {
   padding: 0;
   cursor: pointer;
 }
-button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+button:focus-visible { outline: 3px solid var(--pink-deep); outline-offset: 2px; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -137,7 +140,8 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   gap: 7px;
   min-height: 42px;
   padding: 5px 13px 5px 8px;
-  background: rgba(255, 253, 249, 0.93);
+  /* Opaque enough that the berries' pink keeps 4.5:1 even over a black room. */
+  background: rgba(255, 253, 249, 0.96);
   border-radius: 999px;
   box-shadow: var(--shadow);
   font-weight: 800;
@@ -153,16 +157,16 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(180deg, #ffa6be, #ff6f97);
+  background: linear-gradient(180deg, var(--pink-deep), #c2355f);
   color: #fff;
   font-size: 14px;
   font-weight: 900;
-  box-shadow: inset 0 -2px 3px rgba(190, 40, 90, 0.35);
+  box-shadow: inset 0 -2px 3px rgba(120, 20, 60, 0.35);
 }
 .name-box { display: flex; flex-direction: column; gap: 3px; min-width: 60px; text-align: left; }
 .name-box .nm { line-height: 1; max-width: 118px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xp { display: block; height: 5px; border-radius: 3px; background: rgba(255, 111, 151, 0.2); overflow: hidden; }
-.xp i { display: block; height: 100%; border-radius: 3px; background: var(--pink); transition: width 0.4s; }
+.xp i { display: block; height: 100%; border-radius: 3px; background: var(--pink-deep); transition: width 0.4s; }
 
 .berry-chip { padding-left: 11px; color: #c2355f; }
 .berry-chip .pop { display: inline-block; }
@@ -201,7 +205,8 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(255, 255, 255, 0.55) 0);
+  /* The arc's colours (web/src/ui/hud.js) are 3:1 against this track, so its length reads by day and night. */
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), #f6ece8 0);
   box-shadow: 0 3px 10px rgba(80, 40, 50, 0.16);
   transition: --v 0.4s;
 }
@@ -213,7 +218,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   background: var(--paper);
 }
 .ring span { position: relative; font-size: 20px; line-height: 1; }
-.ring.low { animation: throb 1.2s ease-in-out infinite; --c: #ff5a5f; }
+.ring.low { animation: throb 1.2s ease-in-out infinite; --c: #df3b43; }
 @keyframes throb { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
 
 /* ── Side buttons ────────────────────────────────────────────────────────────────────────────── */
@@ -237,7 +242,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   font-size: 23px;
   transition: transform 0.12s;
 }
-.side-btn.on { background: linear-gradient(180deg, #ffa6be, #ff6f97); }
+.side-btn.on { background: linear-gradient(180deg, #e0457a, var(--pink-deep)); }
 
 /* ── Dock ────────────────────────────────────────────────────────────────────────────────────── */
 
@@ -269,7 +274,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   transition: transform 0.12s, background 0.15s;
 }
 .dock-btn .ico { font-size: 27px; line-height: 1.1; filter: drop-shadow(0 2px 2px rgba(80, 40, 50, 0.16)); }
-.dock-btn.want { background: rgba(255, 111, 151, 0.14); color: #d9406e; }
+.dock-btn.want { background: rgba(255, 111, 151, 0.14); color: #ad2c55; }
 .dock-btn.want .ico { animation: nudge 1.3s ease-in-out infinite; }
 @keyframes nudge { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-5px) rotate(-7deg); } 60% { transform: translateY(0) rotate(5deg); } }
 
@@ -318,7 +323,8 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 }
 .food img { display: block; width: 52px; height: 52px; margin: 0 auto 2px; pointer-events: none; -webkit-user-drag: none; }
 .food .price { color: #c2355f; }
-.food.poor { opacity: 0.45; }
+/* Too dear for now: the treat fades, but its name and price stay readable. */
+.food.poor img { opacity: 0.4; }
 .food.fav::after { content: "💖"; position: absolute; top: 3px; right: 5px; font-size: 14px; }
 
 @keyframes rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -409,16 +415,17 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   font-weight: 900;
   font-size: 17px;
   text-align: center;
-  background: linear-gradient(180deg, #ff93b2, #ff6f97);
+  background: linear-gradient(180deg, var(--pink-deep), #c2355f);
   color: #fff;
-  box-shadow: 0 5px 0 #d84d78, 0 10px 18px rgba(216, 77, 120, 0.3);
+  box-shadow: 0 5px 0 #9e2a4f, 0 10px 18px rgba(158, 42, 79, 0.28);
   transition: transform 0.1s, box-shadow 0.1s;
 }
-.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #d84d78; }
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #9e2a4f; }
 .btn.alt { background: #f7e9dd; color: var(--ink); box-shadow: 0 4px 0 #e2cfbf; }
 .btn.alt:active { box-shadow: 0 1px 0 #e2cfbf; }
 .btn + .btn { margin-top: 12px; }
-.btn[disabled] { opacity: 0.5; }
+/* Not ready yet ("Choose an egg"): pale, but its words still read. */
+.btn[disabled] { background: #f9dfe7; color: #8a3d5c; box-shadow: 0 5px 0 #efc9d5; }
 
 /* Play cards. */
 .play-card {
@@ -466,7 +473,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   font-size: 14px;
   color: var(--soft);
 }
-.tab.on { background: var(--pink); color: #fff; }
+.tab.on { background: var(--pink-deep); color: #fff; }
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -485,9 +492,10 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 }
 .tile:active { transform: scale(0.95); }
 .tile img { display: block; height: 56px; max-width: 80px; object-fit: contain; margin: 0 auto 3px; pointer-events: none; }
-.tile.on { box-shadow: 0 0 0 3px var(--pink), 0 2px 8px rgba(80, 40, 50, 0.08); }
+.tile.on { box-shadow: 0 0 0 3px var(--pink-deep), 0 2px 8px rgba(80, 40, 50, 0.08); }
 .tile .price { display: block; margin-top: 2px; color: #c2355f; }
-.tile.locked { opacity: 0.66; }
+/* Locked: the picture fades, but the name and price stay readable. */
+.tile.locked img, .tile.locked .swatch { opacity: 0.5; }
 .swatch { display: block; height: 56px; margin: 0 6px 5px; border-radius: 12px; }
 
 /* Stamp book. */
@@ -504,9 +512,9 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   background: #f7ebe0;
   font-size: 21px;
 }
-.stamp.today { box-shadow: 0 0 0 2.5px var(--pink); background: #fff; }
+.stamp.today { box-shadow: 0 0 0 2.5px var(--pink-deep); background: #fff; }
 .stamp.empty { background: rgba(244, 230, 218, 0.45); }
-.streak-big { font-size: 42px; font-weight: 900; color: var(--pink); line-height: 1; }
+.streak-big { font-size: 42px; font-weight: 900; color: #c2355f; line-height: 1; }
 
 /* Settings rows. */
 .row {
@@ -545,7 +553,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: left 0.15s;
 }
-.switch.on { background: var(--mint); }
+.switch.on { background: #2c9474; }
 .switch.on::after { left: 22px; }
 
 .stats {
@@ -555,7 +563,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   margin: 10px 0 14px;
 }
 .stat { padding: 10px 4px; border-radius: 15px; background: var(--paper); text-align: center; }
-.stat b { display: block; font-size: 20px; font-weight: 900; color: var(--pink); }
+.stat b { display: block; font-size: 20px; font-weight: 900; color: #c2355f; }
 .stat span { font-size: 11px; font-weight: 800; color: var(--soft); }
 
 .card-preview {
@@ -624,7 +632,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 .banner h2 { margin: 4px 0; font-size: 23px; font-weight: 900; }
 .banner p { margin: 4px 0 14px; color: var(--soft); font-weight: 700; }
 /* The notification card's choices: a line under a button, and a quiet Not now. */
-.banner .btn small { display: block; margin-top: 2px; font-size: 13px; font-weight: 700; opacity: 0.9; }
+.banner .btn small { display: block; margin-top: 2px; font-size: 13px; font-weight: 700; }
 .btn.plain { min-height: 44px; padding: 10px 16px; background: none; box-shadow: none; color: var(--soft); }
 .btn.plain:active { transform: none; box-shadow: none; }
 .banner .btn.plain { margin-top: 4px; }
@@ -655,7 +663,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 .gamebar .score {
   padding: 8px 16px;
   border-radius: 999px;
-  background: rgba(255, 253, 249, 0.93);
+  background: rgba(255, 253, 249, 0.96);
   box-shadow: var(--shadow);
   font-size: 18px;
   font-weight: 900;
@@ -675,7 +683,8 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   font-size: 14px;
   line-height: 1.25;
   color: #fff;
-  background: rgba(70, 40, 62, 0.62);
+  /* Dark enough for 4.5:1 with white even over a white wall. */
+  background: rgba(70, 40, 62, 0.72);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   pointer-events: none;
@@ -706,7 +715,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   transition: transform 0.12s, background 0.15s;
 }
 .tool .ico { display: block; font-size: 29px; line-height: 1.1; }
-.tool.on { background: rgba(94, 184, 255, 0.2); color: #2c7fc9; }
+.tool.on { background: rgba(94, 184, 255, 0.2); color: #1d64a6; }
 .tool.next .ico { animation: nudge 1.2s ease-in-out infinite; }
 
 /* Hatching: the egg picker. */
@@ -739,7 +748,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   border: 0;
   border-radius: 18px;
   background: var(--paper);
-  box-shadow: inset 0 0 0 2.5px var(--pink-2);
+  box-shadow: inset 0 0 0 2.5px #e0457a;
   color: var(--ink);
   font: inherit;
   font-size: 21px;
@@ -750,7 +759,8 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   user-select: text;
   touch-action: manipulation;
 }
-.name-input:focus { box-shadow: inset 0 0 0 3px var(--pink); }
+.name-input:focus { box-shadow: inset 0 0 0 3px var(--pink-deep); }
+.name-input::placeholder { color: var(--soft); opacity: 1; }
 .name-picks { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .name-pick {
   padding: 7px 13px;
@@ -778,8 +788,12 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
   #side { bottom: calc(var(--safe-b) + 8px); flex-direction: row; }
   .sheet { max-height: 92dvh; }
 }
+@keyframes toastFade { 0% { opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .ring.low, .dock-btn.want .ico, .tool.next .ico, .loader-egg { animation: none; }
+  .ring.low, .dock-btn.want .ico, .tool.next .ico, .loader-egg, .berry-chip .pop.go { animation: none; }
+  /* Panels, cards and toasts fade in where they'd slide, pop or grow. */
+  #tray, .sheet, .banner { animation: fade 0.2s ease; }
+  .toast { animation-name: toastFade; }
 }
 .hint:empty {
   display: none;

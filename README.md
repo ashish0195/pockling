@@ -48,7 +48,10 @@ node tools/smoke.mjs
 - `web/src/talk.js` and `ios/Pockling/TalkBack.swift`: the same talk-back, for each platform.
 - `ios/Pockling/NineIO.swift`: 9io's anonymous usage data and notifications, in the iOS app only. It's a
   copy of `stocks-bot/games/client/NineIO.swift`: change it there and copy it back. Pockling's own
-  reminders are `ios/Pockling/Reminders.swift`.
+  reminders are `ios/Pockling/ReminderPlan.swift` (a different 6 pm hello on each day without a visit, for up
+  to a week, saying only what's true of the pet that evening) and `Reminders.swift` (queueing them through
+  NineIO). The app's links, `pockling://pet` and `pockling://firstsnow` (for the "First Snow" in-app event),
+  are `PetLinks.swift`: they and every reminder show the pet.
 - `web/src/widget.js` and `ios/PocklingWidget/`: the Home Screen, Lock Screen and StandBy widget. See below.
 
 ## Images
@@ -63,6 +66,12 @@ Open `ios/Pockling.xcodeproj`, or build from the command line. It bundles `web/`
 
 ```bash
 xcodebuild -project ios/Pockling.xcodeproj -scheme Pockling -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build build
+```
+
+The app's tests (`ios/PocklingTests`: the reminders and the links) run on a simulator:
+
+```bash
+xcodebuild test -project ios/Pockling.xcodeproj -scheme Pockling -destination 'platform=iOS Simulator,name=<your simulator>' CODE_SIGNING_ALLOWED=NO
 ```
 
 Bundle id `app.pockling.Pockling`, team 9X9HQVQ78G. The simulator hears a made-up voice instead of the

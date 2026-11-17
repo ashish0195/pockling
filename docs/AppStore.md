@@ -239,6 +239,8 @@ Removing a version from review to swap a build goes back to the end of the queue
 
 1.2's notifications and usage data have only been built, not run: not the card, iOS's prompt, a reminder or nudge arriving, 1.1's reminder setting carrying over, or anything reaching 9io's games server, which isn't deployed yet. The web side was tried in headless Chrome with a stand-in for the app's bridge.
 
+1.3.2's daily reminders and links have run on the simulator (17 November 2026, `docs/aso/listing-1.3.2.md`): iOS's prompt from the Reminders switch, the week's queue in iOS's pending store with the right lines and times, Reminders off clearing it and on bringing it back, the queue rebuilt on the way to the background with no come-back nudge, `pockling://firstsnow` and `pockling://pet` closing a menu and taking a bath back home, and the upgrade from 1.3 replacing its old reminders. A reminder arriving on a real phone, and tapping one in Notification Center (the simulator didn't open it), haven't been tried; the tap goes through the same `PetLinks.open` the links do.
+
 ## Next listing (proposed 14 Nov 2026, not live)
 
 `docs/ASO.md` is the App Store optimisation review: subtitle "Cozy Kitten & Puppy Games", new

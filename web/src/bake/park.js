@@ -1,5 +1,6 @@
 // The park: layers that scroll at different speeds, each a seamless tile. Everything wraps at TILE so
 // the walk never ends.
+import { motion } from '../particles.js';
 import { css, darken, lerp, lighten, rgb, seeded, TAU } from '../util.js';
 import { makeCanvas } from './paint.js';
 
@@ -314,9 +315,11 @@ export function drawPark(g, assets, view, scroll, tint) {
   const midH = 400 * u;
   const nearH = 230 * u;
   const farH = 520 * u;
-  strip(g, assets.get('park.far'), scroll * 0.14, groundY - farH + 30 * u, farH, tint);
-  strip(g, assets.get('park.mid'), scroll * 0.3, groundY - midH + 40 * u, midH, tint);
-  strip(g, assets.get('park.near'), scroll * 0.58, groundY - nearH + 16 * u, nearH, tint);
+  // With Reduce Motion every layer moves with the ground, so there's no parallax (docs/aso/accessibility.md).
+  const [far, mid, near] = motion.reduced ? [1, 1, 1] : [0.14, 0.3, 0.58];
+  strip(g, assets.get('park.far'), scroll * far, groundY - farH + 30 * u, farH, tint);
+  strip(g, assets.get('park.mid'), scroll * mid, groundY - midH + 40 * u, midH, tint);
+  strip(g, assets.get('park.near'), scroll * near, groundY - nearH + 16 * u, nearH, tint);
   strip(g, assets.get('park.ground'), scroll, groundY, view.h - groundY + 2, tint);
   return { groundY, pathY: groundY + 128 * u, w };
 }

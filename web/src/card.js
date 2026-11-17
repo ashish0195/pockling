@@ -87,14 +87,14 @@ function makeCard(photo) {
   x.fillStyle = '#4a3540';
   x.font = `800 44px ${FONT}`;
   x.fillText(`${trait(s)} ${coat.name.toLowerCase()} ${breed.name}`, W / 2, 1120);
-  x.fillStyle = '#8c7480';
+  x.fillStyle = '#765667';
   x.font = `700 36px ${FONT}`;
   const age = ageDays(p, game.now());
   const ageText = age === 0 ? 'hatched today' : `${age} day${age === 1 ? '' : 's'} old`;
   x.fillText(`${ageText}  ·  love level ${levelOf(p.xp)}  ·  ${s.streak} day streak`, W / 2, 1180);
 
   // The way in for whoever sees it.
-  x.fillStyle = '#ff6f97';
+  x.fillStyle = '#c2355f';
   x.beginPath();
   const pillW = 680;
   x.roundRect((W - pillW) / 2, 1228, pillW, 76, 38);

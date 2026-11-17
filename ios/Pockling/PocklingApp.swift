@@ -8,6 +8,8 @@ struct PocklingApp: App {
     var body: some Scene {
         WindowGroup {
             GameScreen()
+                // pockling://pet and pockling://firstsnow (PetLinks.swift) show the pet, as reminders do.
+                .onOpenURL { url in PetLinks.open(PetLinks.key(for: url)) }
         }
     }
 }
@@ -17,8 +19,8 @@ struct PocklingApp: App {
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         NineIO.shared.start(app: "pockling")
-        // Pockling is a single screen with no open keys: a tapped notification just opens the app.
-        NineIO.shared.onOpen = { _ in }
+        // Every reminder opens "pet": the game closes any menu and goes home to the pet (PetLinks.swift).
+        NineIO.shared.onOpen = { key in PetLinks.open(key) }
         Reminders.start(save: SaveStore().load())
         return true
     }

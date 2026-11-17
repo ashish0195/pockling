@@ -71,7 +71,7 @@ export const ui = {
       layer.innerHTML = `
         ${this.topbar()}
         <div id="needs">
-          ${[['tummy', '🍎', '#ff8a5c', 'Tummy'], ['clean', '🫧', '#5eb8ff', 'Clean'], ['energy', '⚡', '#ffc247', 'Energy'], ['fun', '🎈', '#4fcfa8', 'Fun'], ['love', '💖', '#ff6f97', 'Love']]
+          ${[['tummy', '🍎', '#e45a26', 'Tummy'], ['clean', '🫧', '#2585d4', 'Clean'], ['energy', '⚡', '#bb7708', 'Energy'], ['fun', '🎈', '#2c9474', 'Fun'], ['love', '💖', '#e0457a', 'Love']]
     .map(([k, ico, c, label]) => `<div class="ring" data-need="${k}" style="--c:${c}" role="img" aria-label="${label}"><span>${ico}</span></div>`).join('')}
         </div>
         <div id="side">
@@ -357,7 +357,7 @@ export const ui = {
    */
   choiceToggles() {
     const row = (key, label, sub) => `<button class="row" data-action="choice" data-key="${key}" role="switch" aria-checked="${this.chosen(key)}"><span>${label}<small>${sub}</small></span><span class="switch${this.chosen(key) ? ' on' : ''}"></span></button>`;
-    return `${row('reminders', '🔔 Reminders', 'A hello at 6 pm, and a nudge after a few days away')}
+    return `${row('reminders', '🔔 Reminders', 'A little note from your pet at 6 pm on days you haven\'t visited')}
       ${row('news', '📣 News and new games', 'New games and events from 9io')}
       ${row('analytics', '📊 Share anonymous usage data', 'Helps us see what Pocklings like doing. No account, no ads, no tracking.')}`;
   },
@@ -419,7 +419,7 @@ export const ui = {
       return;
     }
     const name = esc(game.state.pet.name);
-    this.banner(`<div class="big">🔔</div><h2>Can ${name} say hello?</h2><p>A hello at 6 pm each day, and a nudge after a few days away.</p>
+    this.banner(`<div class="big">🔔</div><h2>Can ${name} say hello?</h2><p>A little note at 6 pm on days you haven't visited, with all of ${name}'s news.</p>
       <button class="btn" data-close data-answer="all">Reminders and news<small>Also news about new games and events from 9io</small></button>
       <button class="btn alt" data-close data-answer="reminders">Just reminders</button>
       <button class="btn plain" data-close data-answer="later">Not now</button>`, {

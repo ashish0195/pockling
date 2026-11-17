@@ -74,6 +74,15 @@ function boot() {
     measure();
     game.scene?.resize?.();
   });
+  // A reminder or a pockling:// link was opened (ios/Pockling/PetLinks.swift): show the pet. A menu closes,
+  // and a game left open since the last visit gives way to the pet saying hello at home. Before an egg has
+  // hatched, the eggs are the place to be anyway.
+  on('open', () => {
+    const scene = game.scene;
+    if (!scene || !game.state.pet || scene === hatch) return;
+    ui.hideSheet();
+    if (scene !== home) fadeTo(home, { greet: true });
+  });
   startMotion((x, y) => {
     game.tilt = [x, y];
   });

@@ -520,6 +520,30 @@ const flows = {
     await d.js(`T.click('[data-action="talk"]')`);
     assert((await d.js(`__talk.state`)) === 'off', 'talk mode turns off');
   },
+
+  // A tapped reminder or a pockling:// link (ios/Pockling/PetLinks.swift) tells the game to show the pet.
+  async links(d) {
+    await d.open('web/');
+    assert(await d.js(`T.scene === __scenes.hatch`), 'no pet yet: the eggs');
+    await d.js(`window.__pockling.emit('open', { to: 'pet' })`);
+    await d.sleep(400);
+    assert(await d.js(`T.scene === __scenes.hatch`), 'before hatching, a link leaves the eggs where they are');
+
+    await d.open('web/?demo=home&breed=puppling&hour=18');
+    await d.js(`T.click('[data-action="menu"]')`);
+    await d.sleep(450);
+    assert(await d.js(`Boolean(document.getElementById('sheet-wrap'))`), 'the menu opens');
+    await d.js(`window.__pockling.emit('open', { to: 'pet' })`);
+    await d.sleep(400);
+    assert(await d.js(`!document.getElementById('sheet-wrap') && T.scene === __scenes.home`), 'a link closes the menu, at home');
+
+    await d.js(`__goTo(__scenes.bath); T.ff(0.5)`);
+    assert(await d.js(`T.scene === __scenes.bath`), 'in the bath');
+    await d.js(`window.__pockling.emit('open', { to: 'firstsnow' })`);
+    await d.waitFor(`T.scene === __scenes.home`, 4000);
+    await d.js(`T.ff(0.8)`);
+    await d.shot('link-home');
+  },
 };
 
 /**
