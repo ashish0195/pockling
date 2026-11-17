@@ -74,7 +74,8 @@ const PATTERNS = { light: 8, medium: 16, heavy: 28, success: [12, 40, 18], soft:
 export function haptic(kind = 'light') {
   if (!hapticsOn) return;
   if (bridge) send('haptic', { kind });
-  else navigator.vibrate?.(PATTERNS[kind] ?? 10);
+  // Browsers ignore vibrate until the first tap, and Chrome logs a warning each time it's tried before.
+  else if (navigator.userActivation?.hasBeenActive ?? true) navigator.vibrate?.(PATTERNS[kind] ?? 10);
 }
 
 /** A continuous purr you can feel, while being stroked. */
