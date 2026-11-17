@@ -102,7 +102,14 @@ from "In Simulator builds, talk-back plays a built-in test voice …". Everythin
   e15106be767898c844cc6555e299717b) was removed once the new one had processed.
 - **Hindi keywords** as above, read back identical (98 characters).
 - **Draft submission** `10130e00-52d7-44dd-8e47-d21c4d90997c` (Add for Review at 21:33 IST), READY_FOR_REVIEW
-  with version 1.3.1 (6) alone, not submitted: the orchestrator session submits it on the user's go. The custom
+  with version 1.3.1 (6) alone. The orchestrator submitted it on 17 Nov 2026 at 21:36 IST, under the user's
+  standing go-ahead to fix issues and push them live. Before submitting, it checked:
+  - no price word in any subtitle, keyword field, promotional text, What's New or description;
+  - build 6 VALID;
+  - the iPhone Duo set (10) and Duo preview, the re-cut iPhone preview and the iPad set: all 30 shots and
+    both previews match `docs/aso/store/` by MD5 and order;
+  - the previews' 6–12 s frames show no food tray, and the screenshots' tray labels sit below the frame.
+  Now Waiting for Review. The custom
   pages' submission (`e5291bba`, Kitten, Bunny and Dragon) is still Waiting for Review, apart from it. Read
   back after Add for Review: release after approval, build 6 VALID, What's New hashes as above in all four
   languages, review notes 3,891 characters, 10 + 10 + 10 screenshots (iPhone Duo, iPhone, iPad) and both
