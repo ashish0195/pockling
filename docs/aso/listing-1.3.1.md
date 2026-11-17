@@ -1,18 +1,27 @@
 # Pockling 1.3.1: made for iPhone Duo
 
-1.3.1 (6) is 1.3 made for iPhone Duo (pockling e460da5, README.md "iPhone Duo"): open, the Duo's inner
+1.3.1 (6) is 1.3 made for iPhone Duo (pockling 1ba6bbe, README.md "iPhone Duo"): open, the Duo's inner
 screen has a crease across the middle, and the game now keeps the pet, its buttons and its menus off it.
-Its listing changes only where 1.3's (`listing-1.3.md`) said nothing about the Duo:
+Its listing changes only where 1.3's (`listing-1.3.md`) said nothing about the Duo, and in its iPhone
+preview:
 
 - **What's New**, below, in every language.
 - **iPhone Duo media**, in the slot that had none: the ten `store/iphone-duo/` shots (2007 × 2853) and the
   Duo preview `store/preview/pockling-preview-duo.mp4` (886 × 1920, 29.5 s). How they were made:
   docs/AppStore.md, "iPhone Duo".
+- **iPhone preview**, re-cut: 1.3's showed the food tray for about two seconds, and its free foods say
+  "Free", a price word to App Review (Guideline 2.3.7) even in the game's own screens. Now the fish is
+  thrown up to the pet as a tap on the tray does, without the tray in view; the Duo preview is cut the same
+  way. Otherwise the same day, frame for frame. The user's "Yes, replace it", 17 Nov 2026.
+- **Hindi keywords** (98 of 100): `digital,pocket` fill the 17 characters 1.3's left free (ASO coverage
+  audit, 17 Nov 2026). "Digital pet" and "pocket pet" are two of the three ways people search for a pet
+  (`docs/ASO.md`, research), and none of the fields India indexes (English (U.K.) and Hindi) had either word:
+  `पालतू,बिल्ली,पपी,खरगोश,गेम,प्यारा,पेट,cute,pet,kitten,puppy,bunny,games,care,widget,digital,pocket`
 - **Review notes:** one paragraph on top of 1.3's.
 
-Everything else (name, subtitle, keywords, promotional text, description, the iPhone and iPad media,
-header and search images) stays as 1.3 has it. No price words anywhere (Guideline 2.3.7): the feed shot's
-tray is cut off above its prices.
+Everything else (name, subtitle, the other keywords, promotional text, description, the iPhone screenshots and iPad
+media, header and search images) stays as 1.3 has it. No price words anywhere (Guideline 2.3.7): the Duo
+feed shot's tray is cut off above its prices, as the iPhone one's is, and neither preview shows the tray.
 
 ## What's New
 
@@ -83,3 +92,12 @@ from "In Simulator builds, talk-back plays a built-in test voice …". Everythin
   | 08-talk | 922d5cefed1fbbefbf6e0091e53f0bd3 |
   | 09-sleep | 5f8c83449e354cdd032ac83956ee373c |
   | 10-dress | 40c23d75fc33cc1c72e2038b93bc3beb |
+
+- **iPhone Duo preview** (`IPHONE_DUO`, English (U.S.)): `store/preview/pockling-preview-duo.mp4`, 886 × 1920,
+  29.5 s, 5,152,548 bytes, MD5 82c092a3b0463eb53afd5f11617cedb5 in App Store Connect as in the file (preview
+  `2bb22973-8849-45c5-bc79-79f204b36a37`, poster frame Apple's default, 00:00:05:01).
+- **iPhone preview** (`IPHONE_61`, English (U.S.)): the re-cut `store/preview/pockling-preview.mp4`, uploaded as
+  `pockling-preview-1.3.1.mp4`, 8,621,689 bytes, MD5 ffd6412e1a91059521982508af40db68 as in the file (preview
+  `01043594-c101-414d-9b25-5faef8058ba8`, poster frame 00:00:05:01 as before). 1.3's (`262aeae1`, MD5
+  e15106be767898c844cc6555e299717b) was removed once the new one had processed.
+- **Hindi keywords** as above, read back identical (98 characters).

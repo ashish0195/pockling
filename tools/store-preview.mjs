@@ -51,9 +51,9 @@ function timeline() {
   each(2.53 + L, 5.2 + L, `T.move(__head[0] + Math.sin(i * 0.2) * 58 * __game.view.u, __head[1] + Math.cos(i * 0.2) * 14 * __game.view.u);`);
   at(5.2 + L, `T.up(__head[0], __head[1])`);
 
-  // Its favorite snack.
-  at(5.5 + L, `T.click('[data-action="feed"]'); __game.state.foodsTried = ['fish', 'apple', 'carrot', 'cookie']`);
-  at(5.9 + L, `T.scene.idleIn = 1e9; __game.pet.lookAt(null); T.scene.giveFood('fish')`);
+  // Its favorite snack, thrown up to it as a tap on the food tray does, landing when it used to be handed over
+  // (5.9 s). Without the tray in view: its free foods say "Free", a price word to App Review (Guideline 2.3.7).
+  at(5.44 + L, `T.scene.idleIn = 1e9; __game.state.foodsTried = ['fish', 'apple', 'carrot', 'cookie']; T.scene.throwFood('fish')`);
 
   // Bubbles, then a rainbow.
   at(8.5 + L, `__game.ui.hideTray?.(); __game.ui.hideSheet(); __goTo(__scenes.bath); (() => {

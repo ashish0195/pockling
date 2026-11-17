@@ -165,7 +165,9 @@ version is approved.
 ## App preview
 
 The 29-second preview stays, re-cut so its first three seconds are the nose on the glass with
-"Your cute virtual pet" (search autoplays them muted), not a slow start.
+"Your cute virtual pet" (search autoplays them muted), not a slow start. In 1.3.1 it's cut again so the
+food tray, whose free foods say "Free" (Guideline 2.3.7), never shows: the fish is thrown up to the pet
+instead (`listing-1.3.1.md`).
 
 ## Icon
 

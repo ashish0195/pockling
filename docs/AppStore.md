@@ -171,7 +171,7 @@ node tools/make-art.mjs store build/appstore/creative
 | Product page header | `creative/header-3840x1646.png` | 3840x1646 |
 | Search results | `creative/search-3840x2560.jpg` | 3840x2560 |
 
-The headlines are in `tools/store-frame.mjs`. Since the ASO update (14 Nov 2026, `docs/ASO.md`) the ten shots are `01-glass` … `10-dress`: the first says "Your cute / virtual pet", `04-kinds` stands the six pets together (each drawn alone by `store-shots.mjs`, grouped by `store-frame.mjs`), the phone is larger and some scenes zoom the game's camera so the pet reads at search size, and "Tap the egg" is gone. The preview opens on the nose on the glass with "Your cute / virtual pet" and runs 29.5 s. The approved set, as JPEGs, the preview and the creative images are committed in `docs/aso/store/`. A busy machine makes `tools/drive.mjs` time out (15 s for Chrome, 12 s for the game); retry, or run when it's quiet.
+The headlines are in `tools/store-frame.mjs`. Since the ASO update (14 Nov 2026, `docs/ASO.md`) the ten shots are `01-glass` … `10-dress`: the first says "Your cute / virtual pet", `04-kinds` stands the six pets together (each drawn alone by `store-shots.mjs`, grouped by `store-frame.mjs`), the phone is larger and some scenes zoom the game's camera so the pet reads at search size, and "Tap the egg" is gone. The preview opens on the nose on the glass with "Your cute / virtual pet" and runs 29.5 s. From 1.3.1 its fish is thrown up to the pet as a tap on the food tray does, with the tray out of view: the tray's free foods say "Free", which App Review counts as a price in a preview (Guideline 2.3.7). The approved set, as JPEGs, the preview and the creative images are committed in `docs/aso/store/`. A busy machine makes `tools/drive.mjs` time out (15 s for Chrome, 12 s for the game); retry, or run when it's quiet.
 
 ### iPhone Duo (from 1.3.1)
 
@@ -189,7 +189,8 @@ iPhone Duo" badge on the product page.
 - The kinds pictures are the phone's (they're drawn alone in Chrome, not captured).
 - The preview is the iPhone preview's day, played frame by frame in the app on the Duo simulator and captured
   from its inner screen. The slot takes the iPhone's 886x1920 (Apple: Duo previews use the standard iPhone
-  sizes), so each frame is shown whole on the screenshots' cream, with each scene's headline above it.
+  sizes), so each frame is shown whole on the screenshots' cream, with each scene's headline above it. Like
+  the iPhone preview from 1.3.1, it never opens the food tray.
 
 To make them again:
 1. Build Debug for the simulator, install it on an iPhone Duo simulator (the iOS 27.2 iPhone Duo runtime,
