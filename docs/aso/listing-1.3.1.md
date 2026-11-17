@@ -115,7 +115,12 @@ from "In Simulator builds, talk-back plays a built-in test voice …". Everythin
   languages, review notes 3,891 characters, 10 + 10 + 10 screenshots (iPhone Duo, iPhone, iPad) and both
   previews processed.
 - **Web game** at bitfold.9io.ai/pockling/ deployed from main 2c5f21d at 21:02 IST (the user's "Yes, after the
-  upload"); the server matched 700fea0 before and main's `web/` after.
+  upload"); the server matched 700fea0 before and main's `web/` after. Deployed again from main f322bf9 at
+  21:54 IST for the vibrate guard (2e318a4; the user's "Yes, deploy it"): the server matched 2c5f21d before,
+  only `src/platform.js` changed, and all 40 files match main after. Checked live in headless Chrome:
+  - scripted strokes before any tap: 0 calls to `navigator.vibrate` and no "Blocked call" lines (the old file
+    made 3 calls and logged 3);
+  - after a real tap: 5 calls, all allowed.
 
 ## Not in 1.3.1 (next version)
 
