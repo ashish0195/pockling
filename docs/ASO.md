@@ -153,6 +153,15 @@ up from a fifth: a larger phone, and the game's camera zoomed in some scenes (`s
   5. Add the widgets, medium above small, with an XCUITest runner that drives SpringBoard, or by hand.
   6. Take `xcrun simctl io <udid> screenshot --type=png` with the status bar set to 9:41.
 
+**1.3.1, iPhone Duo (made 17 Nov 2026):** the slot had no media, so the product page had no "Made for iPhone
+Duo" badge. 1.3.1 makes the game keep off the Duo's crease (README.md), and its Duo set is the iPhone set's
+ten scenes and headlines, captured in the app on the iPhone Duo simulator standing like a laptop, in
+`store/iphone-duo/` (2007 × 2853), with the Duo preview in `store/preview/pockling-preview-duo.mp4`. The pets
+aren't zoomed as on iPhone: each stands where the app puts it, whole below the crease, so shot 1 has the
+pet's face on the upright half and the others have it on the floor. How they're made: docs/AppStore.md,
+"iPhone Duo". Each custom product page gets the same set, led by its own pet's glass shot, once its first
+version is approved.
+
 ## App preview
 
 The 29-second preview stays, re-cut so its first three seconds are the nose on the glass with

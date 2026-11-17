@@ -586,9 +586,11 @@ async function duoMoments(d, tag, fold) {
     // Feet above the crease, up on the glass's half, or the whole pet below it.
     return a.y <= c.a - CREASE_GAP + 1 || a.y - r.up * SWAY * s >= c.b + CREASE_GAP - 1 ? true : 'y ' + Math.round(a.y);
   })()`;
+  // The game's own frames stop, so time only moves with T.ff: on a busy machine they'd move the animation on
+  // between the steps below.
   for (const breed of breeds) {
     await d.open(`web/?demo=home&breed=${breed}&hour=11`, 1500);
-    await d.js(`window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
+    await d.js(`window.__hold = true; window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
     for (const moment of ['pressGlass', 'lickGlass']) {
       await d.js(`T.ff(0.2); T.scene.idleIn = 1e9; __game.actor.stop(); __game.actor.relax(); __game.actor.x = T.scene.layout ? __game.view.stage.cx : __game.actor.x; __game.actor.y = __game.view.floorY; __game.actor.scale = 1; __game.actor.play(T.scene.${moment}())`);
       // Up to the glass (moving there may cross), then held there: every step of that has to be clear.
@@ -604,7 +606,7 @@ async function duoMoments(d, tag, fold) {
   }
   for (const breed of ['bunling', 'puppling', 'foxling']) {
     await d.open(`web/?demo=hide&breed=${breed}&hour=16`, 1500);
-    await d.js(`window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
+    await d.js(`window.__hold = true; window.__pockling.emit('fold', ${JSON.stringify(fold)})`);
     for (let spot = 0; spot < 5; spot++) {
       await d.js(`(() => {
         const s = T.scene;

@@ -166,12 +166,42 @@ node tools/make-art.mjs store build/appstore/creative
 | iPhone with Dynamic Island (large display) | `iphone-6.9/` | 1320x2868 |
 | iPad 13", **required** | `ipad-13/` | 2064x2752 |
 | App preview (iPhone) | `preview/pockling-preview.mp4` | 886x1920, 29.5 s, silent audio track |
+| iPhone Duo (`APP_IPHONE_DUO`), from 1.3.1 | `iphone-duo/` | 2007x2853 |
+| App preview (iPhone Duo, `IPHONE_DUO`), from 1.3.1 | `preview/pockling-preview-duo.mp4` | 886x1920, 29.5 s, silent audio track |
 | Product page header | `creative/header-3840x1646.png` | 3840x1646 |
 | Search results | `creative/search-3840x2560.jpg` | 3840x2560 |
 
 The headlines are in `tools/store-frame.mjs`. Since the ASO update (14 Nov 2026, `docs/ASO.md`) the ten shots are `01-glass` … `10-dress`: the first says "Your cute / virtual pet", `04-kinds` stands the six pets together (each drawn alone by `store-shots.mjs`, grouped by `store-frame.mjs`), the phone is larger and some scenes zoom the game's camera so the pet reads at search size, and "Tap the egg" is gone. The preview opens on the nose on the glass with "Your cute / virtual pet" and runs 29.5 s. The approved set, as JPEGs, the preview and the creative images are committed in `docs/aso/store/`. A busy machine makes `tools/drive.mjs` time out (15 s for Chrome, 12 s for the game); retry, or run when it's quiet.
 
-The iPhone Duo slot stays empty for now: the fold has never been run on a device or a simulator, so we shouldn't earn the "Made for iPhone Duo" badge yet. Apple requires it from April 2027 for apps built with the iOS 27.1 SDK.
+### iPhone Duo (from 1.3.1)
+
+1.3.1 is made for iPhone Duo (README.md, "iPhone Duo"), so its slot has a set of its own: the same ten
+scenes and headlines as the iPhone set, captured in the real app on the iPhone Duo simulator, open and
+standing like a laptop (portrait, 2007x2853), and set in a drawn Duo with its hinge marked at the middle.
+App Store Connect requires the slot from April 2027 for apps built with the iOS 27.1 SDK, and it puts a "Made for
+iPhone Duo" badge on the product page.
+
+- The game keeps the pet off the crease, so these shots don't zoom the camera as the iPhone's do: each pet
+  stands where the app puts it, whole on the floor below the crease. Shot 1's pet presses its nose to the
+  upright half, which is how the app does it there. The feed shot's tray is cut off by the frame below the
+  foods, so its prices ("Free" for the free foods; Guideline 2.3.7) don't show.
+- Shot 2 is a real Duo Home Screen with the medium and small widgets (`captures/widget-home-duo.png`).
+- The kinds pictures are the phone's (they're drawn alone in Chrome, not captured).
+- The preview is the iPhone preview's day, played frame by frame in the app on the Duo simulator and captured
+  from its inner screen. The slot takes the iPhone's 886x1920 (Apple: Duo previews use the standard iPhone
+  sizes), so each frame is shown whole on the screenshots' cream, with each scene's headline above it.
+
+To make them again:
+1. Build Debug for the simulator, install it on an iPhone Duo simulator (the iOS 27.2 iPhone Duo runtime,
+   README.md) and launch it with `SIMCTL_CHILD_NINEIO_BASE=http://127.0.0.1:9/`, so nothing reaches 9io.
+2. Open the Duo and turn it to portrait, so it stands like a laptop.
+3. `DUO=<udid> node tools/store-shots.mjs build/appstore/raw duo - glass love feed bath walk talk sleep dress`
+   (and `glass-bunny glass-dragon` for the custom pages), and `node tools/store-shots.mjs build/appstore/raw phone 3 kinds`.
+4. For the widget shot, give it Mochi's save as in docs/ASO.md, set the status bar to 9:41
+   (`xcrun simctl status_bar <udid> override --time 9:41`), add the medium and small widgets to the inner
+   Home Screen and save `xcrun simctl io <udid> screenshot --display=3` as `build/appstore/raw/duo/widget.png`.
+5. `node tools/store-frame.mjs build/appstore/raw build/appstore duo`, then JPEGs as for the other sets.
+6. `DUO=<udid> node tools/store-preview.mjs build/appstore/preview` makes `pockling-preview-duo.mp4`.
 
 ## Uploading a build
 
@@ -202,7 +232,7 @@ Export to a folder first, unzip the IPA and check with `codesign -d --entitlemen
 
 ## Not tested before submitting
 
-Nothing has run on a real iPhone yet. TestFlight has the same build, for trying talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone. Apple Silicon Macs, Apple Vision Pro and the iPhone Duo fold haven't been run either.
+Nothing has run on a real iPhone yet. TestFlight has the same build, for trying talk-back with real speech (the simulator can't, see `ios/Pockling/TalkBack.swift`), the purr, tilt, a reminder firing, and how it runs on an older phone. Apple Silicon Macs and Apple Vision Pro haven't been run either. The iPhone Duo has, on its simulator only (1.3.1, 17 November 2026): closed, open like a book and like a laptop, half open, and opening and closing mid-bath and mid-game.
 
 Removing a version from review to swap a build goes back to the end of the queue, so anything found now ships as an update.
 

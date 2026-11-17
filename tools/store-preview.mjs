@@ -3,10 +3,15 @@
 // first seconds, muted. App Store Connect wants an audio track, so it gets a silent one. Needs the dev server
 // and ffmpeg. With seconds, only that much is made, for a look.
 //   node tools/store-preview.mjs <work dir> [seconds]
+// With DUO=<udid>, the iPhone Duo's preview instead: the same day, played frame by frame in the real app on
+// that iPhone Duo simulator (open, standing like a laptop: portrait) through its Debug-only driver
+// (tools/sim-drive.mjs), and each frame captured from its inner screen. The slot takes the iPhone's 886x1920,
+// so the screen is shown whole on the screenshots' cream with each scene's headline above it.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { drive } from './drive.mjs';
+import { simDrive } from './sim-drive.mjs';
 
 const WORK = resolve(process.argv[2]);
 const FPS = 30;
@@ -117,14 +122,16 @@ function timeline() {
 
 const ffmpeg = (...args) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args], { stdio: 'inherit' });
 
-const dir = join(WORK, 'frames');
+const DUO = process.env.DUO;
+const dir = join(WORK, DUO ? 'frames-duo' : 'frames');
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true });
 const { frames, total: whole } = timeline();
 const total = process.argv[3] ? Math.min(whole, Math.round(Number(process.argv[3]) * FPS)) : whole;
-await drive({ width: 443, height: 960, dpr: 2, safe: [59, 34], outDir: dir, quiet: true }, async (d) => {
-  await d.open('web/?demo=home&breed=kitling&coat=peach&hour=15&days=12&tummy=45&love=70&fun=70&energy=90&clean=60&neck=scarf&berries=240', 3000);
-  await d.js(`(() => {
+const START = 'web/?demo=home&breed=kitling&coat=peach&hour=15&days=12&tummy=45&love=70&fun=70&energy=90&clean=60&neck=scarf&berries=240';
+
+/** Holds the game for frame-by-frame play, and goes up to the glass before the first frame. */
+const setup = (caption) => `(() => {
     window.__hold = true;
     let n = 123456;
     Math.random = () => {
@@ -139,30 +146,113 @@ await drive({ width: 443, height: 960, dpr: 2, safe: [59, 34], outDir: dir, quie
       + ' font: 49.6px/1.08 "Arial Rounded MT Bold", ui-rounded, system-ui, sans-serif; letter-spacing: -0.012em; color: #4a3540; text-align: center; }'
       + ' #store-caption em { font-style: normal; color: #f0407c; }';
     document.head.append(style);
-    // The first screenshot's words, in its type, for the opening seconds.
-    const caption = document.createElement('div');
-    caption.id = 'store-caption';
-    caption.innerHTML = '<div>Your cute<br><em>virtual pet</em></div>';
-    document.body.append(caption);
-    window.__caption = (a) => { caption.style.opacity = String(Math.max(0, Math.min(1, a))); };
+    // The first screenshot's words, in its type, for the opening seconds. On the iPhone Duo they're above
+    // the screen instead (duoPreview()), so not in it.
+    if (${caption}) {
+      const caption = document.createElement('div');
+      caption.id = 'store-caption';
+      caption.innerHTML = '<div>Your cute<br><em>virtual pet</em></div>';
+      document.body.append(caption);
+      window.__caption = (a) => { caption.style.opacity = String(Math.max(0, Math.min(1, a))); };
+    } else {
+      window.__caption = () => {};
+    }
     // Up to the glass before the first frame, so the preview starts there, smiling.
     T.scene.idleIn = 1e9;
     __game.actor.relax('smile');
     __game.pet.settle();
     __game.actor.play(T.scene.pressGlass());
     T.ff(1.3, 1 / 30);
-  })()`);
-  await d.sleep(200);
-  const t0 = Date.now();
-  for (let i = 0; i < total; i++) {
-    await d.js(`${frames[i] ?? ''}; T.ff(${1 / FPS}, ${1 / FPS}); __game.ui.refresh?.()`);
-    await d.capture(join(dir, `f${String(i).padStart(4, '0')}.jpg`), 95);
-    if (i % 60 === 0) console.log(`frame ${i}/${total} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
-  }
-});
-// JPEG is BT.601 full range; App Store previews are BT.709.
-ffmpeg('-framerate', String(FPS), '-i', join(dir, 'f%04d.jpg'), '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo',
-  '-vf', 'scale=886:1920:in_color_matrix=bt601:out_color_matrix=bt709:in_range=pc:out_range=tv,format=yuv420p,setparams=range=tv:colorspace=bt709:color_primaries=bt709:color_trc=bt709',
-  '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-crf', '17', '-maxrate', '11M', '-bufsize', '22M', '-r', String(FPS),
-  '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', join(WORK, 'pockling-preview.mp4'));
+  })()`;
+
+const t0 = Date.now();
+const progress = (i) => {
+  if (i % 60 === 0) console.log(`frame ${i}/${total} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+};
+
+if (DUO) {
+  await simDrive({ udid: DUO, display: 3, outDir: dir }, async (d) => {
+    await d.open(START, 3000);
+    await d.js(setup(false));
+    await d.sleep(200);
+    for (let i = 0; i < total; i++) {
+      // Two animation frames, so the app has put this frame on the screen before it's captured.
+      await d.js(`(async () => { ${frames[i] ?? ''}; T.ff(${1 / FPS}, ${1 / FPS}); __game.ui.refresh?.(); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); })()`);
+      d.capture(join(dir, `f${String(i).padStart(4, '0')}.jpg`));
+      progress(i);
+    }
+  });
+  await duoPreview();
+} else {
+  await drive({ width: 443, height: 960, dpr: 2, safe: [59, 34], outDir: dir, quiet: true }, async (d) => {
+    await d.open(START, 3000);
+    await d.js(setup(true));
+    await d.sleep(200);
+    for (let i = 0; i < total; i++) {
+      await d.js(`${frames[i] ?? ''}; T.ff(${1 / FPS}, ${1 / FPS}); __game.ui.refresh?.()`);
+      await d.capture(join(dir, `f${String(i).padStart(4, '0')}.jpg`), 95);
+      progress(i);
+    }
+  });
+  // JPEG is BT.601 full range; App Store previews are BT.709.
+  ffmpeg('-framerate', String(FPS), '-i', join(dir, 'f%04d.jpg'), '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo',
+    '-vf', 'scale=886:1920:in_color_matrix=bt601:out_color_matrix=bt709:in_range=pc:out_range=tv,format=yuv420p,setparams=range=tv:colorspace=bt709:color_primaries=bt709:color_trc=bt709',
+    '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-crf', '17', '-maxrate', '11M', '-bufsize', '22M', '-r', String(FPS),
+    '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', join(WORK, 'pockling-preview.mp4'));
+}
 console.log(`preview in ${WORK}`);
+
+/**
+ * The iPhone Duo's preview, from its frames: each scene's headline (the screenshots', tools/store-frame.mjs)
+ * on the cream above the whole screen, cutting with the scene.
+ */
+async function duoPreview() {
+  // Seconds each scene starts, as timeline() plays it, and its headline; the words in *stars* in pink.
+  const SCENES = [
+    [0, 'Your cute\n*virtual pet*'],
+    [3.5, 'Stroke it.\n*Feel it purr.*'],
+    [6.5, 'Feed it.\n*It has opinions.*'],
+    [9.5, 'Bubble bath,\n*rubber duck*'],
+    [14.2, 'Walkies,\n*new friends*'],
+    [19.6, 'Hide and seek.\n*No peeking!*'],
+    [23.2, 'Say hello.\n*It says it back.*'],
+    [26.3, 'It never dies.\n*It just misses you.*'],
+  ];
+  const W = 886;
+  const H = 1920;
+  // The screen, 669 x 951 points, as wide as the frame, with the headline in the space above it.
+  const screenH = Math.round((W * 951) / 669 / 2) * 2;
+  const screenY = H - screenH - 150;
+  const plates = join(WORK, 'plates-duo');
+  mkdirSync(plates, { recursive: true });
+  await drive({ width: W, height: H, dpr: 1, outDir: plates, quiet: true }, async (d) => {
+    for (const [i, [, title]] of SCENES.entries()) {
+      const words = title.split('\n').map((line) => `<span>${line.replace(/\*(.+?)\*/g, '<em>$1</em>')}</span>`).join('<br>');
+      const html = join(plates, `plate-${i}.html`);
+      writeFileSync(html, `<!doctype html><html><head><meta charset="utf-8"><style>
+        html, body { margin: 0; width: ${W}px; height: ${H}px; overflow: hidden; }
+        body { background: linear-gradient(170deg, #fff4d1, #ffcf8f); font-family: "Arial Rounded MT Bold", ui-rounded, system-ui, sans-serif; }
+        h1 { position: absolute; left: 0; right: 0; top: 0; height: ${screenY}px; margin: 0; display: flex; align-items: center; justify-content: center;
+          text-align: center; font-weight: normal; font-size: 74px; line-height: 1.08; letter-spacing: -0.012em; color: #4a3540; }
+        h1 em { font-style: normal; color: #f0407c; }
+      </style></head><body><h1><div>${words}</div></h1><script>document.fonts.ready.then(() => { window.__fitted = true; });</script></body></html>`);
+      await d.rawOpen(`file://${html}`);
+      await d.waitFor('window.__fitted');
+      await d.shot(`plate-${i}`, { draw: false });
+    }
+  });
+  const inputs = ['-framerate', String(FPS), '-i', join(dir, 'f%04d.jpg')];
+  for (let i = 0; i < SCENES.length; i++) inputs.push('-loop', '1', '-framerate', String(FPS), '-i', join(plates, `plate-${i}.png`));
+  inputs.push('-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo');
+  // JPEG is BT.601 full range; the plates are sRGB; App Store previews are BT.709.
+  let graph = `[0:v]scale=${W}:${screenH}:in_color_matrix=bt601:in_range=pc,format=rgb24[screen];[1:v]format=rgb24[p0];`;
+  for (let i = 1; i < SCENES.length; i++) {
+    const from = SCENES[i][0];
+    const to = SCENES[i + 1]?.[0] ?? 1e6;
+    graph += `[${i + 1}:v]format=rgb24[q${i}];[p${i - 1}][q${i}]overlay=enable='between(t,${from},${to})'[p${i}];`;
+  }
+  graph += `[p${SCENES.length - 1}][screen]overlay=0:${screenY}:shortest=1,scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,setparams=range=tv:colorspace=bt709:color_primaries=bt709:color_trc=bt709[v]`;
+  ffmpeg(...inputs, '-filter_complex', graph, '-map', '[v]', '-map', `${SCENES.length + 1}:a`,
+    '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-crf', '17', '-maxrate', '11M', '-bufsize', '22M', '-r', String(FPS),
+    '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', join(WORK, 'pockling-preview-duo.mp4'));
+}

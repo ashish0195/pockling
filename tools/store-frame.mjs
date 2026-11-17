@@ -2,7 +2,9 @@
 // Connect takes. The device is as big as the shot allows, so the pet reads at the size of a search result,
 // and runs off the bottom edge. The kinds shot has no device: the six pets stand together under it.
 // The PNGs come out with no alpha channel, because it rejects them otherwise.
-//   [PAGE=kitten|bunny|dragon] node tools/store-frame.mjs <shots dir> <out dir> [phone|ipad|all] [names...]
+//   [PAGE=kitten|bunny|dragon] node tools/store-frame.mjs <shots dir> <out dir> [phone|ipad|duo|all] [names...]
+// The iPhone Duo's set is the open Duo standing like a laptop, from the app on its simulator
+// (tools/store-shots.mjs ... duo), in a drawn device with the hinge across the middle.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -12,8 +14,9 @@ import { drive } from './drive.mjs';
 const SHOTS = [
   { name: 'glass', title: 'Your cute\n*virtual pet*', from: '#fff4d1', to: '#ffcf8f' },
   // 1.3's widget: a real Home Screen captured on an iPhone 17 Pro Max simulator, not by store-shots.mjs
-  // (docs/aso/store/captures/, docs/ASO.md). iPhone only: on an iPad Home Screen the widget is too small to read.
-  { name: 'widget', title: 'On your\n*Home Screen*', from: '#eaf5ff', to: '#bcd8ff', only: 'phone' },
+  // (docs/aso/store/captures/, docs/ASO.md), and on the iPhone Duo's simulator for its set. Not on iPad: on an
+  // iPad Home Screen the widget is too small to read.
+  { name: 'widget', title: 'On your\n*Home Screen*', from: '#eaf5ff', to: '#bcd8ff', only: ['phone', 'duo'] },
   { name: 'love', title: 'Stroke it.\n*Feel it purr.*', from: '#ffeadf', to: '#ffb9ca' },
   { name: 'feed', title: 'Feed it.\n*It has opinions.*', from: '#f1e9ff', to: '#cbb8ff' },
   { name: 'kinds', title: 'Kitten, puppy, bunny,\n*fox, bear or dragon*', from: '#eaf5ff', to: '#bcd8ff', kinds: true },
@@ -59,6 +62,12 @@ const SETS = {
     raw: 'ipad', W: 2064, H: 2752, screen: 0.88, ratio: 1376 / 1032, top: 0.185, font: 0.083, bezel: 0.021, radius: 0.04, island: false,
     kinds: { body: 0.26, at: [[0.175, 0.53], [0.5, 0.53], [0.825, 0.53], [0.175, 0.87], [0.5, 0.87], [0.815, 0.87]] },
   },
+  // The inner screen of an open iPhone Duo, 2007 x 2853, as App Store Connect's iPhone Duo slot takes it.
+  'iphone-duo': {
+    // The kinds are drawn alone in Chrome, not captured, so they're the phone's pictures.
+    raw: 'duo', kindsFrom: 'phone', W: 2007, H: 2853, screen: 0.875, ratio: 951 / 669, top: 0.205, font: 0.1, bezel: 0.022, radius: 0.055, island: false, hinge: true,
+    kinds: { body: 0.27, at: [[0.18, 0.52], [0.5, 0.52], [0.82, 0.52], [0.18, 0.86], [0.5, 0.86], [0.82, 0.86]] },
+  },
 };
 
 const heart = (x, y, s, rot, alpha, color = '#fff') => `<svg class="deco" style="left:${x}%;top:${y}%;width:${s}%;transform:rotate(${rot}deg);opacity:${alpha}" viewBox="-16 -14 32 30"><path fill="${color}" d="M0 14C-24-1-14-17 0-6 14-17 24-1 0 14Z"/></svg>`;
@@ -76,7 +85,11 @@ function device(set, shot, rawFile) {
       background: #17151c; box-shadow: 0 0 0 ${W * 0.0034}px #6d6875, 0 ${W * 0.024}px ${W * 0.066}px rgba(70, 30, 60, ${shot.night ? 0.6 : 0.34}); }
     .device img { display: block; width: ${sw}px; height: ${sh}px; border-radius: ${radius}px; }
     .island { position: absolute; left: 50%; top: ${bezel + sw * 0.0315}px; width: ${sw * 0.216}px; height: ${sw * 0.0825}px; margin-left: ${-sw * 0.108}px; border-radius: ${sw * 0.0413}px; background: #000; }
-  </style><div class="device"><img src="file://${rawFile}">${set.island ? '<div class="island"></div>' : ''}</div>`;
+    .hinge { position: absolute; top: ${bezel + sh / 2 - W * 0.008}px; width: ${bezel + W * 0.0094}px; height: ${W * 0.016}px; border-radius: ${W * 0.004}px;
+      background: linear-gradient(180deg, #55515d, #a39eac 45%, #3f3c46); z-index: 2; }
+    .hinge.l { left: ${-W * 0.0094}px; }
+    .hinge.r { right: ${-W * 0.0094}px; }
+  </style><div class="device"><img src="file://${rawFile}">${set.island ? '<div class="island"></div>' : ''}${set.hinge ? '<div class="hinge l"></div><div class="hinge r"></div>' : ''}</div>`;
 }
 
 /** The six kinds standing together, the nearer (lower) ones in front, on a soft glow. */
@@ -86,7 +99,7 @@ function kinds(set, shotsDir) {
   const width = (W * k.body) / KIND_BODY;
   const pets = KINDS.map((breed, i) => {
     const [x, y] = [W * k.at[i][0], H * k.at[i][1]];
-    return `<img class="kind" style="left:${x - width * KIND_FEET[0]}px;top:${y - width * KIND_FEET[1]}px;width:${width}px;z-index:${Math.round(k.at[i][1] * 100)}" src="file://${join(shotsDir, set.raw, `kinds-${breed}.png`)}">`;
+    return `<img class="kind" style="left:${x - width * KIND_FEET[0]}px;top:${y - width * KIND_FEET[1]}px;width:${width}px;z-index:${Math.round(k.at[i][1] * 100)}" src="file://${join(shotsDir, set.kindsFrom ?? set.raw, `kinds-${breed}.png`)}">`;
   });
   const top = H * Math.min(...k.at.map(([, y]) => y)) - width * 0.6;
   const bottom = H * Math.max(...k.at.map(([, y]) => y));
@@ -150,7 +163,7 @@ for (const [setName, set] of Object.entries(SETS)) {
   // A whole set replaces the last one, so a shot that has gone or moved doesn't linger.
   if (!names.length) for (const f of readdirSync(dir)) if (f.endsWith('.png')) rmSync(join(dir, f));
   // Each set is numbered by its own shots: a shot marked `only` is left out of the other device's set.
-  const setShots = LIST.filter((s) => !s.only || s.only === set.raw);
+  const setShots = LIST.filter((s) => !s.only || [].concat(s.only).includes(set.raw));
   const shots = setShots.filter((s) => !names.length || names.includes(s.name));
   await drive({ width: set.W, height: set.H, dpr: 1, outDir: tmp, quiet: true, base: 'http://localhost:8651/' }, async (d) => {
     for (const shot of shots) {

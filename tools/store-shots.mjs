@@ -2,14 +2,22 @@
 // with the game's own hooks, on a phone or iPad sized page with the real safe areas. tools/store-frame.mjs
 // then sets them in a device with a headline. Needs the dev server.
 //   node tools/store-shots.mjs <out dir> <phone|ipad> [dpr] [moment names...]
+// The iPhone Duo's are the real app on its simulator instead, staged the same way through the app's
+// Debug-only driver (tools/sim-drive.mjs): a Debug build installed and running, the Duo open and standing
+// like a laptop (portrait), and its udid in DUO:
+//   DUO=<udid> node tools/store-shots.mjs <out dir> duo - [moment names...]
+// Its kinds pictures are the phone's (they're drawn alone, not captured).
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { drive } from './drive.mjs';
+import { simDrive } from './sim-drive.mjs';
 
 const DEVICES = {
   // iPhone Pro Max and iPad Pro 13, the sizes the store's largest slots want.
   phone: { width: 440, height: 956, dpr: 3, safe: [62, 34] },
   ipad: { width: 1032, height: 1376, dpr: 2, safe: [32, 20] },
+  // The inner screen of an open iPhone Duo, display 3 to simctl.
+  duo: { sim: true, display: 3 },
 };
 
 // The six kinds for the lineup, each drawn alone on a clear background as kinds-<breed>.png: breed, coat,
@@ -58,10 +66,20 @@ const HOLD = `(() => {
     const c = document.getElementById('stage');
     const tx = Math.min(0, Math.max(v.w * (1 - z), toX - z * x));
     const ty = Math.min(0, Math.max(v.h * (1 - z), toY - z * y));
-    __game.g.resize(v.w, v.h, devicePixelRatio * z);
+    // In the app, at the density it draws at (game.js), which keeps the canvas within what iOS allows.
+    const dpr = window.webkit?.messageHandlers?.pockling ? v.dpr : devicePixelRatio;
+    __game.g.resize(v.w, v.h, dpr * z);
     c.style.transformOrigin = '0 0';
     c.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + z + ')';
     T.draw();
+  };
+  // On an iPhone Duo standing like a laptop, the camera stays where it is: the pet is shown standing whole on
+  // the floor below the crease, as the game keeps it (web/src/fold.js). Zooming in would take it across the
+  // crease, or its face down under the dock and off the frame. Anywhere else, it's __zoom.
+  window.__zoomFit = (z, x, y, toX = x, toY = y) => {
+    const c = __game.view.crease;
+    if (c && !c.vertical) return;
+    __zoom(z, x, y, toX, toY);
   };
 })()`;
 
@@ -117,7 +135,8 @@ const open = async (d, query) => {
 };
 
 /** The camera in z times, about the pet's feet unless at (page code) works out another point. */
-const zoom = (d, z, at = '__feet()') => d.js(`__zoom(${z}, ...${at})`);
+/** The camera in z times, about the pet's feet unless at (page code) works out another point. */
+const zoom = (d, z, at = '__feet()') => d.js(`__zoomFit(${z}, ...${at})`);
 
 /** A moment with the pet (breed and coat, as a query) pressing its nose to the glass. */
 const pressGlass = (pet) => async (d) => {
@@ -221,7 +240,7 @@ const MOMENTS = {
       const a = g.pet.anchors, b = s.friendPet.anchors;
       const left = a.center[0] - 125 * a.unit, right = b.center[0] + 125 * b.unit;
       const z = Math.min(1.4, (0.92 * v.w) / (right - left));
-      if (z > 1.02) __zoom(z, (left + right) / 2, __feet()[1]);
+      if (z > 1.02) __zoomFit(z, (left + right) / 2, __feet()[1]);
     })()`);
   },
 
@@ -315,10 +334,14 @@ const device = DEVICES[kind];
 const out = resolve(outArg, kind);
 mkdirSync(out, { recursive: true });
 const dpr = Number(dprArg ?? device.dpr);
-for (const name of names.length ? names : Object.keys(MOMENTS)) {
+// On the simulator, every moment but the kinds, which are the phone's.
+const all = Object.keys(MOMENTS).filter((m) => !device.sim || m !== 'kinds');
+if (device.sim && !process.env.DUO) throw new Error('DUO=<simulator udid> says which iPhone Duo simulator to use');
+const run = device.sim ? (fn) => simDrive({ udid: process.env.DUO, display: device.display, outDir: out }, fn) : (fn) => drive({ ...device, dpr, outDir: out, quiet: true }, fn);
+for (const name of names.length ? names : all) {
   const t0 = Date.now();
   let saved;
-  await drive({ ...device, dpr, outDir: out, quiet: true }, async (d) => {
+  await run(async (d) => {
     // A moment that saves its own pictures says which.
     saved = await MOMENTS[name](d);
     if (!saved) await d.shot(process.env.SHOT_AS ?? name);
