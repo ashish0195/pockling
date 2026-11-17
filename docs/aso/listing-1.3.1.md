@@ -101,3 +101,21 @@ from "In Simulator builds, talk-back plays a built-in test voice …". Everythin
   `01043594-c101-414d-9b25-5faef8058ba8`, poster frame 00:00:05:01 as before). 1.3's (`262aeae1`, MD5
   e15106be767898c844cc6555e299717b) was removed once the new one had processed.
 - **Hindi keywords** as above, read back identical (98 characters).
+- **Draft submission** `10130e00-52d7-44dd-8e47-d21c4d90997c` (Add for Review at 21:33 IST), READY_FOR_REVIEW
+  with version 1.3.1 (6) alone, not submitted: the orchestrator session submits it on the user's go. The custom
+  pages' submission (`e5291bba`, Kitten, Bunny and Dragon) is still Waiting for Review, apart from it. Read
+  back after Add for Review: release after approval, build 6 VALID, What's New hashes as above in all four
+  languages, review notes 3,891 characters, 10 + 10 + 10 screenshots (iPhone Duo, iPhone, iPad) and both
+  previews processed.
+- **Web game** at bitfold.9io.ai/pockling/ deployed from main 2c5f21d at 21:02 IST (the user's "Yes, after the
+  upload"); the server matched 700fea0 before and main's `web/` after.
+
+## Not in 1.3.1 (next version)
+
+- **Daily reminders** (the orchestrator's plan, approved for all four games): the user chose "Ship Duo version
+  now" in this session on 17 Nov, so they lead the next version.
+- **A URL scheme** for the "First Snow" in-app event: the event needs its snow, hat and scarf in an update
+  first (`docs/ASO.md`), so the scheme ships in that update.
+- **Custom pages:** once approved, each gets a new version with its Duo set from `store/pages/<page>/iphone-duo/`,
+  and Kitten's swaps 1.3's iPhone preview (with the tray's "Free") for the re-cut one.
+- es-MX and Hindi screenshot sets, a widget preview, an iPad preview and the pet bigger in the frame.
