@@ -12,6 +12,9 @@ is Waiting for Review.
 **How it was checked.** After saving, everything was read back from App Store Connect: the
 promotional texts by SHA-256, the keywords, and the order of every screenshot set.
 
+**Approved** by 18 Nov 2026 (submission `e5291bba` complete). **Version 2 of each page, with iPhone Duo
+media,** is below ("Version 2: iPhone Duo").
+
 **What's left out:**
 - **Icon test:** traffic doesn't allow one yet (`docs/ASO.md`).
 - **Price words:** none in the promotional texts or screenshots. On 16 Nov Apple rejected Bitfold 1.3
@@ -98,3 +101,35 @@ The media is on English (U.S.) only, as on the live page; the other three langua
 4. **Frame each page:** run `PAGE=kitten node tools/store-frame.mjs <shots> <out>/kitten all`, then
    the same for bunny and dragon. The page orders are in `PAGES` in that file.
 5. **Convert to JPEG:** `sips -s format jpeg -s formatOptions 90`.
+
+## Version 2: iPhone Duo (18 Nov 2026)
+
+Pockling 1.3.1 is made for iPhone Duo (`listing-1.3.1.md`), so once Apple approved the three pages, each got
+a version 2 with an iPhone Duo set. The user's "Yes, all three" came in the pockling-duo session.
+Entered on 18 Nov 2026 with "Create New Version", which copied:
+- the promotional text in all four languages (read back identical by SHA-256);
+- the English (U.S.) iPhone and iPad sets (identical by MD5 and order);
+- Kitten's preview.
+
+It didn't copy the keywords, which were restored from version 1 for every language and read back identical.
+No deep link, as before.
+
+| Page | Version 2 ID | Duo set (`APP_IPHONE_DUO`, English (U.S.)) |
+|---|---|---|
+| Kitten | `a10274bf-9bc2-49a2-bc6c-a33239bb8da3` | glass, walk, widget, love, feed, kinds, bath, talk, sleep, dress |
+| Bunny | `73315f1e-8512-4fcb-93a0-311ee35e4064` | glass-bunny, feed, dress, kinds, widget, love, bath, walk, talk, sleep |
+| Dragon | `6a3b1c99-b70c-4264-b1bb-be803ced9dd6` | glass-dragon, talk, bath, kinds, widget, love, feed, walk, sleep, dress |
+
+- **The Duo sets:** each page's iPhone order, from `docs/aso/store/pages/<page>/iphone-duo/` (2007 × 2853).
+  They're framed with `PAGE=<page> node tools/store-frame.mjs <raw> <out> duo` from the Duo captures
+  (`docs/AppStore.md`, "iPhone Duo"). All 30 are in App Store Connect with the same MD5s as the files, in order.
+- **Kitten's previews:**
+  - iPhone: the re-cut `store/preview/pockling-preview.mp4` (MD5 ffd6412e1a91059521982508af40db68), in place of
+    1.3's (e15106be…), whose food tray showed "Free" (Guideline 2.3.7);
+  - iPhone Duo: `store/preview/pockling-preview-duo.mp4` (MD5 82c092a3b0463eb53afd5f11617cedb5).
+  Bunny and Dragon still have no preview.
+- **Draft submission** `d9262cc2-1c6c-429b-8c17-d9575b578904` (Add for Review on 18 Nov 2026 at 13:37–13:38 IST)
+  holds the three version 2s and nothing else. It's READY_FOR_REVIEW and not submitted: the orchestrator session
+  checks it and clicks Submit. Read back after Add for Review: keywords, the 10 + 10 + 10 shots per page, and
+  Kitten's two previews (processed). Version 1 of each page stays live until its version 2 is approved.
+
