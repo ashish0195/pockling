@@ -191,3 +191,5 @@ SHA-256 bccc0b574f1e6242…). The new text's SHA-256 starts 4d32b4c24b441ae9.
   Your session has expired" (App Store Connect was failing account-wide that evening). The user signed in to
   Xcode again and said "Signed in, upload it" in this session.
 - **Uploaded** on 18 Nov 2026 at 12:53:16 IST ("Upload succeeded"), while 1.3.1 was In Review.
+- In App Store Connect as build `e8ae0d2b-42b0-4019-b3dc-ea71f5441c75`, VALID by 12:58 IST. Version 1.3.2 can
+  only be created once 1.3.1, In Review since that morning, leaves review.
