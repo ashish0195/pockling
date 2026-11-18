@@ -179,3 +179,15 @@ SHA-256 bccc0b574f1e6242…). The new text's SHA-256 starts 4d32b4c24b441ae9.
     carry-over flag are kept;
   - from **1.3.1 (6)** (1ba6bbe, in review), with the final build: the same, and the queue held the quirky
     lines (streak, nearly grown up, come-back, the echoing yawn, the sunset, 60% dust bunny, the crumb).
+
+## The build
+
+- **1.3.2 (7)** from main 102c2d2: archived unsigned (Xcode 27.2), the widget and then the app signed ad hoc
+  with their entitlements (push as `production`), exported to a folder first and checked: version 1.3.2 (7)
+  on the app and the widget, URL scheme `pockling`, `aps-environment` production, the App Group
+  `group.app.pockling.Pockling` on both, Apple Distribution (9X9HQVQ78G), 40 web files, the new pool in the
+  binary and the widget line gone. IPA 20,674,311 bytes, SHA-256 31ff38fa80d013ea….
+- The first export, on 17 Nov at 23:04 IST, failed: Apple answered "Bad Gateway", then "Authentication failed:
+  Your session has expired" (App Store Connect was failing account-wide that evening). The user signed in to
+  Xcode again and said "Signed in, upload it" in this session.
+- **Uploaded** on 18 Nov 2026 at 12:53:16 IST ("Upload succeeded"), while 1.3.1 was In Review.
