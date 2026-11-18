@@ -129,7 +129,8 @@ No deep link, as before.
   - iPhone Duo: `store/preview/pockling-preview-duo.mp4` (MD5 82c092a3b0463eb53afd5f11617cedb5).
   Bunny and Dragon still have no preview.
 - **Draft submission** `d9262cc2-1c6c-429b-8c17-d9575b578904` (Add for Review on 18 Nov 2026 at 13:37–13:38 IST)
-  holds the three version 2s and nothing else. It's READY_FOR_REVIEW and not submitted: the orchestrator session
-  checks it and clicks Submit. Read back after Add for Review: keywords, the 10 + 10 + 10 shots per page, and
+  holds the three version 2s and nothing else. The orchestrator session checked it and submitted it on 18 Nov
+  2026 at 13:40 IST (08:10:47Z): Waiting for Review. Its checks covered the Duo shots, Kitten's processed
+  previews, keyword counts matching version 1, and no price words in the promotional text. Read back after Add for Review: keywords, the 10 + 10 + 10 shots per page, and
   Kitten's two previews (processed). Version 1 of each page stays live until its version 2 is approved.
 
