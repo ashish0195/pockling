@@ -13,7 +13,7 @@ is Waiting for Review.
 promotional texts by SHA-256, the keywords, and the order of every screenshot set.
 
 **Approved** by 18 Nov 2026 (submission `e5291bba` complete). **Version 2 of each page, with iPhone Duo
-media,** is below ("Version 2: iPhone Duo").
+media,** was approved on 19 Nov 2026 at 14:37 IST and is live (below, "Version 2: iPhone Duo").
 
 **What's left out:**
 - **Icon test:** traffic doesn't allow one yet (`docs/ASO.md`).
@@ -133,4 +133,11 @@ No deep link, as before.
   2026 at 13:40 IST (08:10:47Z): Waiting for Review. Its checks covered the Duo shots, Kitten's processed
   previews, keyword counts matching version 1, and no price words in the promotional text. Read back after Add for Review: keywords, the 10 + 10 + 10 shots per page, and
   Kitten's two previews (processed). Version 1 of each page stays live until its version 2 is approved.
+- **Approved** on 19 Nov 2026. At 14:33 IST all three were still In Review. Submission `d9262cc2` was last
+  updated at 14:37 IST (09:07:51Z) and is COMPLETE, and each version 2 is APPROVED. Version 1 of each page is
+  REPLACED_WITH_NEW_VERSION, so the Duo sets are live.
+- **Kitten's Duo preview is banded:** a headline plate above the inner screen and a band below. Apple approved
+  it here and with 1.3.1. But by 19 Nov it had rejected Football Kick 1.2.1's Duo preview, which has the same
+  bands, under Guideline 2.3.4. So 1.3.2 went in without one (`listing-1.3.2.md`). Kitten's page keeps it while
+  version 2 is live. A version 3 should drop it, or swap in a full-frame Duo recording.
 
