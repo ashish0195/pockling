@@ -177,7 +177,7 @@ SHA-256 bccc0b574f1e6242…). The new text's SHA-256 starts 4d32b4c24b441ae9.
     `9io.comeback` were replaced by `9io.daily.1`–`7` at the first launch of 1.3.2; the save (pet, berries,
     streak, stamps, totals, owned, settings) is identical, and the install id, Reminders choice and 1.1
     carry-over flag are kept;
-  - from **1.3.1 (6)** (1ba6bbe, in review), with the final build: the same, and the queue held the quirky
+  - from **1.3.1 (6)** (1ba6bbe, then in review, live since 18 Nov), with the final build: the same, and the queue held the quirky
     lines (streak, nearly grown up, come-back, the echoing yawn, the sunset, 60% dust bunny, the crumb).
 
 ## The build
@@ -191,5 +191,29 @@ SHA-256 bccc0b574f1e6242…). The new text's SHA-256 starts 4d32b4c24b441ae9.
   Your session has expired" (App Store Connect was failing account-wide that evening). The user signed in to
   Xcode again and said "Signed in, upload it" in this session.
 - **Uploaded** on 18 Nov 2026 at 12:53:16 IST ("Upload succeeded"), while 1.3.1 was In Review.
-- In App Store Connect as build `e8ae0d2b-42b0-4019-b3dc-ea71f5441c75`, VALID by 12:58 IST. Version 1.3.2 can
-  only be created once 1.3.1, In Review since that morning, leaves review.
+- In App Store Connect as build `e8ae0d2b-42b0-4019-b3dc-ea71f5441c75`, VALID by 12:58 IST. Version 1.3.2 could
+  only be created once 1.3.1, In Review since that morning, left review (it went live that night, below).
+
+## As entered in App Store Connect (19 Nov 2026)
+
+1.3.1 went live on 18 Nov 2026 at 22:18 IST (the App Store's public lookup). By the next morning App Store
+Connect had signed the user out in Chrome; they signed in again and answered "Signed in" in this session. The
+go-ahead for this draft is their "Signed in, upload it" of 18 Nov (upload build 7, then enter 1.3.2 as a draft,
+Add for Review only, once 1.3.1 leaves review).
+
+- **Version 1.3.2** (`70ea0dc7-0b31-4de7-9574-d8fbae1b27b1`), created at 14:24 IST from 1.3.1, which copied its
+  text, media and review details: the iPhone Duo, iPhone and iPad sets (10 screenshots each) and both previews
+  (iPhone and iPhone Duo), in English (U.S.), which the other languages use, all processed. Release
+  automatically after approval, as before; copyright "2026 9io".
+- **Build 1.3.2 (7)** (`e8ae0d2b…`) attached: VALID, no non-exempt encryption.
+- **What's New** as above in en-US, en-GB, es-MX and hi, read back and checked by SHA-256 against this file
+  (en 5bfe9138f9b04d8c, es 0139dda4b3dff37c, hi 729e9052753d9c16, first 16 hex digits).
+- **Review notes** as above. The copied text was 1.3.1's as live (3,891 characters, bccc0b574f1e6242…), the
+  same text the new notes were written from. Now 3,968 characters, 4d32b4c24b441ae9…, read back identical.
+  Sign-in required: off.
+- No price word in any description, keyword field, promotional text, What's New, name or subtitle
+  (Guideline 2.3.7).
+- **Draft submission** `b8d57a32-b326-4aad-9d07-64614f959068` (Add for Review at 14:26 IST): READY_FOR_REVIEW
+  with version 1.3.2 (7) alone, not submitted. App Store Connect's page shows "1.3.2 Ready for Review" and one
+  draft submission, with no warnings. The orchestrator submits it. The custom pages' version 2 (`d9262cc2`) is
+  In Review, apart from it.
