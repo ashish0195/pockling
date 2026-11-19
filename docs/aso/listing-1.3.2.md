@@ -217,3 +217,20 @@ Add for Review only, once 1.3.1 leaves review).
   with version 1.3.2 (7) alone, not submitted. App Store Connect's page shows "1.3.2 Ready for Review" and one
   draft submission, with no warnings. The orchestrator submits it. The custom pages' version 2 (`d9262cc2`) is
   In Review, apart from it.
+
+## Submitted without the Duo preview (19 Nov 2026, 15:29 IST)
+
+- **Why:** overnight, App Review rejected Football Kick 1.2.1 under 2.3.4 for "framing around the video screen
+  capture" in its iPhone Duo preview. Apple's attached screenshot showed the recording boxed between caption bands.
+  `pockling-preview-duo.mp4` uses the same banded layout, though 1.3.1 and the Kitten page v2 passed with it.
+- **What the orchestrator did:** on the user's "Yes, fix and resubmit", it took the version out of draft `b8d57a32`.
+  Media is locked while the version is Ready for Review in a draft, so it then deleted the Duo preview and put the
+  version back. The same draft was submitted at 09:59:13Z and is WAITING_FOR_REVIEW.
+- **What 1.3.2 carries now:**
+  - en-US iPhone preview: 1, the full-screen capture;
+  - Duo preview: none;
+  - screenshots: iPhone 10, iPad 10, Duo 10.
+
+  Build 7 is unchanged.
+- The live 1.3.1 page and the Kitten page keep the banded Duo preview until their next versions. A new Duo preview
+  would have to be a full-frame capture.
