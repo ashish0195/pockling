@@ -67,4 +67,6 @@ user's OK.
 ## Release
 
 1.4.1 can be submitted only once 1.4 (Waiting for Review since 25 Nov 22:01 IST) is approved, and only with
-the user's OK. The live-events session submits the in-app event with it.
+the user's OK. The in-app event goes in the same submission, added by the live-events session (see
+`listing-1.5.md`, Release: 1.5 may carry the festival in place of 1.4.1, and this archive has a widget bug that 1.5
+fixes).

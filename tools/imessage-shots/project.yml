@@ -1,0 +1,30 @@
+name: MsgShots  # tools/imessage-shots: a UI test that takes the iPad iMessage screenshots (DriverUITests)
+options:
+  bundleIdPrefix: local.msgshots
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    GENERATE_INFOPLIST_FILE: YES
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  Driver:
+    type: application
+    platform: iOS
+    sources: [Driver]
+    settings:
+      base:
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+  DriverUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [DriverUITests]
+    dependencies:
+      - target: Driver
+    settings:
+      base:
+        TEST_TARGET_NAME: Driver
