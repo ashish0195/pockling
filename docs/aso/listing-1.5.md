@@ -95,7 +95,7 @@ the festival once 1.4 is approved?".
   1. Create version 1.5 from 1.4, which copies its text, media and review details.
   2. Enter What's New in four languages and the review notes paragraph above. Add the iMessage screenshots
      (English (U.S.)): `store/imessage-6.3/` into `IMESSAGE_APP_IPHONE_61` (as the main iPhone set is
-     `APP_IPHONE_61`), `store/imessage-ipad-13/` into `IMESSAGE_APP_IPAD_PRO_3GEN_129`. Attach build 10, and release
+     `APP_IPHONE_61`), `store/imessage-ipad-13/` into `IMESSAGE_APP_IPAD_PRO_3GEN_129`. Attach build 11 (not 10), and release
      automatically.
   3. Add for Review, which makes the draft submission. Then message the live-events session with the version
      and the draft's id: it adds the Snow Festival event (6839282325) to that draft and says when it's in.
@@ -109,6 +109,14 @@ the festival once 1.4 is approved?".
   "💌 Mochi came to visit!" with "Hatch your own" and "Get Pockling for iPhone".
 - **Found while checking:** visit links waited the whole time the hatch scene showed. So a new player who got the
   app from a friend's visit, opened it to the eggs and tapped "See Mochi there" saw nothing happen, and a web tab
-  at the eggs ignored a new #visit=. Fixed on main in ef87d21: only mid-hatch waits now, and smoke `links` checks
-  it. Build 10 and the live web game don't have the fix. 1.5 (11) and a web redeploy would carry it, on the
-  user's OK.
+  at the eggs ignored a new #visit=. Fixed in ef87d21: only mid-hatch waits now, and smoke `links` checks it.
+- **Build 11 and the redeploy**, on the user's "Yes, both" (25 Nov):
+  - 1.5 (11) was archived from main 93ddfce, the same as build 10 plus that fix. It was signed and checked the
+    same way: 1.5 (11) on all three bundles, the App Group on each, push `production`, and the fix inside. IPA
+    21,381,893 bytes, SHA-256 d85a9275857da5ca…. Uploaded at 23:54:30 IST.
+  - **Build 11 is the one to submit**, in place of build 10. The upgrade tests above were on build 10; 11 changes
+    only how visit links are let in.
+  - The web game was redeployed at 23:54:43 IST from 93ddfce. Only `src/app.js` changed, and all 48 files match
+    main.
+  - Checked live: a visit link opens Mochi's visit fresh, in a tab already at the eggs, and when navigated to in a
+    running tab.
