@@ -13,11 +13,36 @@ import Foundation
 enum PetLinks {
     static let scheme = "pockling"
     /// "pet" is also the `open` key of every reminder (ReminderPlan.open).
-    static let keys: Set<String> = ["pet", "firstsnow", "snowfestival"]
+    static let keys: Set<String> = ["pet", "firstsnow", "snowfestival", "visit"]
 
     private static weak var host: GameHost?
     /// A link or reminder tapped before the game's host exists (a cold launch) waits for it.
     private static var waiting: String?
+    /// A friend's pet from a visit link (pockling://visit?c=…, web/src/visit.js), waiting the same way.
+    private static var waitingVisit: String?
+
+    /// The pet a visit link carries: its code, as web/src/visit.js makes it, or nil. The game checks it again.
+    nonisolated static func visitCode(for url: URL) -> String? {
+        guard key(for: url) == "visit",
+              let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "c" })?.value,
+              (1...400).contains(code.count),
+              code.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil else { return nil }
+        return code
+    }
+
+    /// From SwiftUI's `onOpenURL`: a visit shows the friend's pet; any other link, the player's own.
+    static func open(url: URL) {
+        if let code = visitCode(for: url) {
+            if let host {
+                host.showVisit(code)
+            } else {
+                waitingVisit = code
+            }
+            return
+        }
+        let key = key(for: url)
+        open(key == "visit" ? "pet" : key)
+    }
 
     /// The key a link carries, or nil if it isn't one of the app's links: pockling://pet, pockling://pet/,
     /// pockling:pet and pockling://PET all give "pet".
@@ -42,6 +67,10 @@ enum PetLinks {
         if let key = waiting {
             waiting = nil
             newHost.showPet(key)
+        }
+        if let code = waitingVisit {
+            waitingVisit = nil
+            newHost.showVisit(code)
         }
     }
 }

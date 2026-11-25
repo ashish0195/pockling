@@ -85,6 +85,31 @@ export function purr(on_) {
 
 // ── Sharing ──────────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Shares a link (a visit, web/src/visit.js) with words before it: the app's share sheet, the browser's, or the
+ * clipboard. Returns 'shared', 'cancelled', 'copied' or 'failed'.
+ */
+export async function shareLink(text, url) {
+  if (bridge) {
+    send('shareLink', { text, url });
+    return 'shared';
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({ text, url });
+      return 'shared';
+    } catch (e) {
+      if (e.name === 'AbortError') return 'cancelled';
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${text} ${url}`);
+    return 'copied';
+  } catch {
+    return 'failed';
+  }
+}
+
 /** Shares or saves a picture. blob is a PNG; returns how it went. */
 export async function shareImage(blob, text, filename) {
   if (bridge) {

@@ -23,6 +23,13 @@ struct PetLinkTests {
         #expect(PetLinks.keys.contains(ReminderPlan.open))
     }
 
+    @Test func aVisitLinkCarriesItsPet() {
+        #expect(PetLinks.visitCode(for: URL(string: "pockling://visit?c=eyJuIjoiUGlwIn0")!) == "eyJuIjoiUGlwIn0")
+        #expect(PetLinks.visitCode(for: URL(string: "pockling://visit")!) == nil)
+        #expect(PetLinks.visitCode(for: URL(string: "pockling://visit?c=no%20spaces")!) == nil)
+        #expect(PetLinks.visitCode(for: URL(string: "pockling://pet?c=abc")!) == nil)
+    }
+
     @Test func anythingElseLeadsNowhere() {
         #expect(key("pockling://") == nil)
         #expect(key("pockling://nowhere") == nil)

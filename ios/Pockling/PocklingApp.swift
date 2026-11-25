@@ -9,7 +9,7 @@ struct PocklingApp: App {
         WindowGroup {
             GameScreen()
                 // pockling://pet and pockling://firstsnow (PetLinks.swift) show the pet, as reminders do.
-                .onOpenURL { url in PetLinks.open(PetLinks.key(for: url)) }
+                .onOpenURL { url in PetLinks.open(url: url) }
         }
     }
 }

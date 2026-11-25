@@ -6,7 +6,8 @@ import { applySettings, askForRatingNicely, celebrate, defineRoomArt, game, grew
 import { foodThumb } from '../bake/food.js';
 import { OUTFIT_ART } from '../bake/outfits.js';
 import { festivalNow, festivalSettings, festivalSoon, festivalState, walkFlakesLeft, windowFlakeDue } from '../festival.js';
-import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting, track } from '../platform.js';
+import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting, shareLink, track } from '../platform.js';
+import { visitLink } from '../visit.js';
 import { ageDays, buyOutfit, buyRoom, levelOf, levelProgress, mood, stageOf, tasteOf, trait, useRoom, wear } from '../state.js';
 import { dayNumber } from '../util.js';
 
@@ -661,8 +662,18 @@ export const ui = {
         <div class="stat"><b>${s.totals.walked}</b><span>walks</span></div>
         <div class="stat"><b>${s.totals.played}</b><span>games</span></div>
       </div>
-      <button class="btn" data-action="photo">📸 Take a photo to share</button>`);
+      <button class="btn" data-action="photo">📸 Take a photo to share</button>
+      <button class="btn alt" data-action="sendVisit">💌 Send ${esc(p.name)} to visit a friend</button>`);
     return wrap;
+  },
+
+  /** A visit link for a friend (visit.js): whoever opens it meets this very pet, and can make their own. */
+  async on_sendVisit() {
+    const p = game.state.pet;
+    const how = await shareLink(`${p.name} wants to come and visit you! Meet ${p.name}, and hatch a Pockling of your own:`, visitLink(p));
+    track('visit_share', { how });
+    if (how === 'copied') this.toast('Link copied. Send it to a friend! 💌');
+    else if (how === 'failed') this.toast("Couldn't share the link this time");
   },
 };
 

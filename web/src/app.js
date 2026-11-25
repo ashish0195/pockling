@@ -7,6 +7,8 @@ import { applySettings, checkDaily, game, goTo, initGame, makePet, measure, save
 import { home } from './scenes/home.js';
 import { hatch } from './scenes/hatch.js';
 import { makeover } from './scenes/makeover.js';
+import { visit } from './scenes/visit.js';
+import { visitFromHash } from './visit.js';
 import { bath, defineBathTools } from './scenes/bath.js';
 import { walk } from './scenes/walk.js';
 import { fetchGame } from './scenes/fetch.js';
@@ -98,13 +100,27 @@ function boot() {
   // A reminder or a pockling:// link was opened (ios/Pockling/PetLinks.swift): show the pet. A menu closes,
   // and a game left open since the last visit gives way to the pet saying hello at home. Before an egg has
   // hatched, the eggs are the place to be anyway.
-  on('open', ({ to } = {}) => {
+  on('open', ({ to, code } = {}) => {
     const scene = game.scene;
+    // A visit link opened in the app: the friend's pet, wherever the game was (not mid-hatch).
+    if (to === 'visit' && code && scene && scene !== hatch) {
+      ui.hideSheet();
+      fadeTo(visit, { code });
+      return;
+    }
     if (!scene || !game.state.pet || scene === hatch) return;
     ui.hideSheet();
     if (scene !== home) fadeTo(home, { greet: true });
     // The Snow Festival's App Store event (pockling://snowfestival, and 1.3.2's pockling://firstsnow): its card.
     if (to === 'snowfestival' || to === 'firstsnow') setTimeout(() => ui.on_festival(null, 'link'), scene !== home ? 800 : 150);
+  });
+  // A visit link opened in a tab where the game is already running only changes the # (visit.js).
+  window.addEventListener('hashchange', () => {
+    const code = visitFromHash(location.hash);
+    if (code && game.scene && game.scene !== hatch) {
+      ui.hideSheet();
+      fadeTo(visit, { code });
+    }
   });
   // The live events list: at launch, and on coming back to the game, when it's stale (festival.js).
   const festivalCheck = () => refreshFestival(() => game.now()).then(() => {
@@ -149,7 +165,15 @@ function applyDemo() {
 
 function start() {
   const state = game.state;
-  if (!state.pet) {
+  // A visit link (visit.js): the friend's pet first, whether or not this player has one yet.
+  const visiting = !demo && visitFromHash(location.hash);
+  if (visiting) {
+    if (state.pet) {
+      tickState();
+      makePet();
+    }
+    goTo(visit, { code: visiting });
+  } else if (!state.pet) {
     goTo(hatch);
   } else {
     tickState();
@@ -277,7 +301,7 @@ function listen() {
 
 // Hooks for tests and recordings.
 window.__game = game;
-window.__scenes = { home, hatch, makeover, bath, walk, fetchGame, snackGame, hideGame };
+window.__scenes = { home, hatch, makeover, visit, bath, walk, fetchGame, snackGame, hideGame };
 window.__state = { trait, stageOf, BREED_IDS };
 window.__talk = talkMode;
 window.__audio = audio;

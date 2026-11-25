@@ -939,3 +939,7 @@ button:focus-visible { outline: 3px solid var(--pink-deep); outline-offset: 2px;
 /* 5.9:1 on the tile's white. */
 .tile.reward.on small { color: #1f6f56; }
 .festival-today { margin: 12px 0 14px; font-weight: 800; }
+
+/* A visit from a friend's pet (web/src/scenes/visit.js). */
+#hatch.visit .btn + .btn { margin-top: 10px; }
+.visit-open { display: inline-block; margin-top: 12px; padding: 8px 12px; color: var(--soft); font-weight: 800; font-size: 14px; text-decoration: underline; }

@@ -66,6 +66,11 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         emit("open", ["to": key])
     }
 
+    /// A friend's pet from a visit link (web/src/visit.js): the game shows it waving.
+    func showVisit(_ code: String) {
+        emit("open", ["to": "visit", "code": code])
+    }
+
     // MARK: Messages from the game
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -102,6 +107,8 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
             haptics.purr(body["on"] as? Bool ?? false)
         case "share":
             share(png: body["png"] as? String ?? "", text: body["text"] as? String ?? "")
+        case "shareLink":
+            shareLink(text: body["text"] as? String ?? "", url: body["url"] as? String ?? "")
         case "open":
             if let text = body["url"] as? String, let url = URL(string: text) { UIApplication.shared.open(url) }
         case "pet":
@@ -259,6 +266,19 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         guard let data = Data(base64Encoded: png), let image = UIImage(data: data) else { return }
         guard let top = webView.window?.rootViewController?.topmost else { return }
         let sheet = UIActivityViewController(activityItems: [PetCardShare(image: image, text: text), text], applicationActivities: nil)
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = webView
+            popover.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 1, height: 1)
+            popover.permittedArrowDirections = []
+        }
+        top.present(sheet, animated: true)
+    }
+
+    /// A visit link for a friend (web/src/visit.js): the words and the link, so Messages shows its preview.
+    private func shareLink(text: String, url: String) {
+        guard let link = URL(string: url), link.scheme == "https", link.host() == "bitfold.9io.ai" else { return }
+        guard let top = webView.window?.rootViewController?.topmost else { return }
+        let sheet = UIActivityViewController(activityItems: [text, link], applicationActivities: nil)
         if let popover = sheet.popoverPresentationController {
             popover.sourceView = webView
             popover.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 1, height: 1)
