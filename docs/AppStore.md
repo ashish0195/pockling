@@ -171,7 +171,7 @@ node tools/make-art.mjs store build/appstore/creative
 | Product page header | `creative/header-3840x1646.png` | 3840x1646 |
 | Search results | `creative/search-3840x2560.jpg` | 3840x2560 |
 
-The headlines are in `tools/store-frame.mjs`. Since the ASO update (14 Nov 2026, `docs/ASO.md`) the ten shots are `01-glass` … `10-dress`: the first says "Your cute / virtual pet", `04-kinds` stands the six pets together (each drawn alone by `store-shots.mjs`, grouped by `store-frame.mjs`), the phone is larger and some scenes zoom the game's camera so the pet reads at search size, and "Tap the egg" is gone. The preview opens on the nose on the glass with "Your cute / virtual pet" and runs 29.5 s. From 1.3.1 its fish is thrown up to the pet as a tap on the food tray does, with the tray out of view: the tray's free foods say "Free", which App Review counts as a price in a preview (Guideline 2.3.7). The approved set, as JPEGs, the preview and the creative images are committed in `docs/aso/store/`. A busy machine makes `tools/drive.mjs` time out (15 s for Chrome, 12 s for the game); retry, or run when it's quiet.
+The headlines are in `tools/store-frame.mjs`. Since the ASO update (14 Nov 2026, `docs/ASO.md`) the ten shots are `01-glass` … `10-dress`: the first says "Your cute / virtual pet", `04-kinds` stands the six pets together (each drawn alone by `store-shots.mjs`, grouped by `store-frame.mjs`), the phone is larger and some scenes zoom the game's camera so the pet reads at search size, and "Tap the egg" is gone. The preview opens on the nose on the glass with "Your cute / virtual pet" and runs 29.5 s. From 1.3.1 its fish is thrown up to the pet as a tap on the food tray does, with the tray out of view: the tray's free foods say "Free", which App Review counts as a price in a preview (Guideline 2.3.7). The approved set, as JPEGs, the preview and the creative images are committed in `docs/aso/store/`. A busy machine makes `tools/drive.mjs` time out (15 s for Chrome, 12 s for the game); retry, or run when it's quiet. From 1.4 the second is `02-make`, the "Make it yours" studio ("Make your own / one-of-a-kind pet"), and the kinds stand together only on the custom pages (`docs/aso/listing-1.4.md`).
 
 ### iPhone Duo (from 1.3.1)
 
@@ -196,7 +196,8 @@ To make them again:
 1. Build Debug for the simulator, install it on an iPhone Duo simulator (the iOS 27.2 iPhone Duo runtime,
    README.md) and launch it with `SIMCTL_CHILD_NINEIO_BASE=http://127.0.0.1:9/`, so nothing reaches 9io.
 2. Open the Duo and turn it to portrait, so it stands like a laptop.
-3. `DUO=<udid> node tools/store-shots.mjs build/appstore/raw duo - glass love feed bath walk talk sleep dress`
+3. `DUO=<udid> node tools/store-shots.mjs build/appstore/raw duo - glass make love feed bath walk talk sleep dress`
+   (a fresh install for `make`, which hatches an egg)
    (and `glass-bunny glass-dragon` for the custom pages), and `node tools/store-shots.mjs build/appstore/raw phone 3 kinds`.
 4. For the widget shot, give it Mochi's save as in docs/ASO.md, set the status bar to 9:41
    (`xcrun simctl status_bar <udid> override --time 9:41`), add the medium and small widgets to the inner

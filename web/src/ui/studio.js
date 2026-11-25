@@ -235,7 +235,9 @@ export const studio = {
       // How tall and wide it is for each unit of scale: its reach (fold.js, a grown pet at scale 1), by its stage.
       const reach = reachOf(spec);
       const per = this.pet.stage.scale / 1.05;
-      const most = book ? Math.min(this.rest.scale * 1.25, (v.stage.w / 2 - 12) / (reach.side * 1.06 * per)) : this.rest.scale;
+      // Up to a third bigger than when it hatched, as far as there's room: the creation is the star here.
+      const width = book ? v.stage.w : v.w;
+      const most = Math.min(this.rest.scale * 1.3, (width / 2 - 12) / (reach.side * 1.06 * per));
       const scale = Math.max(this.rest.scale * 0.55, Math.min(most, (bottom - top) / (reach.up * per)));
       this.onLift({ y: bottom, scale });
     });

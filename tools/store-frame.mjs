@@ -13,6 +13,8 @@ import { drive } from './drive.mjs';
 // The words in *stars* are picked out in the accent colour.
 const SHOTS = [
   { name: 'glass', title: 'Your cute\n*virtual pet*', from: '#fff4d1', to: '#ffcf8f' },
+  // 1.4: create your own pet, in the studio just after hatching.
+  { name: 'make', title: 'Make your own\n*one-of-a-kind pet*', from: '#f6ecff', to: '#d6c2ff' },
   // 1.3's widget: a real Home Screen captured on an iPhone 17 Pro Max simulator, not by store-shots.mjs
   // (docs/aso/store/captures/, docs/ASO.md), and on the iPhone Duo's simulator for its set. Not on iPad: on an
   // iPad Home Screen the widget is too small to read.
@@ -40,7 +42,10 @@ const PAGES = {
 };
 const PAGE = process.env.PAGE;
 if (PAGE && !PAGES[PAGE]) throw new Error(`no page ${PAGE}: ${Object.keys(PAGES).join(', ')}`);
-const LIST = PAGE ? PAGES[PAGE].map((s) => (typeof s === 'string' ? SHOTS.find((x) => x.name === s) : s)) : SHOTS;
+// The main set (1.4): the studio comes second, in place of the six kinds standing together, which the custom
+// pages keep.
+const MAIN = ['glass', 'make', 'widget', 'love', 'feed', 'bath', 'walk', 'talk', 'hide', 'sleep', 'dress'];
+const LIST = (PAGE ? PAGES[PAGE] : MAIN).map((s) => (typeof s === 'string' ? SHOTS.find((x) => x.name === s) : s));
 
 // The kinds, as tools/store-shots.mjs draws them (kinds-<breed>.png), in the headline's order, each with
 // its feet at KIND_FEET of the picture's width across and down and its body KIND_BODY of it wide.

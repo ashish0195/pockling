@@ -317,6 +317,20 @@ const MOMENTS = {
     return saved;
   },
 
+  /** Make it yours (1.4): the studio just after hatching, a pet like no other on the stage. */
+  async make(d) {
+    await d.open('web/', 2500);
+    await d.js(HOLD);
+    const egg = await d.js(`(() => { const e = T.scene.eggs[0]; return [e.x, e.y]; })()`);
+    await d.js(`T.tap(${egg[0]}, ${egg[1]}); T.click('#hatchBtn'); __run(2)`);
+    const w = await d.js(`T.scene.spot()`);
+    for (let i = 0; i < 6; i++) await d.js(`T.tap(${w[0]}, ${w[1]}); __run(0.25)`);
+    await d.js(`__run(6)`);
+    await d.waitFor(`document.getElementById('studioDone')`);
+    await d.js(`T.click('[data-tab="ears"]'); T.click('[data-ears="bunling"]'); T.click('[data-tab="tail"]'); T.click('[data-tail="foxling"]'); T.click('[data-tab="wings"]'); T.click('[data-wings="yes"]'); T.click('[data-tab="mark"]'); T.click('[data-mark="socks"]'); T.click('[data-tab="colour"]'); T.click('[data-palette="bunling.lilac"]'); __run(3)`);
+    await d.sleep(300);
+  },
+
   /** The egg bursting open. */
   async hatch(d) {
     await d.open('web/', 2500);
