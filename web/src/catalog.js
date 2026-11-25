@@ -98,9 +98,174 @@ export const BREEDS = {
 
 export const BREED_IDS = Object.keys(BREEDS);
 
+/** A pet's coat: its breed's, with its own look (below) painted over it if it has one. */
 export function coatOf(pet) {
   const breed = BREEDS[pet.breed];
-  return breed.coats.find((c) => c.id === pet.coat) ?? breed.coats[0];
+  const base = breed.coats.find((c) => c.id === pet.coat) ?? breed.coats[0];
+  return pet.look ? lookCoat(pet.look, base) : base;
+}
+
+// ── Make it yours ────────────────────────────────────────────────────────────────────────────────
+// A pet hatches as its breed, in one of the breed's coats. Right after, in the studio, and later in the
+// Makeover, the player can give it any breed's ears and tail, wings, any palette, a marking and an eye
+// colour. That's saved as pet.look, every field optional; a pet without one draws exactly as its breed and
+// coat always have. Whatever it looks like, it stays the breed it hatched as: its voice, its tastes, the
+// Drakling's sparkle sneeze. The fur's noise comes from breed, coat and seed (bake/pet.js petSeed), none of
+// which a look changes, so restyling a pet keeps its fluff where it was.
+
+/** Every coat's colours as a palette any pet can wear, then a few no breed has. */
+export const PALETTES = [
+  ...BREED_IDS.flatMap((b) => BREEDS[b].coats.map((c) => ({
+    id: `${b}.${c.id}`, name: c.name, fur: c.fur, belly: c.belly, inner: c.inner, nose: c.nose, cheek: c.cheek, iris: c.iris, wing: c.wing, horn: c.horn,
+  }))),
+  { id: 'lemon', name: 'Lemon', fur: ['#b8901a', '#ebc43c', '#ffe27f', '#fff8d8'], belly: '#fffbea', inner: '#ffc0b8', nose: '#f08f8a', cheek: '#ff9f9a', iris: '#6a4a10', wing: '#9fe3d6', horn: '#fff3c9' },
+  { id: 'ocean', name: 'Ocean', fur: ['#1f7680', '#3aa9b0', '#7fd8d5', '#e0fbf9'], belly: '#f4fffe', inner: '#ffc6d3', nose: '#f0899f', cheek: '#ff9fb4', iris: '#1e4f6e', wing: '#ffd27a', horn: '#fff1c2' },
+  { id: 'bubblegum', name: 'Bubblegum', fur: ['#c2467e', '#ec6fa6', '#ffa3c9', '#ffe3ef'], belly: '#fff6fa', inner: '#ffd0e2', nose: '#e0558c', cheek: '#ff6fa3', iris: '#6a2350', wing: '#a9e8ff', horn: '#fff0c4' },
+  { id: 'galaxy', name: 'Galaxy', fur: ['#2b2463', '#4b3f9e', '#7f6fd6', '#c9c0fa'], belly: '#ece8ff', inner: '#f4b6e6', nose: '#e57fc8', cheek: '#ff8fd0', iris: '#f0c84a', wing: '#9ff0ff', horn: '#ffe9a8' },
+];
+
+/** Markings, painted by bake/pet.js bakeMark (socks are the paws, in pet.js). */
+export const MARKS = ['none', 'tabby', 'socks', 'patch', 'spots', 'muzzle', 'panda', 'fox'];
+
+/** Eye colours. */
+export const IRISES = [
+  { id: 'cocoa', hex: '#5a3518' }, { id: 'amber', hex: '#d6a02a' }, { id: 'leaf', hex: '#3f7a6a' }, { id: 'sky', hex: '#2f6d9a' },
+  { id: 'violet', hex: '#5a3fa0' }, { id: 'berry', hex: '#a34a6a' }, { id: 'mint', hex: '#2f9c7c' }, { id: 'night', hex: '#2d1a10' },
+];
+
+/** The fields a look may have, and the values each may take. Anything else is dropped on load. */
+export function cleanLook(look) {
+  if (!look || typeof look !== 'object') return null;
+  const out = {};
+  if (BREEDS[look.ears]) out.ears = look.ears;
+  if (BREEDS[look.tail]) out.tail = look.tail;
+  if (typeof look.wings === 'boolean') out.wings = look.wings;
+  if (paletteOf(look.palette)) out.palette = look.palette;
+  if (MARKS.includes(look.mark)) out.mark = look.mark;
+  if (IRISES.some((i) => i.id === look.iris)) out.iris = look.iris;
+  return Object.keys(out).length ? out : null;
+}
+
+/** A palette by id: one of PALETTES, or "hue:0" to "hue:359", any colour at all. */
+export function paletteOf(id) {
+  if (typeof id !== 'string') return null;
+  const m = /^hue:(\d{1,3})$/.exec(id);
+  if (m) return Number(m[1]) < 360 ? huePalette(Number(m[1])) : null;
+  return PALETTES.find((p) => p.id === id) ?? null;
+}
+
+const HUE_NAMES = [[12, 'Cherry'], [36, 'Apricot'], [58, 'Butter'], [90, 'Lime'], [150, 'Clover'], [185, 'Lagoon'], [215, 'Bluebell'], [250, 'Iris'], [285, 'Grape'], [320, 'Orchid'], [345, 'Rosy'], [360, 'Cherry']];
+
+/** Any colour: a fur ramp around one hue, dark to light, as soft as the painted coats. */
+export function huePalette(h) {
+  const c = (s, l, hue = h) => hslHex(hue, s, l);
+  return {
+    id: `hue:${h}`,
+    name: HUE_NAMES.find(([top]) => h < top)[1],
+    fur: [c(0.42, 0.38), c(0.56, 0.58), c(0.72, 0.77), c(0.86, 0.93)],
+    belly: c(0.7, 0.97),
+    inner: '#ffc2cf',
+    nose: '#ef8a9e',
+    cheek: '#ff9fb4',
+    iris: c(0.45, 0.28, (h + 200) % 360),
+    wing: c(0.75, 0.8, (h + 150) % 360),
+    horn: '#ffe9a8',
+  };
+}
+
+/** The coat a look paints over its breed's own coat. */
+export function lookCoat(look, base) {
+  const pal = look.palette ? paletteOf(look.palette) : null;
+  const coat = { ...base, custom: true };
+  if (pal) {
+    Object.assign(coat, { name: pal.name, fur: pal.fur, belly: pal.belly, inner: pal.inner, nose: pal.nose, cheek: pal.cheek, iris: pal.iris });
+    coat.wing = pal.wing ?? base.wing ?? '#ffc4d6';
+    coat.horn = pal.horn ?? base.horn ?? '#ffe9a8';
+  }
+  if (look.mark) coat.mark = look.mark;
+  if (pal || look.mark) {
+    // A marking's colour comes from the fur it's on (bakeMark, and bakeEar for flop and panda ears).
+    delete coat.markColor;
+    delete coat.tip;
+    if (coat.mark === 'panda') Object.assign(coat, { markColor: '#413e4b', inner: '#3d3a46', nose: '#2c2933' });
+    else if (coat.mark === 'fox') Object.assign(coat, { markColor: coat.belly, tip: coat.belly });
+    else if (coat.mark === 'muzzle') coat.markColor = coat.belly;
+    else if (coat.mark === 'patch') coat.markColor = mixHex(coat.fur[0], coat.fur[1], 0.5);
+    else if (coat.mark === 'spots') coat.markColor = mixHex(coat.fur[0], '#2d1b2e', 0.35);
+  }
+  const iris = IRISES.find((i) => i.id === look.iris);
+  if (iris) coat.iris = iris.hex;
+  return coat;
+}
+
+/**
+ * What a pet is built from: its breed, with its look's ears, tail and wings. Whiskers come with the cat's
+ * ears. Everything else (voice, tastes, fang, the egg) stays its breed's.
+ */
+export function partsOf(spec) {
+  const breed = BREEDS[spec.breed];
+  const look = spec.look;
+  if (!look) return breed;
+  const ears = BREEDS[look.ears] ? look.ears : null;
+  return {
+    ...breed,
+    ears: ears ? BREEDS[ears].ears : breed.ears,
+    tail: BREEDS[look.tail]?.tail ?? breed.tail,
+    wings: typeof look.wings === 'boolean' ? look.wings : Boolean(breed.wings),
+    whiskers: Boolean(ears ? BREEDS[ears].whiskers : breed.whiskers),
+  };
+}
+
+/**
+ * A look as short text, for links and the demo's ?look=: "ears:bunling,tail:foxling,wings:1,palette:hue:200".
+ * parseLook reads it back, keeping only what cleanLook allows.
+ */
+export function lookCode(look) {
+  const l = cleanLook(look);
+  if (!l) return '';
+  return Object.entries(l).map(([k, v]) => `${k}:${typeof v === 'boolean' ? Number(v) : v}`).join(',');
+}
+
+export function parseLook(code) {
+  if (typeof code !== 'string' || !code) return null;
+  const look = {};
+  for (const part of code.split(',')) {
+    const at = part.indexOf(':');
+    if (at < 1) continue;
+    const key = part.slice(0, at);
+    const value = part.slice(at + 1);
+    look[key] = key === 'wings' ? value === '1' || value === 'true' : value;
+  }
+  return cleanLook(look);
+}
+
+/** A random look that hangs together: for "Surprise me". `rnd` returns 0..1. */
+export function surpriseLook(rnd = Math.random) {
+  const one = (list) => list[Math.floor(rnd() * list.length)];
+  const palette = rnd() < 0.25 ? `hue:${Math.floor(rnd() * 360)}` : one(PALETTES).id;
+  return cleanLook({
+    ears: one(BREED_IDS),
+    tail: one(BREED_IDS),
+    wings: rnd() < 0.3,
+    palette,
+    mark: rnd() < 0.4 ? 'none' : one(MARKS),
+    iris: one(IRISES).id,
+  });
+}
+
+function hslHex(h, s, l) {
+  const a = s * Math.min(l, 1 - l);
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(v * 255).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function mixHex(a, b, t) {
+  const p = (hex, i) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+  return `#${[0, 1, 2].map((i) => Math.round(p(a, i) + (p(b, i) - p(a, i)) * t).toString(16).padStart(2, '0')).join('')}`;
 }
 
 /** Life stages, by days of care. */

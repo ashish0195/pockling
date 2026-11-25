@@ -32,7 +32,7 @@ function glassAt(share, at, lo, hi, dip = 0) {
     // tools/record-clips.mjs moves it beside the words on 9io.ai/games with stageX.
     return { cx: game.stageX ?? view.w / 2, big, targetY: view.h * at + GROUND * big * s };
   }
-  const reach = reachOf(game.state.pet.breed);
+  const reach = reachOf(game.state.pet);
   if (!c.vertical) {
     // Its face a little above its middle, and its feet GROUND below that.
     const face = c.a * 0.45;

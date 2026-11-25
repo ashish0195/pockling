@@ -1,13 +1,14 @@
-// The first few minutes: pick an egg, tap it until it cracks, meet what comes out, give it a name.
-// This is the moment people fall for it, so it's staged with some care.
+// The first few minutes: pick an egg, tap it until it cracks, meet what comes out, make it yours, give it a
+// name. This is the moment people fall for it, so it's staged with some care.
 import { Actor } from '../actor.js';
 import { audio } from '../audio.js';
 import { bakeCrack, bakeEgg } from '../bake/props.js';
-import { BREEDS, BREED_IDS } from '../catalog.js';
+import { BREEDS, BREED_IDS, coatOf } from '../catalog.js';
 import { CREASE_GAP, reachOf } from '../fold.js';
 import { adoptPet, bakeScale, fadeTo, game, save } from '../game.js';
 import { Pet } from '../pet.js';
 import { haptic } from '../platform.js';
+import { studio } from '../ui/studio.js';
 import { clamp, hash, lerp, pick, rand, smooth, TAU } from '../util.js';
 import { home } from './home.js';
 
@@ -37,6 +38,7 @@ export const hatch = {
     this.topShell = null;
     this.pet = null;
     this.actor = null;
+    this.fit = null;
     game.ui.show('none');
     this.showPick();
   },
@@ -108,7 +110,7 @@ export const hatch = {
       }
     } else if (this.phase === 'crack') {
       this.tapEgg(x, y);
-    } else if (this.phase === 'meet' && this.actor && !this.actor.busy) {
+    } else if ((this.phase === 'meet' || this.phase === 'studio') && this.actor && !this.actor.busy) {
       const part = this.pet.hit(x, y);
       if (part === 'nose') this.actor.play(this.actor.boop());
       else if (part) this.actor.play(this.actor.giggle());
@@ -195,7 +197,7 @@ export const hatch = {
       // On an open iPhone Duo, it stands between the title and the name (the HUD is zoomed there), and standing
       // like a laptop, on the upright half (see spot()). Its ears stay under the title.
       a.y = view.crease.vertical ? Math.min(view.h * 0.66, view.h - 232 * view.ui - view.safeBottom) : view.crease.a - CREASE_GAP - 16 * view.u;
-      a.scale = Math.min(1.32 * view.u, (a.y - 120 * view.ui) / (reachOf(this.spec.breed).up * 1.06));
+      a.scale = Math.min(1.32 * view.u, (a.y - 120 * view.ui) / (reachOf(this.spec).up * 1.06));
     }
     pet.setFace('sleep');
     pet.settle();
@@ -230,12 +232,35 @@ export const hatch = {
     yield* a.hop(38, 0.32, { sound: false });
     a.relax('smile');
     pet.lookIn = 1;
-    this.askName();
+    this.makeItYours();
+  },
+
+  /** Make it yours: change anything about the pet that just hatched, while it watches and reacts. */
+  makeItYours() {
+    this.phase = 'studio';
+    this.restY = this.actor.y;
+    this.restScale = this.actor.scale;
+    studio.open({
+      pet: this.pet,
+      actor: this.actor,
+      spec: this.spec,
+      title: 'Make it yours ✨',
+      intro: 'Pick its colours, ears and tail. Even wings! It will love whatever you choose.',
+      keep: 'Keep it like this',
+      onLift: (fit) => { this.fit = fit; },
+      onDone: (look) => {
+        if (look) this.spec.look = look;
+        else delete this.spec.look;
+        this.phase = 'meet';
+        this.fit = { y: this.restY, scale: this.restScale };
+        this.askName();
+      },
+    });
   },
 
   askName() {
     const b = BREEDS[this.spec.breed];
-    const coat = b.coats.find((c) => c.id === this.spec.coat);
+    const coat = coatOf(this.spec);
     const picks = [...NAMES].sort(() => Math.random() - 0.5).slice(0, 4);
     document.getElementById('layer').innerHTML = `
       <div id="hatch-top" style="top:calc(var(--safe-t) + 22px)">
@@ -289,6 +314,12 @@ export const hatch = {
     this.t += dt;
     fx.update(dt);
     if (this.actor) this.actor.update(dt);
+    // Into the room the studio leaves it (ui/studio.js lift), and back for its name.
+    if (this.actor && this.fit) {
+      const k = Math.min(1, dt * 7);
+      this.actor.y += (this.fit.y - this.actor.y) * k;
+      this.actor.scale += (this.fit.scale - this.actor.scale) * k;
+    }
     if (this.phase === 'pick' || this.phase === 'moving') {
       for (const e of this.eggs) {
         e.scale = clamp(e.scale + dt * 4.2 * (this.t > e.pop ? 1 : 0));
@@ -370,7 +401,7 @@ export const hatch = {
       if (stage) g.sprite(assets.get(`egg.crack${stage}`), cx, bottom, { w: tex.w * scale, h: tex.h * scale, ay: 1, rot: sway });
     }
 
-    if (this.phase === 'meet') {
+    if (this.phase === 'meet' || this.phase === 'studio') {
       const a = this.actor;
       const pet = this.pet;
       const s = a.scale;
@@ -398,7 +429,8 @@ const easeBack = (t) => {
   return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2;
 };
 
-function bakeBackground() {
+/** The soft stage the egg hatches on, and the Makeover's (scenes/makeover.js). */
+export function bakeBackground() {
   const { w, h } = game.view;
   const c = document.createElement('canvas');
   c.width = Math.round(w);

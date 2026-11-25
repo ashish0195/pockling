@@ -81,9 +81,10 @@ export function bakeBelly(coat, seed, S) {
   return { canvas: c, w, h };
 }
 
-/** An ear strip: its root is at the top of the canvas and its tip at the bottom, for ribbon(). */
-export function bakeEar(breed, coat, seed, S) {
-  const e = BREEDS[breed].ears;
+/** An ear strip: its root is at the top of the canvas and its tip at the bottom, for ribbon(). `ears` is a
+ * breed's ears ({ kind, length, width, … }, see catalog.js partsOf), or a breed id for its own. */
+export function bakeEar(ears, coat, seed, S) {
+  const e = typeof ears === 'string' ? BREEDS[ears].ears : ears;
   const L = e.length;
   const W = e.width;
   const pad = e.kind === 'flop' ? 26 : 14;
@@ -171,9 +172,9 @@ export function bakeEar(breed, coat, seed, S) {
   return { canvas: c, w: cw, h: ch, length: ch, pad };
 }
 
-/** A tail strip: root at the top, tip at the bottom. */
-export function bakeTail(breed, coat, seed, S) {
-  const t = BREEDS[breed].tail;
+/** A tail strip: root at the top, tip at the bottom. `tail` is a breed's tail, or a breed id for its own. */
+export function bakeTail(tail, coat, seed, S) {
+  const t = typeof tail === 'string' ? BREEDS[tail].tail : tail;
   const L = t.length;
   const W = t.width;
   const pad = 16;

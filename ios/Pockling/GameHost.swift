@@ -85,6 +85,9 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
                 // A snapshot is about 10 KB; anything much bigger isn't one.
                 WidgetShare.save(widget, key: body["widgetKey"] as? String ?? "", inBackground: UIApplication.shared.applicationState == .background)
             }
+        case "petArt":
+            // The widget's pictures of a pet with a look of its own (web/src/petArt.js).
+            WidgetShare.saveArt(body)
         case "haptic":
             haptics.play(body["kind"] as? String ?? "light")
         case "purr":

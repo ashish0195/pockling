@@ -27,11 +27,20 @@ const flows = {
     await d.js(`T.ff(0.3)`);
     await d.shot('hatch-burst');
     await d.js(`T.ff(4.5)`);
+    // Make it yours: change a few things, see the pet change, then name it.
+    await d.waitFor(`document.getElementById('studioDone')`);
+    await d.shot('hatch-studio');
+    await d.js(`T.click('[data-palette="lemon"]'); T.click('[data-tab="ears"]'); T.click('[data-ears="bunling"]'); T.click('[data-tab="wings"]'); T.click('[data-wings="yes"]'); T.ff(1.2)`);
+    assert(await d.js(`__scenes.hatch.pet.breed.ears.kind === 'long' && __scenes.hatch.pet.breed.wings && __scenes.hatch.pet.coat.name === 'Lemon'`), 'the studio restyles the pet as it goes');
+    await d.shot('hatch-studio-changed');
+    await d.js(`T.click('#studioDone')`);
     await d.waitFor(`document.getElementById('petName')`);
+    assert((await d.js(`document.querySelector('#hatch-top h1').textContent`)).includes('lemon'), 'the name screen says what it is');
     await d.shot('hatch-name');
     await d.js(`document.getElementById('petName').value = 'Biscuit'; T.click('#nameBtn')`);
     await d.waitFor(`T.scene === __scenes.home`);
     assert((await d.js(`T.pet().name`)) === 'Biscuit', 'the name sticks');
+    assert((await d.js(`JSON.stringify(__game.state.pet.look)`)) === JSON.stringify({ ears: 'bunling', wings: true, palette: 'lemon' }), 'and so does its look');
     await d.sleep(800);
     await d.js(`T.ff(2)`);
     await d.shot('hatch-home');

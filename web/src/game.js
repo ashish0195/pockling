@@ -11,10 +11,11 @@ import { frameFor, minFeetY, onStage } from './fold.js';
 import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
-import { askForReview, haptic, isNative, loadSave, setHaptics, setPetName, track, writeSave } from './platform.js';
+import { paintPetArt } from './petArt.js';
+import { askForReview, haptic, isNative, loadSave, sendPetArt, setHaptics, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
 import { clamp, dayNumber, hourOf, lerp, mixRgb, seeded } from './util.js';
-import { saveGame } from './widget.js';
+import { artKey, saveGame } from './widget.js';
 
 export const game = {
   g: null,
@@ -79,7 +80,7 @@ export function measure() {
   const safeTop = css ? parseFloat(css.paddingTop) || 0 : 0;
   const safeBottom = css ? parseFloat(css.paddingBottom) || 0 : 0;
   const ui = clamp(Math.min(w, h) / 560, 1, 1.75);
-  const { u, horizon, floorY, crease, stage } = frameFor(w, h, { fold: game.fold, breed: game.state?.pet?.breed, safeBottom, ui });
+  const { u, horizon, floorY, crease, stage } = frameFor(w, h, { fold: game.fold, pet: game.state?.pet, safeBottom, ui });
   game.view = { w, h, u, horizon, floorY, dpr, safeTop, safeBottom, landscape: w > h, crease, stage, ui };
   const root = document.documentElement;
   root.style.setProperty('--ui', String(ui));
@@ -96,12 +97,12 @@ export function measure() {
 
 /** x kept on the pet's stage, for a pet drawn at this scale (actor.scale × view.u). */
 export function onStageX(x, scale = game.view.u) {
-  return onStage(game.view, game.state?.pet?.breed, x, scale);
+  return onStage(game.view, game.state?.pet, x, scale);
 }
 
 /** y for the pet's feet that keeps a pet drawn at this scale on its stage: below a laptop's crease. */
 export function feetOnStage(y, scale = game.view.u) {
-  return Math.max(y, minFeetY(game.view, game.state?.pet?.breed, scale));
+  return Math.max(y, minFeetY(game.view, game.state?.pet, scale));
 }
 
 export function quality() {
@@ -129,7 +130,7 @@ export function petLight(amb) {
 export function makePet() {
   const p = game.state.pet;
   if (!p) return null;
-  game.pet = new Pet(game.assets, { breed: p.breed, coat: p.coat, seed: p.seed, stage: stageOf(p).id, outfit: p.outfit }, { bakeScale: bakeScale() });
+  game.pet = new Pet(game.assets, { breed: p.breed, coat: p.coat, seed: p.seed, stage: stageOf(p).id, outfit: p.outfit, look: p.look }, { bakeScale: bakeScale() });
   game.pet.outfit = p.outfit;
   game.actor = new Actor(game.pet, game.fx);
   audio.voiceBase = BREEDS[p.breed].voice * ({ baby: 1.3, kid: 1.14, grown: 1 }[stageOf(p).id] ?? 1);
@@ -169,6 +170,42 @@ function write() {
   // A save still waiting when the player starts over mustn't write the old pet back.
   if (game.demo || game.startingOver) return;
   saveGame(game.state, game.now(), { native: isNative, writeSave });
+  syncPetArt();
+}
+
+let artSent = null;
+let artTimer = 0;
+let painting = false;
+
+/**
+ * In the app, a pet with a look of its own needs the widget's pictures painted for it (petArt.js): once a
+ * launch, and again when its look or its stage changes (its art key). A moment after the save, so painting
+ * never holds up the game; the widget shows its breed and coat's pictures until they arrive.
+ */
+function syncPetArt() {
+  if (!isNative) return;
+  const key = artKey(game.state.pet);
+  if (!key || key === artSent) return;
+  clearTimeout(artTimer);
+  artTimer = setTimeout(async () => {
+    const p = game.state.pet;
+    if (!p || artKey(p) !== key || game.startingOver || painting) return;
+    painting = true;
+    try {
+      const art = await paintPetArt(p);
+      // Only if it's still that pet, that look and that stage.
+      if (art && artKey(game.state.pet) === key && !game.startingOver) {
+        sendPetArt(art);
+        artSent = key;
+      }
+    } catch (err) {
+      console.warn('No widget pictures this time:', err);
+    } finally {
+      painting = false;
+      // A change while painting: catch up with it.
+      if (artKey(game.state.pet) !== artSent) syncPetArt();
+    }
+  }, 1500);
 }
 
 export function save(now = false) {
@@ -263,9 +300,31 @@ export function grewUpAndCheered() {
   if (!isNative || game.demo || rated) return;
   rated = true;
   setTimeout(() => {
-    if (game.ui?.quiet?.()) askForReview('grew');
+    if (game.ui?.quiet?.()) askForRatingNicely('grew');
   }, 700);
 }
+
+/**
+ * Apple's rating prompt, at a happy moment, gently: the pet glows with hearts first, and the prompt comes a
+ * moment later, when nothing else is on screen. Nothing of ours asks anything or gates it (Guideline 5.6.1):
+ * the app decides whether it's due (NineIO.swift: from the second day, once a version) and iOS whether it
+ * shows. Never mid-game, at launch or from a button.
+ */
+export function askForRatingNicely(moment) {
+  if (!isNative || game.demo) return;
+  const c = game.pet?.anchors?.center;
+  if (c && game.scene === homeScene()) {
+    game.fx.heartBurst(c[0], c[1] - 30, 10);
+    audio.coo();
+    haptic('light');
+  }
+  setTimeout(() => {
+    if (game.ui?.quiet?.()) askForReview(moment);
+  }, 1100);
+}
+
+/** The home scene, without importing it here (it imports this module). */
+const homeScene = () => window.__scenes?.home;
 
 /** A soft fade to a new scene, covering any baking it needs to do. */
 export async function fadeTo(scene, data) {

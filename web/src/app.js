@@ -1,10 +1,11 @@
 // Starts the game: bakes what's needed, picks the first scene, runs the frame loop and sends touches to
 // whichever scene is on stage.
 import { audio } from './audio.js';
-import { BREEDS, BREED_IDS } from './catalog.js';
+import { BREEDS, BREED_IDS, parseLook } from './catalog.js';
 import { applySettings, checkDaily, game, goTo, initGame, makePet, measure, save, tickState } from './game.js';
 import { home } from './scenes/home.js';
 import { hatch } from './scenes/hatch.js';
+import { makeover } from './scenes/makeover.js';
 import { bath, defineBathTools } from './scenes/bath.js';
 import { walk } from './scenes/walk.js';
 import { fetchGame } from './scenes/fetch.js';
@@ -49,6 +50,16 @@ const actions = {
   talk: () => talkMode.toggle(),
   photo: () => takePhoto(),
   home: () => fadeTo(home),
+  makeover: () => {
+    ui.hideSheet();
+    const p = game.state.pet;
+    // Asleep, it stays in bed: the Makeover is for an awake pet.
+    if (p.asleep) {
+      ui.toast(`Shh… ${p.name} is asleep. Try again when it's up!`);
+      return;
+    }
+    fadeTo(makeover);
+  },
 };
 
 function boot() {
@@ -96,7 +107,7 @@ function applyDemo() {
   game.demo = true;
   const s = game.state;
   const breed = params.get('breed') ?? 'kitling';
-  adopt(s, { breed, coat: params.get('coat') ?? BREEDS[breed].coats[0].id, name: params.get('name') ?? 'Mochi' }, game.now());
+  adopt(s, { breed, coat: params.get('coat') ?? BREEDS[breed].coats[0].id, name: params.get('name') ?? 'Mochi', look: parseLook(params.get('look')) }, game.now());
   const p = s.pet;
   p.careDays = Number(params.get('days') ?? 7);
   s.lastVisit = Math.floor(Date.now() / 86400000) + 2;
@@ -245,7 +256,7 @@ function listen() {
 
 // Hooks for tests and recordings.
 window.__game = game;
-window.__scenes = { home, hatch, bath, walk, fetchGame, snackGame, hideGame };
+window.__scenes = { home, hatch, makeover, bath, walk, fetchGame, snackGame, hideGame };
 window.__state = { trait, stageOf, BREED_IDS };
 window.__talk = talkMode;
 window.__audio = audio;

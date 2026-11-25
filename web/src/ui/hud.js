@@ -2,10 +2,10 @@
 // switch modes with show(); menus are sheets that slide up. Buttons use data-action, handled in one place.
 import { audio } from '../audio.js';
 import { BREEDS, FOODS, FOOD_IDS, OUTFITS, OUTFIT_IDS, ROOMS, ROOM_IDS, coatOf } from '../catalog.js';
-import { applySettings, celebrate, defineRoomArt, game, grewUpAndCheered, save } from '../game.js';
+import { applySettings, askForRatingNicely, celebrate, defineRoomArt, game, grewUpAndCheered, save } from '../game.js';
 import { foodThumb } from '../bake/food.js';
 import { OUTFIT_ART } from '../bake/outfits.js';
-import { answerNotificationOffer, askForReview, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting } from '../platform.js';
+import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting } from '../platform.js';
 import { ageDays, buyOutfit, buyRoom, levelOf, levelProgress, mood, stageOf, tasteOf, trait, useRoom, wear } from '../state.js';
 import { dayNumber } from '../util.js';
 
@@ -317,6 +317,7 @@ export const ui = {
     this.sheet(`${this.head('Menu')}
       <button class="row" data-action="stamps"><span>📖 Stamp book<small>${s.streak} day streak</small></span><span>›</span></button>
       <button class="row" data-action="closet"><span>👒 Closet<small>Hats, glasses, scarves</small></span><span>›</span></button>
+      <button class="row" data-action="makeover"><span>✨ Makeover<small>New colours, ears, tail, even wings</small></span><span>›</span></button>
       <button class="row" data-action="rooms"><span>🏠 Rooms<small>Paint the walls</small></span><span>›</span></button>
       <button class="row" data-action="card"><span>🪪 ${esc(s.pet.name)}'s card<small>Share your pet</small></span><span>›</span></button>
       <button class="row" data-action="settings"><span>⚙️ Settings</span><span>›</span></button>
@@ -334,6 +335,7 @@ export const ui = {
       <h3>About</h3>
       <button class="row" data-action="link" data-url="${SITE}privacy/"><span>🔒 Privacy<small>${isNative ? 'What the app sends, and what it never does' : 'Nothing leaves your device'}</small></span><span>›</span></button>
       <button class="row" data-action="link" data-url="${SITE}support/"><span>💬 Help and support</span><span>›</span></button>
+      ${isNative ? `<button class="row" data-action="link" data-url="${APP_STORE}?action=write-review"><span>⭐ Rate Pockling<small>A kind word helps others find it</small></span><span>›</span></button>` : ''}
       <p class="muted center" style="font-size:13px;margin-top:14px">Pockling, a Bitfold Original from 9io.<br>No ads. No accounts. No tracking.</p>
       <button class="row" data-action="restart" style="margin-top:10px"><span style="color:#c2355f">Start over with a new egg</span></button>`);
   },
@@ -415,7 +417,7 @@ export const ui = {
     const answer = offer ? await canOfferNotifications() : null;
     if (!this.quiet()) return;
     if (!answer?.offer) {
-      if (rate) askForReview('streak');
+      if (rate) askForRatingNicely('streak');
       return;
     }
     const name = esc(game.state.pet.name);

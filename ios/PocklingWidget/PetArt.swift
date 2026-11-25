@@ -5,6 +5,8 @@ import ImageIO
 /// The pet's pictures. A widget can't run the game's WebGL, so tools/widget-art.mjs paints them ahead of
 /// time from the game's own art, into the PetArt folder: for each breed, coat and stage a whole picture
 /// in the smiling look, and each other look's face alone, which goes on top where faces.json says.
+/// A pet with a look of its own (1.4) has pictures the game painted in the app (web/src/petArt.js), kept in
+/// the App Group's PetArt folder by the snapshot's art key (the app's WidgetShare.saveArt).
 enum PetArt {
     private static let folder = Bundle.main.url(forResource: "PetArt", withExtension: nil)
 
@@ -18,9 +20,21 @@ enum PetArt {
 
     private static let cache = NSCache<NSString, CGImage>()
 
+    /// Where the app keeps the pictures of a pet with its own look (WidgetShare.artFolder in the app).
+    private static let customFolder = FileManager.default
+        .containerURL(forSecurityApplicationGroupIdentifier: PetSnapshot.group)?
+        .appendingPathComponent("PetArt", isDirectory: true)
+
+    private struct Placement: Decodable {
+        let face: [Int]
+        let size: [Int]
+    }
+
     /// The pet in a look, no more than maxPixels on its longer side if given. A widget has little memory,
     /// and a picture with more pixels than the widget itself won't draw. An egg if there's no such pet.
     static func pet(_ pet: PetSnapshot.Pet, look: String, maxPixels: Int? = nil) -> CGImage? {
+        // Its own look's pictures; until the game has painted them, its breed and coat's stand in.
+        if let art = pet.art, let image = custom(art, look: look, maxPixels: maxPixels) { return image }
         let key = "\(pet.breed)-\(pet.coat)-\(pet.stage)-\(look)-\(maxPixels ?? 0)" as NSString
         if let image = cache.object(forKey: key) { return image }
         // A coat newer than the pictures (tools/widget-art.mjs not run again) shows as another coat of the
@@ -45,6 +59,27 @@ enum PetArt {
         return image
     }
 
+    /// A pet with a look of its own: the whole picture, with the look's face laid on where its JSON says.
+    private static func custom(_ art: String, look: String, maxPixels: Int?) -> CGImage? {
+        let key = "\(art)-\(look)-\(maxPixels ?? 0)" as NSString
+        if let image = cache.object(forKey: key) { return image }
+        guard let dir = customFolder, let whole = loadFile(dir.appendingPathComponent("\(art).png")) else { return nil }
+        var image = whole
+        if look != "smile", let face = loadFile(dir.appendingPathComponent("\(art)-\(look).png")),
+           let data = try? Data(contentsOf: dir.appendingPathComponent("\(art).json")),
+           let placement = try? JSONDecoder().decode(Placement.self, from: data), placement.face.count == 4 {
+            let at = placement.face
+            image = draw(width: whole.width, height: whole.height) { context in
+                context.draw(whole, in: CGRect(x: 0, y: 0, width: whole.width, height: whole.height))
+                // Core Graphics counts up from the bottom; the pictures count down from the top.
+                context.draw(face, in: CGRect(x: at[0], y: whole.height - at[1] - at[3], width: at[2], height: at[3]))
+            } ?? whole
+        }
+        image = shrink(image, to: maxPixels)
+        cache.setObject(image, forKey: key)
+        return image
+    }
+
     static func egg(maxPixels: Int? = nil) -> CGImage? {
         load("egg").map { shrink($0, to: maxPixels) }
     }
@@ -58,8 +93,12 @@ enum PetArt {
     }
 
     private static func load(_ name: String) -> CGImage? {
-        guard let file = folder?.appendingPathComponent("\(name).webp"),
-              let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
+        guard let file = folder?.appendingPathComponent("\(name).webp") else { return nil }
+        return loadFile(file)
+    }
+
+    private static func loadFile(_ file: URL) -> CGImage? {
+        guard let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
         return CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
     }
 

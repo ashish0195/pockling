@@ -5,6 +5,7 @@
 // and the widget shows each moment when its time comes (ios/PocklingWidget). Nothing in it leaves the phone.
 import { BREEDS, coatOf, ROOMS } from './catalog.js';
 import { mood, NEEDS, stageOf, tick } from './state.js';
+import { hash } from './util.js';
 
 export const WIDGET_VERSION = 1;
 
@@ -63,6 +64,16 @@ function moment(p, at) {
 const sameMoment = (a, b) => a.mood === b.mood && a.asleep === b.asleep && a.low === b.low && NEEDS.every((n) => a.needs[n] === b.needs[n]);
 
 /**
+ * A pet with a look of its own (catalog.js, "Make it yours") has pictures the game paints for it in the app
+ * (petArt.js), for the stage it's at. This names them: a new look, or growing up, gives a new key. Null for a
+ * pet that looks as its breed and coat, whose pictures came with the app.
+ */
+export function artKey(p) {
+  if (!p?.look) return null;
+  return `c${hash(JSON.stringify([p.breed, p.coat, p.seed ?? 1, stageOf(p).id, p.look])).toString(36)}`;
+}
+
+/**
  * The widget's snapshot of a game state at `now`: the pet, and the moments ahead in which it changes, the
  * first being now. With no pet yet (an egg to hatch) it's just { pet: null }.
  */
@@ -90,6 +101,8 @@ export function widgetSnapshot(s, now) {
       stage: stage.id,
       kind: `${stage.name} ${BREEDS[p.breed].name}`,
       wall: room.wall,
+      // Its own pictures (petArt.js), for a pet with a look; the widget falls back to breed and coat's.
+      ...(artKey(p) ? { art: artKey(p) } : {}),
     },
     moments,
   };
@@ -121,5 +134,5 @@ export function widgetKey(snapshot) {
   const pet = snapshot.pet;
   if (!pet) return 'egg';
   const now = snapshot.moments[0];
-  return [pet.name, pet.breed, pet.coat, pet.stage, pet.wall.join(','), now.mood, now.asleep, now.low, NEEDS.map((n) => now.needs[n]).join(',')].join('|');
+  return [pet.name, pet.breed, pet.coat, pet.stage, pet.art ?? '', pet.wall.join(','), now.mood, now.asleep, now.low, NEEDS.map((n) => now.needs[n]).join(',')].join('|');
 }

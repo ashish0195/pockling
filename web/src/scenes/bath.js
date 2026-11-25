@@ -202,7 +202,7 @@ const TUB_BELOW = 134;
 function bathView() {
   const view = game.view;
   if (!view.crease || view.crease.vertical) return view;
-  const above = reachOf(game.state.pet.breed).up * 1.06 * POOF + IN_TUB;
+  const above = reachOf(game.state.pet).up * 1.06 * POOF + IN_TUB;
   const k = Math.min(1, (view.stage.h - CREASE_GAP - 16) / ((above + TUB_BELOW) * view.u));
   return { ...view, u: view.u * k, above };
 }

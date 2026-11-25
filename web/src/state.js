@@ -1,7 +1,7 @@
 // The rules of raising a Pockling, with no drawing in them: needs that move with real time, growth,
 // love, berries and daily stamps. The state is a plain object that saves as JSON. A Pockling never dies
 // and never leaves: at worst it's a little sad and very pleased to see you.
-import { BREEDS, FOODS, OUTFITS, ROOMS, STAGES, STICKERS, TASTES } from './catalog.js';
+import { BREEDS, FOODS, OUTFITS, ROOMS, STAGES, STICKERS, TASTES, cleanLook } from './catalog.js';
 import { clamp, dayNumber, seeded } from './util.js';
 
 export const SAVE_VERSION = 1;
@@ -52,13 +52,20 @@ export function migrate(saved) {
     for (const need of NEEDS) s.pet[need] = clamp(Number(s.pet[need]) || 0, 0, 100);
     if (!BREEDS[s.pet.breed]) s.pet = null;
   }
+  if (s.pet) {
+    // The player's own look (1.4): only what this version can draw. Without one, the breed's own.
+    const look = cleanLook(s.pet.look);
+    if (look) s.pet.look = look;
+    else delete s.pet.look;
+  }
   return s;
 }
 
-export function adopt(s, { breed, coat, name, seed = 1 }, now) {
+export function adopt(s, { breed, coat, name, seed = 1, look = null }, now) {
   s.pet = {
     breed,
     coat,
+    ...(cleanLook(look) ? { look: cleanLook(look) } : {}),
     name: cleanName(name) || BREEDS[breed].name,
     seed,
     born: now,

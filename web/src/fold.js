@@ -33,8 +33,20 @@ const MOST = { up: 280, side: 212 };
 /** Wagging, hopping and stretching take it a little further than it stands. */
 export const SWAY = 1.06;
 
-export function reachOf(breed) {
-  return REACH[breed] ?? MOST;
+/**
+ * A pet's reach: by breed id, or for a pet ({ breed, look }) with the player's own ears, tail and wings
+ * (catalog.js partsOf), from the breeds they came from. The ears set its height; the widest of ears, tail and
+ * wings, its sides.
+ */
+export function reachOf(pet) {
+  if (!pet || typeof pet === 'string') return REACH[pet] ?? MOST;
+  const own = REACH[pet.breed] ?? MOST;
+  const look = pet.look;
+  if (!look) return own;
+  const ears = REACH[look.ears] ?? own;
+  const tail = REACH[look.tail] ?? own;
+  const winged = typeof look.wings === 'boolean' ? look.wings : pet.breed === 'drakling';
+  return { up: ears.up, side: Math.max(ears.side, tail.side, winged ? REACH.drakling.side : 0) };
 }
 
 /**
@@ -66,7 +78,7 @@ export function stageOf(w, h, crease) {
  * where the wall meets the floor; floorY, where the pet stands at home; the crease and the stage. safeBottom
  * is the safe area under the HUD, and ui the HUD's zoom.
  */
-export function frameFor(w, h, { fold = null, breed = null, safeBottom = 0, ui = 1 } = {}) {
+export function frameFor(w, h, { fold = null, pet = null, breed = pet, safeBottom = 0, ui = 1 } = {}) {
   const crease = creaseOf(fold, w, h);
   const stage = stageOf(w, h, crease);
   const reach = reachOf(breed);
@@ -93,15 +105,15 @@ export function frameFor(w, h, { fold = null, breed = null, safeBottom = 0, ui =
  * The highest the pet's feet can be with all of it below a laptop's crease, for a pet drawn at this scale
  * (actor.scale × view.u), so its ears are off the fold. Without that crease, anywhere goes.
  */
-export function minFeetY(view, breed, scale = view.u) {
+export function minFeetY(view, pet, scale = view.u) {
   if (!view.crease || view.crease.vertical) return -Infinity;
-  return view.crease.b + CREASE_GAP + reachOf(breed).up * SWAY * scale;
+  return view.crease.b + CREASE_GAP + reachOf(pet).up * SWAY * scale;
 }
 
 /** An x for the pet clamped into its stage, keeping its widest side clear of a book's crease. */
-export function onStage(view, breed, x, scale = view.u) {
+export function onStage(view, pet, x, scale = view.u) {
   if (!view.crease?.vertical) return x;
-  const half = reachOf(breed).side * SWAY * scale;
+  const half = reachOf(pet).side * SWAY * scale;
   const lo = view.stage.x + Math.min(half + CREASE_GAP, view.stage.w / 2);
   const hi = view.stage.x + view.stage.w - Math.min(half + CREASE_GAP, view.stage.w / 2);
   return clamp(x, lo, hi);

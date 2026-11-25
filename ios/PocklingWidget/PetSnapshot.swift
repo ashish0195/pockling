@@ -18,6 +18,8 @@ struct PetSnapshot: Decodable {
         let kind: String
         /// The room's wall, top to bottom, as the game paints it.
         let wall: [String]
+        /// For a pet with a look of its own (1.4): the key of the pictures the app keeps for it (PetArt.swift).
+        var art: String? = nil
     }
 
     struct Moment: Decodable, Hashable {

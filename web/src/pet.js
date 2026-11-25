@@ -2,7 +2,7 @@
 // turning, and a table of expressions. Everything moves through a spring, so any expression can follow
 // any other and the whole creature stays alive. The local coordinates: the body's centre is (0, 0), its
 // radius about 100, and it stands on the ground at y = 88.
-import { BREEDS, STAGES, coatOf } from './catalog.js';
+import { STAGES, coatOf, partsOf } from './catalog.js';
 import { bakeBelly, bakeBody, bakeBrow, bakeCheek, bakeEar, bakeFoot, bakeMark, bakeNose, bakePaw, bakeTail, bakeWhisker, bakeWing, petSeed } from './bake/pet.js';
 import { clamp, lerp, rand, rgb, Rig, smooth, Spring, TAU, mixRgb } from './util.js';
 import { outfitAnchors } from './bake/outfits.js';
@@ -49,7 +49,8 @@ export const FACES = {
 
 export class Pet {
   /**
-   * assets is the shared texture store; spec is { breed, coat, seed, stage } as saved in the game state.
+   * assets is the shared texture store; spec is { breed, coat, seed, stage, look } as saved in the game state
+   * (look, the player's own ears, tail, wings and colours, is optional: catalog.js partsOf and coatOf).
    * Each pet's textures live under its own prefix so a new coat can replace an old one.
    */
   constructor(assets, spec, { prefix = 'pet', bakeScale = 4 } = {}) {
@@ -57,7 +58,7 @@ export class Pet {
     this.prefix = prefix;
     this.S = bakeScale;
     this.spec = { ...spec };
-    this.breed = BREEDS[spec.breed];
+    this.breed = partsOf(spec);
     this.coat = coatOf(spec);
     this.stage = STAGES.find((s) => s.id === spec.stage) ?? STAGES[0];
     this.outfit = spec.outfit ?? {};
@@ -114,13 +115,13 @@ export class Pet {
     const a = this.assets;
     const p = this.prefix;
     const { S, coat } = this;
-    const breed = this.spec.breed;
+    const { ears, tail } = this.breed;
     const seed = petSeed(this.spec);
     const pale = coat.mark === 'socks' ? coat.belly : coat.mark === 'panda' ? coat.markColor : null;
     a.define(`${p}.body`, () => bakeBody(coat, seed, S));
     a.define(`${p}.belly`, () => bakeBelly(coat, seed, S));
-    a.define(`${p}.ear`, () => bakeEar(breed, coat, seed, S));
-    a.define(`${p}.tail`, () => bakeTail(breed, coat, seed, S));
+    a.define(`${p}.ear`, () => bakeEar(ears, coat, seed, S));
+    a.define(`${p}.tail`, () => bakeTail(tail, coat, seed, S));
     a.define(`${p}.paw`, () => bakePaw(coat, seed, S, { tint: pale }));
     a.define(`${p}.pawPad`, () => bakePaw(coat, seed, S, { tint: pale, pad: true }));
     a.define(`${p}.foot`, () => bakeFoot(coat, seed, S, pale));
@@ -136,6 +137,19 @@ export class Pet {
 
   tex(name) {
     return this.assets.get(`${this.prefix}.${name}`);
+  }
+
+  /**
+   * Gives the pet a new look (or none: its breed's own) without rebuilding it, so it keeps moving and
+   * reacting while the player tries things on. Its textures are baked again the next time they're drawn.
+   */
+  restyle(look) {
+    this.spec = { ...this.spec, look: look ?? undefined };
+    if (!look) delete this.spec.look;
+    this.breed = partsOf(this.spec);
+    this.coat = coatOf(this.spec);
+    this.iris = rgb(this.coat.iris);
+    this.defineTextures();
   }
 
   setStage(id) {

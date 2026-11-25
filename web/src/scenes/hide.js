@@ -293,7 +293,7 @@ export const hideGame = {
     let x = actor.x;
     let y = spot.y + 24 * view.u;
     if (c?.vertical) {
-      const half = reachOf(game.state.pet.breed).side * SWAY * 0.92 * view.u;
+      const half = reachOf(game.state.pet).side * SWAY * 0.92 * view.u;
       x = spot.x < c.a ? Math.min(x, c.a - CREASE_GAP - half) : Math.max(x, c.b + CREASE_GAP + half);
     } else if (c) {
       y = Math.min(y, view.h - view.safeBottom - 8);

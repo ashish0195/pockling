@@ -28,6 +28,43 @@ enum WidgetShare {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(fileName)
     }
 
+    /// Pictures the game painted of a pet with a look of its own (web/src/petArt.js), which the widget finds
+    /// by the snapshot's art key (PocklingWidget/PetArt.swift). As the widget's own folder name, ArtFolder.
+    static let artFolder = "PetArt"
+    /// The looks besides the whole picture's: the faces laid over it (web/src/widget.js LOOKS).
+    static let artLooks: Set<String> = ["sleep", "happy", "hungry", "sleepy", "sad", "pout"]
+
+    private static var artDirectory: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(artFolder, isDirectory: true)
+    }
+
+    /// Keeps the pictures of the pet's look for its stage: "<key>.png", "<key>-<look>.png" for each face, and
+    /// "<key>.json" with where the faces go. Only the latest key is kept. Then the widget redraws with them.
+    static func saveArt(_ body: [String: Any]) {
+        guard let key = body["key"] as? String, key.range(of: "^c[0-9a-z]{1,14}$", options: .regularExpression) != nil,
+              let whole = (body["whole"] as? String).flatMap({ Data(base64Encoded: $0) }), whole.count < 2_000_000,
+              let faces = body["faces"] as? [String: String],
+              let face = body["face"] as? [Int], face.count == 4,
+              let size = body["size"] as? [Int], size.count == 2 else { return }
+        var files: [(String, Data)] = [("\(key).png", whole)]
+        for (look, text) in faces where artLooks.contains(look) {
+            guard let data = Data(base64Encoded: text), data.count < 1_000_000 else { return }
+            files.append(("\(key)-\(look).png", data))
+        }
+        guard let placement = try? JSONSerialization.data(withJSONObject: ["face": face, "size": size]) else { return }
+        files.append(("\(key).json", placement))
+        queue.async {
+            guard let dir = artDirectory else { return }
+            let fm = FileManager.default
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            for name in (try? fm.contentsOfDirectory(atPath: dir.path)) ?? [] where !name.hasPrefix("\(key).") && !name.hasPrefix("\(key)-") {
+                try? fm.removeItem(at: dir.appendingPathComponent(name))
+            }
+            for (name, data) in files { try? data.write(to: dir.appendingPathComponent(name), options: .atomic) }
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
     /// With each save, about once a second while the game runs. The widget gets the snapshot when what it
     /// shows changes (the key), not every second; and from the background, where the game's last save before
     /// leaving arrives. While the app is open a redraw costs the widget nothing, so it also catches up every
@@ -58,6 +95,7 @@ enum WidgetShare {
         shownKey = nil
         queue.async {
             if let file { try? FileManager.default.removeItem(at: file) }
+            if let artDirectory { try? FileManager.default.removeItem(at: artDirectory) }
             WidgetCenter.shared.reloadAllTimelines()
             DispatchQueue.main.async { endTask() }
         }

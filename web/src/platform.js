@@ -182,6 +182,14 @@ export function askForReview(moment) {
   send('review', { at: moment });
 }
 
+/**
+ * The widget's pictures of a pet with a look of its own (petArt.js), for the app to keep where the widget
+ * finds them (ios/Pockling/WidgetShare.swift saveArt).
+ */
+export function sendPetArt(art) {
+  if (bridge && art) send('petArt', art);
+}
+
 /** The pet's name, for the text of reminders on the phone (null before an egg has hatched). */
 export function setPetName(name) {
   send('pet', { name });
