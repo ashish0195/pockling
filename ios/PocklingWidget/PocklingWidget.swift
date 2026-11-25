@@ -2,11 +2,14 @@ import SwiftUI
 import WidgetKit
 
 /// Pockling's widget: your pet on the Home Screen, the Lock Screen and in StandBy, with its name, how it
-/// feels, whether it's asleep and what it needs most. Tapping it opens the game to visit.
+/// feels, whether it's asleep and what it needs most. Tapping it opens the game to visit. And its naps, as a
+/// Live Activity (from 1.5).
 @main
 struct PocklingWidgets: WidgetBundle {
     var body: some Widget {
         PetWidget()
+        // The pet's nap on the Lock Screen and in the Dynamic Island (NapLiveActivity.swift).
+        NapLiveActivity()
     }
 }
 

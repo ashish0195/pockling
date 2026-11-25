@@ -190,6 +190,14 @@ export function sendPetArt(art) {
   if (bridge && art) send('petArt', art);
 }
 
+/**
+ * The pet's nap, for the app's Live Activity (ios/Pockling/NapActivity.swift): { on: false }, or { on: true, name,
+ * breed, coat, stage, art, wake } with wake in ms.
+ */
+export function setNap(nap) {
+  if (bridge) send('nap', nap);
+}
+
 /** The pet's name, for the text of reminders on the phone (null before an egg has hatched). */
 export function setPetName(name) {
   send('pet', { name });

@@ -6,17 +6,17 @@ import { defineFoods } from './bake/food.js';
 import { defineFx } from './bake/fx.js';
 import { defineOutfits } from './bake/outfits.js';
 import { defineRoom, defineSky, lightAt } from './bake/room.js';
-import { BREEDS, ROOMS, STAGES } from './catalog.js';
+import { BREEDS, ROOMS, STAGES, coatOf } from './catalog.js';
 import { frameFor, minFeetY, onStage } from './fold.js';
 import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
 import { festivalNow } from './festival.js';
 import { paintPetArt } from './petArt.js';
-import { askForReview, haptic, isNative, loadSave, sendPetArt, setHaptics, setPetName, track, writeSave } from './platform.js';
+import { askForReview, haptic, isNative, loadSave, sendPetArt, setHaptics, setNap, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
 import { clamp, dayNumber, hourOf, lerp, mixRgb, seeded } from './util.js';
-import { artKey, saveGame } from './widget.js';
+import { artKey, saveGame, widgetSnapshot } from './widget.js';
 
 export const game = {
   g: null,
@@ -172,6 +172,32 @@ function write() {
   if (game.demo || game.startingOver) return;
   saveGame(game.state, game.now(), { native: isNative, writeSave });
   syncPetArt();
+  syncNap();
+}
+
+let napSent = null;
+let napAt = 0;
+
+/**
+ * In the app, the pet's nap for the Live Activity (ios/Pockling/NapActivity.swift): when it's tucked in, when it
+ * wakes, and its wake time, from the widget's own forecast (widget.js), worked out at most every 30 s while it
+ * sleeps. Sent only when it changes.
+ */
+function syncNap() {
+  if (!isNative) return;
+  const p = game.state.pet;
+  const now = game.now();
+  if (p?.asleep && napSent?.startsWith('{"on":true') && now - napAt < 30000) return;
+  let nap = { on: false };
+  if (p?.asleep) {
+    napAt = now;
+    const up = widgetSnapshot(game.state, now).moments.find((m) => !m.asleep);
+    if (up) nap = { on: true, name: p.name, breed: p.breed, coat: coatOf(p).id, stage: stageOf(p).id, ...(artKey(p) ? { art: artKey(p) } : {}), wake: up.at };
+  }
+  const key = JSON.stringify(nap);
+  if (key === napSent) return;
+  napSent = key;
+  setNap(nap);
 }
 
 let artSent = null;
