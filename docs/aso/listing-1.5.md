@@ -113,7 +113,8 @@ the festival once 1.4 is approved?".
 - **Build 11 and the redeploy**, on the user's "Yes, both" (25 Nov):
   - 1.5 (11) was archived from main 93ddfce, the same as build 10 plus that fix. It was signed and checked the
     same way: 1.5 (11) on all three bundles, the App Group on each, push `production`, and the fix inside. IPA
-    21,381,893 bytes, SHA-256 d85a9275857da5ca…. Uploaded at 23:54:30 IST.
+    21,381,893 bytes, SHA-256 d85a9275857da5ca…. Uploaded at 23:54:30 IST. Build
+    `a39ff5bd-a14f-44eb-b28b-597602be7716` was VALID by 23:56 IST, with no non-exempt encryption.
   - **Build 11 is the one to submit**, in place of build 10. The upgrade tests above were on build 10; 11 changes
     only how visit links are let in.
   - The web game was redeployed at 23:54:43 IST from 93ddfce. Only `src/app.js` changed, and all 48 files match
