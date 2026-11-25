@@ -7,6 +7,19 @@ const assert = (ok, message) => {
   if (!ok) throw new Error(`FAILED: ${message}`);
 };
 
+/**
+ * A stand-in for the app's bridge (ios/Pockling/GameHost.swift), so the page plays as it does in the app. It
+ * keeps what the game sends, without the pictures themselves, in window.__sent.
+ */
+const APP_BRIDGE = `
+  window.__sent = [];
+  window.webkit = { messageHandlers: { pockling: { postMessage(m) {
+    const kept = { cmd: m.cmd, at: Date.now() };
+    if (m.cmd === 'stickers') kept.stickers = { key: m.key, items: (m.items ?? []).map((i) => ({ id: i.id, size: (i.png ?? '').length })) };
+    window.__sent.push(kept);
+  } } } };
+`;
+
 const flows = {
   async hatch(d) {
     await d.open('web/');
@@ -530,6 +543,43 @@ const flows = {
     assert((await d.js(`__talk.state`)) === 'off', 'talk mode turns off');
   },
 
+  // In the app, a pet with a look of its own gets the widget's pictures and its stickers for Messages painted
+  // and sent, once, and again after a Makeover, though the game saves every second (in 1.4 each save put a
+  // Makeover's pictures off again, until the app had been away and back).
+  async app(d) {
+    await d.open('web/');
+    assert(await d.js(`T.scene === __scenes.hatch`), 'no pet yet: the eggs');
+    await d.js(`(async () => {
+      const { adopt, newGame } = await import('./src/state.js');
+      const s = newGame();
+      adopt(s, { breed: 'kitling', coat: 'peach', name: 'Pip', seed: 77, look: { ears: 'bunling', palette: 'hue:300', wings: true } }, Date.now());
+      // Into the game's own state, which it saves as the page goes.
+      __game.state.pet = s.pet;
+    })()`);
+    await d.open('web/');
+    assert(await d.js(`T.scene === __scenes.home && T.pet().name === 'Pip'`), 'the pet is home');
+    await d.waitFor(`__sent.some((m) => m.cmd === 'petArt')`, 20000);
+    await d.waitFor(`__sent.some((m) => m.cmd === 'stickers')`, 30000);
+    const saves = await d.js(`__sent.filter((m) => m.cmd === 'save').length`);
+    assert(saves >= 4, `the game kept saving meanwhile (${saves} saves)`);
+    const st = await d.js(`__sent.find((m) => m.cmd === 'stickers').stickers`);
+    assert(/^s[0-9a-z]{1,14}$/.test(st.key), `the sticker set's key fits the app's check (${st.key})`);
+    assert(st.items.length === 9 && st.items.every((i) => /^[0-9]{2}-[a-z]{1,16}$/.test(i.id) && i.size > 1000 && i.size < (500000 * 4) / 3), `nine stickers the app will keep: ${JSON.stringify(st.items)}`);
+    // From here as on a phone: the frames held (software GL here ticks less often than a phone does) and a save
+    // every second, as a phone's once-a-second tick makes.
+    await d.js(`(async () => { const { save } = await import('./src/game.js'); window.__hold = true; setInterval(() => save(), 1000); })()`);
+    const painted = `__sent.filter((m) => m.cmd === 'stickers' || m.cmd === 'petArt').length`;
+    const n = await d.js(painted);
+    await d.sleep(5000);
+    assert((await d.js(painted)) === n, 'painted only once');
+    // A Makeover: both painted again for the new look, though the saves go on.
+    await d.js(`(async () => { const { save } = await import('./src/game.js'); __game.state.pet.look = { ears: 'foxling', palette: 'hue:120' }; save(true); })()`);
+    await d.waitFor(`__sent.filter((m) => m.cmd === 'petArt').length === 2`, 15000);
+    await d.waitFor(`__sent.filter((m) => m.cmd === 'stickers').length === 2`, 25000);
+    const keys = await d.js(`__sent.filter((m) => m.cmd === 'stickers').map((m) => m.stickers.key)`);
+    assert(keys[0] !== keys[1], 'a new set of stickers for the new look');
+  },
+
   // A tapped reminder or a pockling:// link (ios/Pockling/PetLinks.swift) tells the game to show the pet.
   async links(d) {
     await d.open('web/');
@@ -664,6 +714,7 @@ async function duoMoments(d, tag, fold) {
     }
   }
 }
+flows.app.init = APP_BRIDGE;
 for (const tag of ['duo-book', 'duo-laptop']) {
   const [width, height, fold] = DUO[tag];
   flows[`moments-${tag}`] = (d) => duoMoments(d, tag, fold);
@@ -677,7 +728,7 @@ for (const name of chosen) {
   process.stdout.write(`${name}\n`);
   const t0 = Date.now();
   try {
-    await drive({ media: name === 'talk', ...(flows[name].size ?? {}) }, flows[name]);
+    await drive({ media: name === 'talk', ...(flows[name].size ?? {}), ...(flows[name].init ? { init: flows[name].init } : {}) }, flows[name]);
     console.log(`  ok (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   } catch (e) {
     failed += 1;

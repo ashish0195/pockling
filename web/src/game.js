@@ -12,8 +12,8 @@ import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
 import { festivalNow } from './festival.js';
-import { paintPetArt } from './petArt.js';
-import { askForReview, haptic, isNative, loadSave, sendPetArt, setHaptics, setNap, setPetName, track, writeSave } from './platform.js';
+import { paintPetArt, paintStickers, stickerKey } from './petArt.js';
+import { askForReview, haptic, isNative, loadSave, sendPetArt, sendStickers, setHaptics, setNap, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
 import { clamp, dayNumber, hourOf, lerp, mixRgb, seeded } from './util.js';
 import { artKey, saveGame, widgetSnapshot } from './widget.js';
@@ -173,6 +173,7 @@ function write() {
   saveGame(game.state, game.now(), { native: isNative, writeSave });
   syncPetArt();
   syncNap();
+  syncStickers();
 }
 
 let napSent = null;
@@ -200,40 +201,68 @@ function syncNap() {
   setNap(nap);
 }
 
-let artSent = null;
-let artTimer = 0;
 let painting = false;
 
 /**
- * In the app, a pet with a look of its own needs the widget's pictures painted for it (petArt.js): once a
- * launch, and again when its look or its stage changes (its art key). A moment after the save, so painting
- * never holds up the game; the widget shows its breed and coat's pictures until they arrive.
+ * In the app, something of the pet's that the game paints for the phone (petArt.js), a while after a save and once
+ * for each key: when the key changes (its look, its stage), it's painted again. One painting at a time, so the game
+ * never stutters for long. A save for a key already waiting or painting leaves it alone: the game saves every
+ * second, and in 1.4 each save put the widget's pictures off again, until the app had been away and back.
  */
-function syncPetArt() {
-  if (!isNative) return;
-  const key = artKey(game.state.pet);
-  if (!key || key === artSent) return;
-  clearTimeout(artTimer);
-  artTimer = setTimeout(async () => {
-    const p = game.state.pet;
-    if (!p || artKey(p) !== key || game.startingOver || painting) return;
-    painting = true;
-    try {
-      const art = await paintPetArt(p);
-      // Only if it's still that pet, that look and that stage.
-      if (art && artKey(game.state.pet) === key && !game.startingOver) {
-        sendPetArt(art);
-        artSent = key;
+function painter(what, keyOf, paint, deliver, wait) {
+  let done = null;
+  let waiting = null;
+  let busy = null;
+  let timer = 0;
+  const sync = () => {
+    if (!isNative) return;
+    const key = keyOf(game.state.pet);
+    if (!key || key === done || key === waiting || key === busy) return;
+    clearTimeout(timer);
+    waiting = key;
+    timer = setTimeout(async () => {
+      waiting = null;
+      const p = game.state.pet;
+      if (!p || keyOf(p) !== key || game.startingOver) return;
+      if (painting) {
+        sync();
+        return;
       }
-    } catch (err) {
-      console.warn('No widget pictures this time:', err);
-    } finally {
-      painting = false;
-      // A change while painting: catch up with it.
-      if (artKey(game.state.pet) !== artSent) syncPetArt();
-    }
-  }, 1500);
+      painting = true;
+      busy = key;
+      try {
+        const out = await paint(p);
+        // Only if it's still that pet, that look and that stage.
+        if (out && keyOf(game.state.pet) === key && !game.startingOver) deliver(out);
+      } catch (err) {
+        console.warn(`No ${what} this time:`, err);
+      } finally {
+        // Tried, whatever came of it: not again this launch.
+        done = key;
+        busy = null;
+        painting = false;
+        // A change while painting: catch up with it.
+        sync();
+      }
+    }, wait);
+  };
+  return sync;
 }
+
+/**
+ * A pet with a look of its own needs the widget's pictures painted for it: once a launch, and again when its look
+ * or stage changes (its art key). The widget shows its breed and coat's pictures until they arrive.
+ */
+const syncPetArt = painter('widget pictures', artKey, paintPetArt, sendPetArt, 1500);
+
+/**
+ * Every pet's stickers for Messages, after the widget's pictures: painted when its look or age changes, and not
+ * for a set the app already keeps (it tells the page, as __pocklingStickerKey).
+ */
+const syncStickers = painter('stickers', (p) => {
+  const key = stickerKey(p);
+  return key === globalThis.__pocklingStickerKey ? null : key;
+}, paintStickers, sendStickers, 4000);
 
 export function save(now = false) {
   clearTimeout(saveTimer);

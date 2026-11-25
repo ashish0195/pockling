@@ -38,6 +38,39 @@ enum WidgetShare {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(artFolder, isDirectory: true)
     }
 
+    /// The pet's stickers for Messages (PocklingStickers): "NN-word.png" files and a "key" naming the set.
+    static let stickerFolder = "Stickers"
+
+    private static var stickerDirectory: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.appendingPathComponent(stickerFolder, isDirectory: true)
+    }
+
+    /// The key of the sticker set kept now, for the page (GameHost), so the game paints only a new one.
+    static var stickerKey: String? {
+        guard let file = stickerDirectory?.appendingPathComponent("key"), let text = try? String(contentsOf: file, encoding: .utf8) else { return nil }
+        return text.range(of: "^s[0-9a-z]{1,14}$", options: .regularExpression) != nil ? text : nil
+    }
+
+    /// Keeps the game's stickers of the pet ({ key, items: [{ id, png }] }), in place of the last set.
+    static func saveStickers(_ body: [String: Any]) {
+        guard let key = body["key"] as? String, key.range(of: "^s[0-9a-z]{1,14}$", options: .regularExpression) != nil,
+              let items = body["items"] as? [[String: Any]], !items.isEmpty, items.count <= 24 else { return }
+        var files: [(String, Data)] = []
+        for item in items {
+            guard let id = item["id"] as? String, id.range(of: "^[0-9]{2}-[a-z]{1,16}$", options: .regularExpression) != nil,
+                  let data = (item["png"] as? String).flatMap({ Data(base64Encoded: $0) }), data.count < 500_000 else { return }
+            files.append(("\(id).png", data))
+        }
+        queue.async {
+            guard let dir = stickerDirectory else { return }
+            let fm = FileManager.default
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            for name in (try? fm.contentsOfDirectory(atPath: dir.path)) ?? [] { try? fm.removeItem(at: dir.appendingPathComponent(name)) }
+            for (name, data) in files { try? data.write(to: dir.appendingPathComponent(name), options: .atomic) }
+            try? Data(key.utf8).write(to: dir.appendingPathComponent("key"), options: .atomic)
+        }
+    }
+
     /// Keeps the pictures of the pet's look for its stage: "<key>.png", "<key>-<look>.png" for each face, and
     /// "<key>.json" with where the faces go. Only the latest key is kept. Then the widget redraws with them.
     static func saveArt(_ body: [String: Any]) {
@@ -96,6 +129,7 @@ enum WidgetShare {
         queue.async {
             if let file { try? FileManager.default.removeItem(at: file) }
             if let artDirectory { try? FileManager.default.removeItem(at: artDirectory) }
+            if let stickerDirectory { try? FileManager.default.removeItem(at: stickerDirectory) }
             WidgetCenter.shared.reloadAllTimelines()
             DispatchQueue.main.async { endTask() }
         }

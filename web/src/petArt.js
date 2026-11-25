@@ -4,12 +4,14 @@
 // picture in the widget's first look, and each other look's face alone, with where the faces go. The app
 // keeps them in the App Group's folder ("petArt" in ios/Pockling/GameHost.swift, then WidgetShare.swift),
 // where the widget finds them by the snapshot's `art` key (widget.js artKey; ios/PocklingWidget/PetArt.swift).
-// Only the stage the pet is at: when it grows, its key changes and it's painted again.
+// Only the stage the pet is at: when it grows, its key changes and it's painted again. Below, from 1.5, every
+// pet's stickers for Messages, painted the same way (ios/PocklingStickers).
 import { defineFx } from './bake/fx.js';
 import { defineOutfits } from './bake/outfits.js';
 import { Assets, Renderer } from './gl.js';
 import { Pet } from './pet.js';
 import { stageOf } from './state.js';
+import { hash } from './util.js';
 import { artKey, LOOKS } from './widget.js';
 
 // Each look is a face from the game's own table, as in tools/widget-art.html.
@@ -153,6 +155,116 @@ export async function paintPetArt(p) {
     return { key, stage, whole, faces, face: [face.x, face.y, face.w, face.h], size: [w, h] };
   } finally {
     // A second WebGL context is costly on a phone: give this one back straight away.
+    gl0.getExtension('WEBGL_lose_context')?.loseContext();
+  }
+}
+
+// ── Stickers for Messages (from 1.5) ─────────────────────────────────────────────────────────────
+
+/** The stickers: a face from the game's table and a word on each, in the order Messages shows them. */
+export const STICKERS = [
+  ['hi', 'happy', 'Hi!'], ['love', 'love', 'Love you'], ['yay', 'starry', 'Yay!'],
+  ['night', 'sleep', 'Good night'], ['yum', 'drool', 'Yum!'], ['omg', 'surprised', 'OMG'],
+  ['hugs', 'bliss', 'Hugs'], ['miss', 'sad', 'Miss you'], ['hehe', 'cheeky', 'Hehe'],
+];
+/** Messages' regular sticker size, in pixels. */
+const STICKER = 408;
+/** Change it when the stickers' drawing changes, so every phone paints them again. */
+const STICKERS_VERSION = 1;
+
+/** Names the stickers of a pet as it looks now: a Makeover or growing up gives new ones. */
+export function stickerKey(p) {
+  if (!p) return null;
+  return `s${hash(JSON.stringify([STICKERS_VERSION, p.breed, p.coat, p.seed ?? 1, stageOf(p).id, p.look ?? null])).toString(36)}`;
+}
+
+/**
+ * Paints the pet's stickers for Messages (ios/PocklingStickers): { key, items: [{ id, png }] }, each a 408 px
+ * square PNG, see-through round the pet, its word in a little pill below. A step at a time, a frame apart.
+ */
+export async function paintStickers(p) {
+  const key = stickerKey(p);
+  if (!key) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const gl0 = canvas.getContext('webgl2', { alpha: true, antialias: false, premultipliedAlpha: true, preserveDrawingBuffer: true });
+  if (!gl0) return null;
+  try {
+    const g = new Renderer(canvas);
+    const assets = new Assets(g);
+    defineOutfits(assets);
+    defineFx(assets);
+    g.resize(SIZE, SIZE, 1);
+    const pet = new Pet(assets, { breed: p.breed, coat: p.coat, seed: p.seed ?? 1, stage: stageOf(p).id, outfit: p.outfit ?? {}, look: p.look }, { prefix: 'sticker', bakeScale: 3 });
+    const [work, wx] = canvas2d(SIZE, SIZE);
+    const items = [];
+    for (const [i, [id, face, word]] of STICKERS.entries()) {
+      await breathe();
+      pet.setFace(face);
+      pet.t = 0;
+      pet.breathNow = 0;
+      pet.blink = 1;
+      pet.lookFree = [0, 0];
+      pet.settle();
+      g.begin(0, 0, 0);
+      const gl = g.gl;
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      pet.draw(g, SIZE / 2, FEET, SCALE);
+      g.end();
+      wx.clearRect(0, 0, SIZE, SIZE);
+      wx.drawImage(canvas, 0, 0);
+      // The pet's own box, so each sticker is all pet.
+      const data = wx.getImageData(0, 0, SIZE, SIZE).data;
+      let x0 = SIZE, y0 = SIZE, x1 = 0, y1 = 0;
+      for (let k = 3; k < data.length; k += 4) {
+        if (data[k] <= 6) continue;
+        const px = ((k - 3) / 4) % SIZE;
+        const py = Math.floor((k - 3) / 4 / SIZE);
+        if (px < x0) x0 = px;
+        if (px > x1) x1 = px;
+        if (py < y0) y0 = py;
+        if (py > y1) y1 = py;
+      }
+      if (x1 <= x0 || y1 <= y0) continue;
+      const [out, ox] = canvas2d(STICKER, STICKER);
+      // The pet in the top part, the word below it, overlapping its feet a little.
+      const font = 50;
+      const pillH = Math.round(font * 1.45);
+      const room = STICKER - pillH * 0.62 - 14;
+      const bw = x1 - x0 + 1;
+      const bh = y1 - y0 + 1;
+      const k = Math.min((STICKER - 20) / bw, room / bh);
+      const dw = bw * k;
+      const dh = bh * k;
+      ox.imageSmoothingEnabled = true;
+      ox.imageSmoothingQuality = 'high';
+      ox.drawImage(work, x0, y0, bw, bh, (STICKER - dw) / 2, 8 + (room - dh) / 2, dw, dh);
+      ox.font = `800 ${font}px ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif`;
+      const tw = Math.min(ox.measureText(word).width, STICKER - 60);
+      const pw = tw + 44;
+      const px0 = (STICKER - pw) / 2;
+      const py0 = STICKER - pillH - 8;
+      ox.beginPath();
+      ox.roundRect(px0, py0, pw, pillH, pillH / 2);
+      ox.fillStyle = '#ffffff';
+      ox.shadowColor = 'rgba(80, 40, 50, 0.28)';
+      ox.shadowBlur = 10;
+      ox.shadowOffsetY = 3;
+      ox.fill();
+      ox.shadowColor = 'transparent';
+      ox.lineWidth = 5;
+      ox.strokeStyle = '#d13b68';
+      ox.stroke();
+      ox.fillStyle = '#d13b68';
+      ox.textAlign = 'center';
+      ox.textBaseline = 'middle';
+      ox.fillText(word, STICKER / 2, py0 + pillH / 2 + 2, STICKER - 60);
+      items.push({ id: `${String(i + 1).padStart(2, '0')}-${id}`, png: await png(out) });
+    }
+    return { key, items };
+  } finally {
     gl0.getExtension('WEBGL_lose_context')?.loseContext();
   }
 }

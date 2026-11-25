@@ -215,6 +215,11 @@ export function sendPetArt(art) {
   if (bridge && art) send('petArt', art);
 }
 
+/** The pet's stickers for Messages (petArt.js paintStickers), for the app to keep (WidgetShare.saveStickers). */
+export function sendStickers(stickers) {
+  if (bridge && stickers) send('stickers', stickers);
+}
+
 /**
  * The pet's nap, for the app's Live Activity (ios/Pockling/NapActivity.swift): { on: false }, or { on: true, name,
  * breed, coat, stage, art, wake } with wake in ms.

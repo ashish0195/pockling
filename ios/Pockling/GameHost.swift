@@ -28,6 +28,10 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         if let save = store.load(), let literal = GameHost.jsLiteral(save) {
             content.addUserScript(WKUserScript(source: "window.__pocklingSave = \(literal);", injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
+        // Which stickers the app already keeps, so the game paints only a new set (web/src/game.js syncStickers).
+        if let key = WidgetShare.stickerKey {
+            content.addUserScript(WKUserScript(source: "window.__pocklingStickerKey = \"\(key)\";", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         #if DEBUG
         // Debug builds see the games service's draft live events too (web/src/festival.js).
         content.addUserScript(WKUserScript(source: "window.__pocklingDev = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -101,6 +105,9 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         case "nap":
             // The pet's nap, as a Live Activity (NapActivity.swift).
             NapActivity.update(body)
+        case "stickers":
+            // The pet's stickers for Messages (PocklingStickers).
+            WidgetShare.saveStickers(body)
         case "haptic":
             haptics.play(body["kind"] as? String ?? "light")
         case "purr":
