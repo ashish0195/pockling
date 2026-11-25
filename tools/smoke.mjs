@@ -588,6 +588,31 @@ const flows = {
     await d.sleep(400);
     assert(await d.js(`T.scene === __scenes.hatch`), 'before hatching, a link leaves the eggs where they are');
 
+    // A friend's visit link while choosing an egg (pockling://visit, or a new # in a running tab): the friend's pet,
+    // and "Hatch your own" brings the eggs back. Mid-hatch, a visit waits.
+    const code = await d.js(`(async () => {
+      const { adopt, newGame } = await import('./src/state.js');
+      const { visitCode } = await import('./src/visit.js');
+      const s = newGame();
+      adopt(s, { breed: 'foxling', coat: 'arctic', name: 'Biscuit', seed: 9 }, Date.now());
+      return visitCode(s.pet);
+    })()`);
+    await d.js(`window.__pockling.emit('open', { to: 'visit', code: '${code}' })`);
+    await d.waitFor(`T.scene === __scenes.visit`, 4000);
+    assert(await d.js(`document.querySelector('#hatch-top h1').textContent.includes('Biscuit')`), 'a visit link from the eggs shows the friend\'s pet');
+    await d.js(`T.click('#visitHatch')`);
+    await d.waitFor(`T.scene === __scenes.hatch && T.scene.phase === 'pick'`, 4000);
+    await d.js(`location.hash = '#visit=${code}'`);
+    await d.waitFor(`T.scene === __scenes.visit`, 4000);
+    await d.js(`T.click('#visitHatch')`);
+    await d.waitFor(`T.scene === __scenes.hatch && T.scene.phase === 'pick'`, 4000);
+    const egg = await d.js(`(() => { const e = T.scene.eggs[1]; return [e.x, e.y]; })()`);
+    await d.js(`T.tap(${egg[0]}, ${egg[1]}); T.click('#hatchBtn'); T.ff(2)`);
+    assert((await d.js(`T.scene.phase`)) === 'crack', 'the egg is cracking');
+    await d.js(`window.__pockling.emit('open', { to: 'visit', code: '${code}' })`);
+    await d.sleep(600);
+    assert(await d.js(`T.scene === __scenes.hatch`), 'mid-hatch, a visit link waits');
+
     await d.open('web/?demo=home&breed=puppling&hour=18');
     await d.js(`T.click('[data-action="menu"]')`);
     await d.sleep(450);

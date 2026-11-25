@@ -100,10 +100,14 @@ function boot() {
   // A reminder or a pockling:// link was opened (ios/Pockling/PetLinks.swift): show the pet. A menu closes,
   // and a game left open since the last visit gives way to the pet saying hello at home. Before an egg has
   // hatched, the eggs are the place to be anyway.
+  // Mid-hatch (an egg chosen, cracking, meeting the new pet, the studio, naming), a visit link waits. Choosing an
+  // egg can always give way to a friend's pet: "Hatch your own" brings the eggs back. A new player who got the app
+  // from a friend's visit and taps "See Mochi there" is on the eggs, and sees Mochi.
+  const midHatch = () => game.scene === hatch && hatch.phase !== 'pick';
   on('open', ({ to, code } = {}) => {
     const scene = game.scene;
     // A visit link opened in the app: the friend's pet, wherever the game was (not mid-hatch).
-    if (to === 'visit' && code && scene && scene !== hatch) {
+    if (to === 'visit' && code && scene && !midHatch()) {
       ui.hideSheet();
       fadeTo(visit, { code });
       return;
@@ -117,7 +121,7 @@ function boot() {
   // A visit link opened in a tab where the game is already running only changes the # (visit.js).
   window.addEventListener('hashchange', () => {
     const code = visitFromHash(location.hash);
-    if (code && game.scene && game.scene !== hatch) {
+    if (code && game.scene && !midHatch()) {
       ui.hideSheet();
       fadeTo(visit, { code });
     }
