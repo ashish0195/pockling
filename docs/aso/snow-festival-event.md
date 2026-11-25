@@ -22,7 +22,7 @@ the festival and its deep link, and only on the user's OK.
 | Publish | 8 Dec 2026, 17:30 IST (12:00 UTC) |
 | Start | 15 Dec 2026, 17:30 IST |
 | End | 14 Jan 2027, 17:30 IST: 30 days |
-| Deep link | `pockling://snowfestival` (proposed; the update must open the festival from it) |
+| Deep link | `pockling://snowfestival` (1.4.1 opens the festival card on the pet's home screen; `pockling://firstsnow` goes there too, and older versions just open the app) |
 | Event card | `docs/aso/store/events/snow-festival-card-1920x1080.jpg` |
 | Event details page | `docs/aso/store/events/snow-festival-details-1080x1920.jpg` |
 
@@ -30,23 +30,34 @@ Each language has the same two images. Neither has any words in it.
 
 | Language | Name | Short description | Long description |
 |---|---|---|---|
-| English (U.S.) | Snow Festival | Snowfall, cozy hats and a scarf to earn | Snow is falling past your pet's window. Drop by during the festival to play in the snow and earn cozy winter clothes. |
-| English (U.K.) | Snow Festival | Snowfall, cosy hats and a scarf to earn | Snow is falling past your pet's window. Drop by during the festival to play in the snow and earn cosy winter clothes. |
-| Spanish (Mexico) | Festival de la Nieve | Nieve, gorros calientitos y una bufanda por ganar | Cae nieve afuera de la ventana de tu mascota. Ven durante el festival a jugar en la nieve y gana ropa de invierno. |
-| Hindi | बर्फ़ उत्सव | बर्फ़बारी, गर्म टोपियाँ और जीतने को एक मफ़लर | आपके पेट की खिड़की के बाहर बर्फ़ गिर रही है। उत्सव के दौरान आओ, बर्फ़ में खेलो और सर्दियों के कपड़े जीतो। |
+| English (U.S.) | Snow Festival | Snowfall, cozy hats and a scarf to earn | Snow falls past your pet's window and the park turns white. Catch snowflakes to earn two cozy hats and a scarf. |
+| English (U.K.) | Snow Festival | Snowfall, cosy hats and a scarf to earn | Snow falls past your pet's window and the park turns white. Catch snowflakes to earn two cosy hats and a scarf. |
+| Spanish (Mexico) | Festival de la Nieve | Nieve, gorros calientitos y una bufanda por ganar | Cae nieve tras la ventana de tu mascota y el parque se pinta de blanco. Atrapa copos y gana dos gorros y una bufanda. |
+| Hindi | बर्फ़ उत्सव | बर्फ़बारी, गर्म टोपियाँ और जीतने को एक मफ़लर | आपके पेट की खिड़की के बाहर बर्फ़ गिर रही है और पार्क सफ़ेद हो गया है। बर्फ़ के फाहे पकड़ो, दो टोपियाँ और एक मफ़लर जीतो। |
 
-The text promises snow at the window, playing in the snow, and winter clothes to earn. The festival
-in the update has to do all three, or the text changes before the event is submitted. It has no price
-words (Guideline 2.3.7).
+The long descriptions changed on 25 Nov 2026, to match the festival as built in 1.4.1:
+- snow falls past the pet's window, and the park turns white for walks;
+- a snowflake to catch at the window each day, and more on snowy walks;
+- 2 snowflakes earn the Cozy beanie, 4 the Winter hat and 7 the Red scarf;
+- an outfit the player already owns gives 30 berries instead.
+
+No price words (Guideline 2.3.7). 1.4.1 can only be submitted once 1.4 (Waiting for Review since 25 Nov
+22:01 IST) is approved, and is expected live around 29 Nov to 2 Dec, before the 8 Dec publish.
 
 ## The live event (9io games service)
 
-Listed by `GET https://9io.ai/games-api/v1/live/pockling` (stocks-bot `games/CONTRACT.md`):
-- kind `snow_festival`, id `snow-festival-2026`;
-- the same start and end;
-- the payload the festival screen reads.
+Listed by `GET https://9io.ai/games-api/v1/live/pockling` (stocks-bot `games/CONTRACT.md`, which has the
+kind's payload keys).
+- Kind `snow_festival`, id `snow-festival-2026`, with the same start and end.
+- `min_version` `1.4.1`.
+- Payload `{"room": "snow", "park": "snow", "goal": 7, "outfits": ["beanie", "santa", "scarf"], "steps": [2,
+  4, 7], "window": 1, "walk": 2}`. The app has the same defaults built in.
+- A draft on the server since 25 Nov 2026; debug builds see it.
+- Publish it on the games dashboard's Live events card once 1.4.1 is live. It's then listed from 8 Dec,
+  seven days before the start.
 
-It's made and published on the games dashboard's Live events card. Debug builds see a draft.
+The app sends `live_open` (`from`: `card` or `link`), and puts `live: "snow-festival-2026"` on the walks'
+`play` and `finish` while the festival is on.
 
 ## Making the images again
 
