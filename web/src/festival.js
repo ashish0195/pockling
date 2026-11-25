@@ -10,7 +10,7 @@ import { dayNumber } from './util.js';
 
 export const FESTIVAL_KIND = 'snow_festival';
 /** This build's version, for the events' min_version. */
-export const FESTIVAL_VERSION = '1.4.1';
+export const FESTIVAL_VERSION = '1.5';
 
 /**
  * The settings, each one optional in the event's payload:
