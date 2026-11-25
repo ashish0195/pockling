@@ -79,13 +79,24 @@ reaches a server). No new permission, purchase or data collection.
 
 ## Release
 
-1.4 (8) has been Waiting for Review since 25 Nov 22:01 IST, and 1.4.1 (9) is archived from 3000ae4 but not
-uploaded; it has the widget-pictures bug above. Nothing goes up without the user's OK.
+The user's go-ahead in the pockling-duo session, 25 Nov 2026: "Yes, do that" to "Upload 1.5 now, and submit it with
+the festival once 1.4 is approved?".
 
-**The Snow Festival's in-app event** (6839282325) goes to App Review in the same submission as whichever update
-carries the festival, 1.4.1 or 1.5 (the user's "Yes, with that update", 25 Nov 2026, in the live-events
-session, which holds that OK). Once that version is in its draft submission, after 1.4 is approved, message
-the live-events session with the version and the draft's id; it adds the event to the same draft and says when
-it's in, and only then is the whole draft submitted, with the user's OK here. Don't add the event from here.
-If the update can't be live before the event's publish date (8 Dec), tell that session first: it moves the
-event's dates.
+- **Upload:** 1.5 (10) archived unsigned from main 1934f8c (Xcode 27.2). The widget, then the Messages extension,
+  then the app were signed ad hoc with their entitlements (push as `production`). Exported to a folder first and
+  checked: 1.5 (10) on all three bundles, Apple Distribution (9X9HQVQ78G), a store profile each, the App Group on
+  all three. The export registered the new App ID `app.pockling.Pockling.Stickers` with the App Group. Also
+  checked: `com.apple.message-payload-provider` with the iMessage App Icon, no non-exempt encryption, Live
+  Activities on, and the web game inside at 1.5. IPA 21,381,715 bytes, SHA-256 00a3e0a19025b7ad…. Uploaded at
+  23:38:59 IST ("Upload succeeded").
+- **Next, once 1.4 (8) is approved and live** (Waiting for Review since 25 Nov 22:01 IST; App Store Connect allows
+  no new version while one is in review):
+  1. Create version 1.5 from 1.4, which copies its text, media and review details.
+  2. Enter What's New in four languages and the review notes paragraph above. Add the iMessage screenshots
+     (iPhone 6.3", iPad 13"), attach build 10, and release automatically.
+  3. Add for Review, which makes the draft submission. Then message the live-events session with the version
+     and the draft's id: it adds the Snow Festival event (6839282325) to that draft and says when it's in.
+     Don't add the event from here.
+  4. Submit the whole draft (covered by the go-ahead above). If 1.5 can't be live before the event's publish
+     date (8 Dec), tell the live-events session first: it moves the event's dates.
+- 1.4.1 (9) stays archived (from 3000ae4) but won't be uploaded: 1.5 carries the festival and fixes its widget bug.
