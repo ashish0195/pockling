@@ -28,6 +28,10 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
         if let save = store.load(), let literal = GameHost.jsLiteral(save) {
             content.addUserScript(WKUserScript(source: "window.__pocklingSave = \(literal);", injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
+        #if DEBUG
+        // Debug builds see the games service's draft live events too (web/src/festival.js).
+        content.addUserScript(WKUserScript(source: "window.__pocklingDev = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        #endif
         config.userContentController = content
 
         webView = WKWebView(frame: .zero, configuration: config)

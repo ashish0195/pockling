@@ -1,8 +1,9 @@
 import Foundation
 
 /// Where a tapped reminder or a link to the app leads: the pet. The app's URL scheme is `pockling`
-/// (Info.plist): pockling://pet, and pockling://firstsnow for the planned "First Snow" in-app event, which
-/// shows the pet until the update that brings the snow.
+/// (Info.plist): pockling://pet; pockling://snowfestival, the Snow Festival's App Store event (1.4.1), which opens
+/// the festival's card on the pet's screen (web/src/festival.js); and pockling://firstsnow, 1.3.2's link for the
+/// event as it was first planned, which does the same now.
 ///
 /// It's the same word as the scheme the game's own files load from inside the web view
 /// (pockling://app/index.html, BundleSchemeHandler.swift), and the two don't meet: WebKit answers its
@@ -12,7 +13,7 @@ import Foundation
 enum PetLinks {
     static let scheme = "pockling"
     /// "pet" is also the `open` key of every reminder (ReminderPlan.open).
-    static let keys: Set<String> = ["pet", "firstsnow"]
+    static let keys: Set<String> = ["pet", "firstsnow", "snowfestival"]
 
     private static weak var host: GameHost?
     /// A link or reminder tapped before the game's host exists (a cold launch) waits for it.

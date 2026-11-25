@@ -72,6 +72,46 @@ export function defineFx(a) {
     x.fillStyle = g;
     x.fill();
   }));
+  // The Snow Festival's snowflake (festival.js): six frosted arms with little branches, round-ended and plump
+  // enough to read as a toy at the size of a fingertip, with a soft glow behind.
+  a.define('fx.snowflake', () => art(64, 64, (x) => {
+    const glow = x.createRadialGradient(32, 32, 2, 32, 32, 31);
+    glow.addColorStop(0, 'rgba(225,244,255,0.85)');
+    glow.addColorStop(1, 'rgba(225,244,255,0)');
+    x.fillStyle = glow;
+    x.fillRect(0, 0, 64, 64);
+    const arms = () => {
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU - Math.PI / 2;
+        const dx = Math.cos(a);
+        const dy = Math.sin(a);
+        x.beginPath();
+        x.moveTo(32, 32);
+        x.lineTo(32 + dx * 22, 32 + dy * 22);
+        for (const [at, len] of [[11, 7], [17, 5]]) {
+          for (const side of [-1, 1]) {
+            const b = a + side * 0.75;
+            x.moveTo(32 + dx * at, 32 + dy * at);
+            x.lineTo(32 + dx * at + Math.cos(b) * len, 32 + dy * at + Math.sin(b) * len);
+          }
+        }
+        x.stroke();
+      }
+    };
+    x.strokeStyle = '#8cc8ee';
+    x.lineWidth = 6.5;
+    arms();
+    x.strokeStyle = '#ffffff';
+    x.lineWidth = 3.6;
+    arms();
+    x.fillStyle = '#ffffff';
+    x.beginPath();
+    x.arc(32, 32, 5.5, 0, TAU);
+    x.fill();
+    x.strokeStyle = '#8cc8ee';
+    x.lineWidth = 1.6;
+    x.stroke();
+  }));
   a.define('fx.star', () => art(40, 40, (x) => {
     starPath(x, 20, 21, 16, 0.5);
     x.lineJoin = 'round';

@@ -11,6 +11,8 @@ struct PetLinkTests {
     }
 
     @Test func theEventLinkAndThePetLinkShowThePet() {
+        #expect(key("pockling://snowfestival") == "snowfestival")
+        #expect(key("pockling://SnowFestival/") == "snowfestival")
         #expect(key("pockling://firstsnow") == "firstsnow")
         #expect(key("pockling://pet") == "pet")
         #expect(key("pockling://pet/") == "pet")

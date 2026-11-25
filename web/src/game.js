@@ -11,6 +11,7 @@ import { frameFor, minFeetY, onStage } from './fold.js';
 import { Assets, Renderer } from './gl.js';
 import { Particles } from './particles.js';
 import { Pet } from './pet.js';
+import { festivalNow } from './festival.js';
 import { paintPetArt } from './petArt.js';
 import { askForReview, haptic, isNative, loadSave, sendPetArt, setHaptics, setPetName, track, writeSave } from './platform.js';
 import { adopt, dailyVisit, migrate, stageOf, tick } from './state.js';
@@ -252,9 +253,16 @@ const launchedAt = Date.now();
 
 function beginRound(scene) {
   if (!scene.mode) return;
-  round = { mode: scene.mode, done: false };
+  round = { mode: scene.mode, done: false, ...liveProps(scene.mode) };
   happyRound = false;
-  track('play', { mode: scene.mode });
+  track('play', { mode: scene.mode, ...liveProps(scene.mode) });
+}
+
+/** Walks and Fetch in the Snow Festival's snow say so (live events' analytics, stocks-bot games/CONTRACT.md). */
+function liveProps(mode) {
+  if (mode !== 'walk' && mode !== 'fetch') return {};
+  const ev = festivalNow(game.now());
+  return ev ? { live: ev.id } : {};
 }
 
 /** A game or activity came to its proper end: the score sheet, the poof after a bath, home from a walk. */
@@ -262,12 +270,12 @@ export function roundDone(props = {}) {
   if (!round || round.done) return;
   round.done = true;
   happyRound = true;
-  track('finish', { mode: round.mode, result: 'done', ...props });
+  track('finish', { mode: round.mode, result: 'done', ...(round.live ? { live: round.live } : {}), ...props });
 }
 
 /** Leaving before the end, by the ✕. */
 function endRound() {
-  if (round && !round.done) track('finish', { mode: round.mode, result: 'quit' });
+  if (round && !round.done) track('finish', { mode: round.mode, result: 'quit', ...(round.live ? { live: round.live } : {}) });
   round = null;
 }
 

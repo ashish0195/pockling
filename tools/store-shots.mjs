@@ -317,6 +317,41 @@ const MOMENTS = {
     return saved;
   },
 
+  /** The Snow Festival (1.4.1, festival.js): snow past the window, today's snowflake waiting, a winter hat on. */
+  async 'snow-home'(d) {
+    await open(d, 'demo=home&breed=kitling&coat=peach&hour=10&days=12&tummy=85&love=90&fun=80&energy=90&clean=95&head=santa&festival=on');
+    await d.js(`(() => { T.scene.idleIn = 1e9; __game.ui.festivalChanged(); T.scene.festivalUpdate(); __game.actor.relax('happy'); __run(2.2); })()`);
+  },
+
+  /** The festival's card part-way: three snowflakes, the beanie earned. */
+  async 'snow-card'(d) {
+    await open(d, 'demo=home&breed=bunling&coat=lilac&hour=16&days=12&head=beanie&festival=on');
+    await d.js(`(() => {
+      T.scene.idleIn = 1e9;
+      const s = __game.state;
+      s.festivals = { 'snow-festival-demo': { flakes: 3, window: [], walk: {}, given: ['beanie'] } };
+      if (!s.owned.outfits.includes('beanie')) s.owned.outfits.push('beanie');
+      __game.ui.festivalChanged();
+      T.scene.festivalUpdate();
+      __run(1);
+      __game.ui.on_festival(null, 'card');
+      __run(0.6);
+    })()`);
+    await d.sleep(500);
+  },
+
+  /** A walk in the snowy park, a snowflake on the path ahead. */
+  async 'snow-walk'(d) {
+    await open(d, 'demo=walk&breed=foxling&coat=tangerine&hour=11&days=12&neck=scarf&festival=on');
+    await d.js(`(() => {
+      const s = T.scene;
+      s.spawnAhead();
+      const f = s.objects.find((o) => o.kind === 'flake');
+      if (f) s.scroll = f.x - __game.actor.x - 150 * __game.view.u;
+      __run(1.6);
+    })()`);
+  },
+
   /** Make it yours (1.4): the studio just after hatching, a pet like no other on the stage. */
   async make(d) {
     await d.open('web/', 2500);

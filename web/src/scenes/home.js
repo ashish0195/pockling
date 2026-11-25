@@ -3,7 +3,8 @@
 import { idleScene } from '../actor.js';
 import { audio } from '../audio.js';
 import { drawSky, roomLayout } from '../bake/room.js';
-import { FOODS, STAGES } from '../catalog.js';
+import { FOODS, OUTFITS, STAGES } from '../catalog.js';
+import { catchWindowFlake, festivalNow, festivalSettings, windowFlakeDue } from '../festival.js';
 import { ambient, petLight, bakeScale, celebrate, checkDaily, defineRoomArt, game, onStageX, refreshLight, save, setPetStage } from '../game.js';
 import { CREASE_GAP, reachOf, SWAY } from '../fold.js';
 import { motion } from '../particles.js';
@@ -11,6 +12,7 @@ import { GROUND } from '../pet.js';
 import { haptic, purr as hapticPurr, setKeepAwake, track } from '../platform.js';
 import { cuddle, feed, goToSleep, levelOf, mood, stageOf, tasteOf, talked, wakeUp } from '../state.js';
 import { talkMode } from '../talk.js';
+import { drawSnow, makeSnow, overcast, updateSnow, windowFlakeAt } from './snow.js';
 import { clamp, lerp, pick, rand, smooth, Spring, TAU } from '../util.js';
 
 const THOUGHTS = { hungry: '🍎', sleepy: '🌙', dirty: '🫧', lonely: '💗', bored: '🎾' };
@@ -57,6 +59,7 @@ export const home = {
     const { actor, pet } = game;
     defineRoomArt();
     this.layout = roomLayout(game.view);
+    this.festivalUpdate();
     actor.scale = 1;
     actor.x = game.view.stage.cx;
     actor.y = game.view.floorY;
@@ -143,10 +146,51 @@ export const home = {
 
   // ── Every frame ──
 
+  /**
+   * The Snow Festival (festival.js), as the scene starts or the list of events changes: snow past the window, and
+   * today's snowflake waiting there to be caught.
+   */
+  festivalUpdate() {
+    this.festival = festivalNow(game.now());
+    const set = this.festival ? festivalSettings(this.festival) : null;
+    this.snow = set?.room === 'snow' ? (this.snow ?? makeSnow(46)) : null;
+    const due = this.festival && game.state.pet && !game.state.pet.asleep && windowFlakeDue(game.state, this.festival, game.now());
+    this.flake = due ? (this.flake ?? { t: 0 }) : null;
+  },
+
+  /** Catching today's snowflake: the festival's snowflakes and whatever they earn. */
+  catchFlake(x, y) {
+    const { fx, view } = game;
+    const result = catchWindowFlake(game.state, this.festival, game.now());
+    this.flake = null;
+    if (!result) return;
+    save(true);
+    const name = game.state.pet.name;
+    fx.sparkles(x, y, 12, 40 * view.u);
+    fx.stars(x, y, 6);
+    audio.chime();
+    haptic('success');
+    const actor = game.actor;
+    if (!actor.busy) actor.play(actor.celebrate());
+    game.ui.toast(`❄️ ${name} caught a snowflake! ${result.flakes} of ${result.goal}`);
+    for (const r of result.rewards) {
+      setTimeout(() => game.ui.festivalReward?.(r), 1300);
+    }
+    track('live_flake', { live: this.festival.id, kind: this.festival.kind, from: 'window', flakes: String(result.flakes) });
+  },
+
   update(dt) {
     const { actor, pet, view } = game;
     const state = game.state;
     actor.update(dt);
+    if (this.snow) updateSnow(this.snow, dt);
+    if (this.flake) this.flake.t += dt;
+    // A new day, the pet waking, or a new list of events: look again now and then.
+    this.festivalIn = (this.festivalIn ?? 5) - dt;
+    if (this.festivalIn <= 0) {
+      this.festivalIn = 5;
+      this.festivalUpdate();
+    }
     talkMode.update(dt);
     const p = game.state.pet;
     const grime = p.bathDirt ? 1 : clamp((32 - p.clean) / 32) * 0.8;
@@ -354,6 +398,14 @@ export const home = {
     const { pet, actor } = game;
     if (this.touch || this.drag) return;
     audio.unlock();
+    // Today's snowflake at the window, in the Snow Festival.
+    if (this.flake && this.layout) {
+      const [fx_, fy, size] = windowFlakeAt(this.layout.window, game.view.u, this.flake.t);
+      if (Math.hypot(x - fx_, y - fy) < size * 0.75) {
+        this.catchFlake(fx_, fy);
+        return;
+      }
+    }
     const asleep = game.state.pet.asleep;
     const part = pet.hit(x, y);
     this.touch = { id, x0: x, y0: y, x, y, t: 0, moved: 0, part, mode: part ? 'press' : 'floor', rub: 0 };
@@ -1229,6 +1281,12 @@ export const home = {
       g.sprite(t, win.x - win.w + ((c.x / w) * win.w * 2.2) + shiftW, win.y + c.y * u, { w: t.w * c.s * u, h: t.h * c.s * u, tint: [light.ambient[0], light.ambient[1], light.ambient[2], 1 - light.night * 0.55] });
     }
 
+    // The Snow Festival's snow, falling past the window (only the window shows it: the wall goes over it).
+    if (this.snow) {
+      overcast(g, win.x - win.w, win.y - 20 * u, win.w * 2, win.h + 40 * u);
+      drawSnow(g, assets, this.snow, { x: win.x - win.w + shiftW, y: win.y - 20 * u, w: win.w * 2, h: win.h + 40 * u }, 9 * u);
+    }
+
     if (dim > 0.01) g.rect(win.x - win.w, win.y - 20 * u, win.w * 2, win.h + 40 * u, [0.08, 0.08, 0.2], dim * 0.62);
 
     // The room.
@@ -1262,6 +1320,12 @@ export const home = {
     // Motes floating in the light.
     for (const m of this.motes) {
       g.sprite(assets.get('fx.dot'), m.x + px * 0.6, m.y, { w: m.s, h: m.s, alpha: m.a * (1 - dim) * light.beam, add: 1, tint: [1, 0.96, 0.84] });
+    }
+
+    // Today's snowflake, waiting at the window to be caught.
+    if (this.flake) {
+      const [fx_, fy, size] = windowFlakeAt(win, u, this.flake.t, ax);
+      g.sprite(assets.get('fx.snowflake'), fx_, fy, { w: size, h: size, rot: motion.reduced ? 0 : Math.sin(this.flake.t * 0.9) * 0.25 });
     }
 
     // Food dropped on the floor, behind the pet if it's further back.

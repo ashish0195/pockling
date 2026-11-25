@@ -2,6 +2,7 @@
 // whichever scene is on stage.
 import { audio } from './audio.js';
 import { BREEDS, BREED_IDS, parseLook } from './catalog.js';
+import { FESTIVAL_KIND, FESTIVAL_VERSION, refreshFestival } from './festival.js';
 import { applySettings, checkDaily, game, goTo, initGame, makePet, measure, save, tickState } from './game.js';
 import { home } from './scenes/home.js';
 import { hatch } from './scenes/hatch.js';
@@ -23,6 +24,15 @@ import { clamp } from './util.js';
 const canvas = document.getElementById('stage');
 const params = new URLSearchParams(location.search);
 const demo = params.get('demo');
+
+// Draft live events show to the app's Debug builds (GameHost.swift sets this) and to ?dev=1 pages.
+if (params.has('dev')) globalThis.__pocklingDev = true;
+// ?festival=on (or =soon) stands a Snow Festival in for the games service's list, for screenshots and tests.
+if (params.has('festival')) {
+  const now = Math.floor(Date.now() / 1000);
+  const soon = params.get('festival') === 'soon';
+  globalThis.NINEIO_LIVE = { app: 'pockling', events: [{ id: 'snow-festival-demo', kind: FESTIVAL_KIND, title: 'Snow Festival', subtitle: '', start: soon ? now + 3 * 86400 : now - 3600, end: now + 30 * 86400, payload: {}, min_version: FESTIVAL_VERSION }] };
+}
 
 function fail(message) {
   document.getElementById('loader').innerHTML = `<p style="max-width:300px;text-align:center;line-height:1.4">${message}</p>`;
@@ -88,11 +98,22 @@ function boot() {
   // A reminder or a pockling:// link was opened (ios/Pockling/PetLinks.swift): show the pet. A menu closes,
   // and a game left open since the last visit gives way to the pet saying hello at home. Before an egg has
   // hatched, the eggs are the place to be anyway.
-  on('open', () => {
+  on('open', ({ to } = {}) => {
     const scene = game.scene;
     if (!scene || !game.state.pet || scene === hatch) return;
     ui.hideSheet();
     if (scene !== home) fadeTo(home, { greet: true });
+    // The Snow Festival's App Store event (pockling://snowfestival, and 1.3.2's pockling://firstsnow): its card.
+    if (to === 'snowfestival' || to === 'firstsnow') setTimeout(() => ui.on_festival(null, 'link'), scene !== home ? 800 : 150);
+  });
+  // The live events list: at launch, and on coming back to the game, when it's stale (festival.js).
+  const festivalCheck = () => refreshFestival(() => game.now()).then(() => {
+    ui.festivalChanged();
+    if (game.scene === home) home.festivalUpdate();
+  }, () => {});
+  setTimeout(festivalCheck, 1500);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') festivalCheck();
   });
   startMotion((x, y) => {
     game.tilt = [x, y];

@@ -928,3 +928,14 @@ button:focus-visible { outline: 3px solid var(--pink-deep); outline-offset: 2px;
   max-height: calc(100% - var(--fold-b) - 20px - var(--safe-b));
   overflow-y: auto;
 }
+
+/* The Snow Festival (web/src/festival.js): the ❄️ button, and its card's snowflakes and rewards. */
+.side-btn.festival { background: linear-gradient(180deg, #f2f9ff, #d4eaff); }
+.flakes { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: 10px 0 14px; font-size: 26px; }
+.flake { opacity: 0.3; filter: grayscale(1); }
+.flake.got { opacity: 1; filter: none; }
+.grid.rewards { grid-template-columns: repeat(3, 1fr); }
+.tile.reward small { display: block; margin-top: 3px; color: var(--soft); font-weight: 800; }
+/* 5.9:1 on the tile's white. */
+.tile.reward.on small { color: #1f6f56; }
+.festival-today { margin: 12px 0 14px; font-weight: 800; }

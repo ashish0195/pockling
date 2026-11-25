@@ -5,7 +5,8 @@ import { BREEDS, FOODS, FOOD_IDS, OUTFITS, OUTFIT_IDS, ROOMS, ROOM_IDS, coatOf }
 import { applySettings, askForRatingNicely, celebrate, defineRoomArt, game, grewUpAndCheered, save } from '../game.js';
 import { foodThumb } from '../bake/food.js';
 import { OUTFIT_ART } from '../bake/outfits.js';
-import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting } from '../platform.js';
+import { festivalNow, festivalSettings, festivalSoon, festivalState, walkFlakesLeft, windowFlakeDue } from '../festival.js';
+import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting, track } from '../platform.js';
 import { ageDays, buyOutfit, buyRoom, levelOf, levelProgress, mood, stageOf, tasteOf, trait, useRoom, wear } from '../state.js';
 import { dayNumber } from '../util.js';
 
@@ -21,6 +22,9 @@ function outfitThumb(id) {
   if (!outfitThumbs.has(id)) outfitThumbs.set(id, OUTFIT_ART[id]().canvas.toDataURL('image/png'));
   return outfitThumbs.get(id);
 }
+
+/** "14 Jan", from Unix seconds. */
+const dateText = (secs) => new Date(secs * 1000).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
 export const SITE = 'https://bitfold.9io.ai/pockling/';
 export const APP_STORE = 'https://apps.apple.com/app/id6829163472';
@@ -75,6 +79,7 @@ export const ui = {
     .map(([k, ico, c, label]) => `<div class="ring" data-need="${k}" style="--c:${c}" role="img" aria-label="${label}"><span>${ico}</span></div>`).join('')}
         </div>
         <div id="side">
+          ${festivalNow(game.now()) ? '<button class="side-btn festival" data-action="festival" aria-label="Snow Festival">❄️</button>' : ''}
           <button class="side-btn" data-action="talk" aria-label="Talk to your pet" id="talkBtn">🎤</button>
           <button class="side-btn" data-action="photo" aria-label="Take a photo">📸</button>
           <button class="side-btn" data-action="closet" aria-label="Closet">👒</button>
@@ -506,6 +511,73 @@ export const ui = {
 
   on_shop(el) {
     this.on_closet(el);
+  },
+
+  /**
+   * The Snow Festival's card (festival.js): the snowflakes so far, what they earn, and where to find more. From
+   * the ❄️ button, or a link (the App Store event's pockling://snowfestival). Before it starts or after it ends,
+   * a word saying so.
+   */
+  on_festival(el, from = 'card') {
+    const s = game.state;
+    const now = game.now();
+    const ev = festivalNow(now);
+    if (!ev) {
+      const soon = festivalSoon(now);
+      this.toast(soon ? `❄️ The Snow Festival starts on ${dateText(soon.start)}!` : 'No festival right now. Snow is on its way! ❄️');
+      return;
+    }
+    const set = festivalSettings(ev);
+    const st = festivalState(s, ev);
+    track('live_open', { live: ev.id, kind: ev.kind, from: el?.dataset?.from ?? from });
+    const flakes = Array.from({ length: set.goal }, (_, i) => `<span class="flake${i < st.flakes ? ' got' : ''}">❄️</span>`).join('');
+    const rewards = set.outfits.map((id, i) => {
+      const got = st.given.includes(id);
+      return `<div class="tile reward${got ? ' on' : ''}"><img src="${outfitThumb(id)}" alt="">${OUTFITS[id].name}<small>${got ? 'Earned ✓' : `${set.steps[i]} ❄️`}</small></div>`;
+    }).join('');
+    const done = st.flakes >= set.goal;
+    const today = done ? 'All the snowflakes are found. Happy festival!' : windowFlakeDue(s, ev, now) ? 'A snowflake is waiting at the window today. Tap it!' : "You caught today's snowflake at the window. Another one comes tomorrow.";
+    const walks = walkFlakesLeft(s, ev, now);
+    this.sheet(`${this.head('❄️ Snow Festival')}
+      <p class="muted center">Snow is falling until ${dateText(ev.end)}. Catch a snowflake at the window each day, and find more on snowy walks.</p>
+      <div class="flakes" role="img" aria-label="${st.flakes} of ${set.goal} snowflakes">${flakes}</div>
+      <div class="grid rewards">${rewards}</div>
+      <p class="center festival-today">${today}</p>
+      ${walks > 0 ? `<button class="btn" data-action="festivalWalk">🐾 Find ${walks === 1 ? 'a snowflake' : `up to ${walks} snowflakes`} on a walk</button>` : ''}`);
+  },
+
+  on_festivalWalk() {
+    this.hideSheet();
+    this.run('walk');
+  },
+
+  /** A festival reward just earned: the outfit to put on now, or berries for one it already had. */
+  festivalReward({ outfit, berries }) {
+    const s = game.state;
+    const name = esc(s.pet.name);
+    const item = OUTFITS[outfit];
+    if (!item) return;
+    if (berries) {
+      this.toast(`🍓 +${berries} berries! ${name} already had the ${item.name}.`);
+      return;
+    }
+    audio.fanfare();
+    haptic('success');
+    this.banner(`<div class="big"><img src="${outfitThumb(outfit)}" alt="" style="width:96px;height:96px"></div><h2>A ${item.name} for ${name}!</h2><p>Earned in the Snow Festival. It's in the Closet too.</p><button class="btn" data-close data-go="wear">Put it on</button><button class="btn alt" data-close>Later</button>`, {
+      onClose: (by) => {
+        if (by?.dataset.go !== 'wear') return;
+        if (s.pet.outfit[item.slot] !== outfit) wear(s, outfit);
+        save(true);
+        game.pet?.squash(0.1);
+        game.actor?.relax('happy');
+        audio.sparkle();
+      },
+    });
+  },
+
+  /** The festival started or ended while the game was open: the ❄️ button follows. */
+  festivalChanged() {
+    if (this.mode === 'home' && !document.getElementById('sheet-wrap')) this.show('home');
   },
 
   on_closetTab(el) {

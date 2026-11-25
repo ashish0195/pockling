@@ -2,6 +2,8 @@
 // sometimes catches it in the air, and brings it back. Five throws.
 import { audio } from '../audio.js';
 import { definePark, drawPark } from '../bake/park.js';
+import { festivalNow, festivalSettings } from '../festival.js';
+import { drawSnow, makeSnow, overcast, updateSnow } from './snow.js';
 import { drawSky } from '../bake/room.js';
 import { ambient, feetOnStage, game, petLight, quality, refreshLight } from '../game.js';
 import { haptic } from '../platform.js';
@@ -16,7 +18,11 @@ export const fetchGame = {
   mode: 'fetch',
   enter() {
     const { assets, actor, pet, view } = game;
-    definePark(assets, quality());
+    // The Snow Festival's snowy park (festival.js).
+    const festival = festivalNow(game.now());
+    this.snowy = Boolean(festival) && festivalSettings(festival).park === 'snow';
+    this.snow = this.snowy ? makeSnow(70) : null;
+    definePark(assets, quality(), { snow: this.snowy });
     actor.stop();
     actor.relax('starry');
     actor.scale = 1;
@@ -44,7 +50,7 @@ export const fetchGame = {
 
   resize() {
     const from = this.laneX;
-    definePark(game.assets, quality());
+    definePark(game.assets, quality(), { snow: this.snowy });
     this.layout();
     this.petX += this.laneX - from;
     this.ball.x += this.laneX - from;
@@ -146,6 +152,7 @@ export const fetchGame = {
     const { actor, pet, fx, view } = game;
     const { u } = view;
     actor.update(dt);
+    if (this.snow) updateSnow(this.snow, dt);
     fx.update(dt);
     refreshLight();
     const b = this.ball;
@@ -309,7 +316,9 @@ export const fetchGame = {
       g.sprite(assets.get('sky.sun'), w * 0.76, this.groundY * 0.3, { w: 180 * u, h: 180 * u, alpha: clamp(1 - light.night) });
     }
     if (light.moon !== null) g.sprite(assets.get('sky.moon'), w * 0.76, this.groundY * 0.3, { w: 140 * u, h: 140 * u, alpha: light.night });
+    if (this.snow) overcast(g, 0, 0, view.w, view.h * 0.6);
     drawPark(g, assets, view, 340, amb);
+    if (this.snow) drawSnow(g, assets, this.snow, { x: -20 * view.u, y: 0, w: view.w + 40 * view.u, h: view.h }, 9 * view.u, 0.95);
 
     const b = this.ball;
     const [ballX, ballY, ballS] = this.project(b.x, b.z);

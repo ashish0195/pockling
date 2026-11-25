@@ -8,10 +8,12 @@ import { BREEDS, BREED_IDS } from '../catalog.js';
 import { ambient, celebrate, fadeTo, game, onStageX, petLight, quality, refreshLight, roundDone, save } from '../game.js';
 import { few, motion } from '../particles.js';
 import { Pet } from '../pet.js';
-import { haptic } from '../platform.js';
+import { festivalNow, festivalSettings, findWalkFlake, walkFlakesLeft } from '../festival.js';
+import { haptic, track } from '../platform.js';
 import { walked } from '../state.js';
 import { clamp, lerp, pick, rand, seeded, TAU } from '../util.js';
 import { home } from './home.js';
+import { drawSnow, makeSnow, overcast, updateSnow } from './snow.js';
 
 const METRE = 11;
 const WALK_SCALE = 0.72;
@@ -20,7 +22,15 @@ export const walk = {
   mode: 'walk',
   enter() {
     const { assets, view, actor, pet } = game;
-    definePark(assets, quality());
+    // The Snow Festival (festival.js): a snowy park, snow falling, and snowflakes to find on the path.
+    this.festival = festivalNow(game.now());
+    this.snowy = Boolean(this.festival) && festivalSettings(this.festival).park === 'snow';
+    this.snow = this.snowy ? makeSnow(80) : null;
+    this.flakesToday = this.festival ? walkFlakesLeft(game.state, this.festival, game.now()) : 0;
+    this.flakesPlaced = 0;
+    this.flakesFound = 0;
+    this.rewards = [];
+    definePark(assets, quality(), { snow: this.snowy });
     this.scroll = 0;
     this.dist = 0;
     this.far = 0;
@@ -65,7 +75,7 @@ export const walk = {
   },
 
   resize() {
-    definePark(game.assets, quality());
+    definePark(game.assets, quality(), { snow: this.snowy });
     this.place();
   },
 
@@ -83,6 +93,7 @@ export const walk = {
     document.getElementById('layer').innerHTML = `
       <div class="gamebar">
         <span class="score" id="walkBerries">🍓 0</span>
+        ${this.festival ? '<span class="score" id="walkFlakes">❄️ 0</span>' : ''}
         <span class="score" id="walkDist" style="color:var(--ink)">🐾 0 m</span>
         <span class="spacer"></span>
         <button class="chip tap" data-action="walkHome" style="padding:5px 14px;white-space:nowrap">🏠 Home</button>
@@ -101,7 +112,14 @@ export const walk = {
       const r = seeded(this.nextChunk * 7919 + 31);
       const x = this.nextChunk * step + r.range(0, step * 0.6);
       const roll = r();
-      if (this.nextChunk > 1) {
+      // In the Snow Festival, today's snowflakes lie on the path every few steps from the third.
+      if (this.flakesPlaced < this.flakesToday && this.nextChunk >= 3 && this.nextChunk % 4 === 3) {
+        this.objects.push({ kind: 'flake', x, y: r.range(-24, 24) * u, bob: r() * TAU });
+        this.flakesPlaced += 1;
+      } else if (this.nextChunk > 1 && this.snowy && roll >= 0.34 && roll < 0.88) {
+        // No flowers, flies or mud in the snow: berries instead, now and then.
+        if (roll < 0.6) this.objects.push({ kind: 'berry', x, y: r.range(-34, 34) * u, bob: r() * TAU });
+      } else if (this.nextChunk > 1) {
         if (roll < 0.34) this.objects.push({ kind: 'berry', x, y: r.range(-34, 34) * u, bob: r() * TAU });
         else if (roll < 0.58) this.objects.push({ kind: 'flower', x, y: -56 * u, i: Math.floor(r() * 4), s: r.range(0.9, 1.2), sniffed: false });
         else if (roll < 0.7) this.objects.push({ kind: 'mud', x, y: r.range(-8, 18) * u, hit: false });
@@ -260,6 +278,7 @@ export const walk = {
 
   update(dt) {
     const { actor, pet, fx, view } = game;
+    if (this.snow) updateSnow(this.snow, dt);
     const { u, w } = view;
     actor.update(dt);
     fx.update(dt);
@@ -319,6 +338,23 @@ export const walk = {
         fx.sparkles(sx, sy, 4, 16);
         fx.add({ tex: 'prop.berry', x: sx, y: sy, vy: -150, life: 0.5, size: 30 * u, end: 10 * u });
         document.getElementById('walkBerries').textContent = `🍓 ${this.berries}`;
+      } else if (o.kind === 'flake' && Math.abs(o.x - px) < 40 * u && actor.air < 60 * u) {
+        const sx = o.x - this.scroll;
+        const sy = this.pathY + o.y - 18 * u;
+        this.objects.splice(i, 1);
+        const found = findWalkFlake(game.state, this.festival, game.now());
+        if (found) {
+          this.flakesFound += 1;
+          this.rewards.push(...found.rewards);
+          save();
+          audio.chime();
+          haptic('success');
+          fx.sparkles(sx, sy, 10, 30 * u);
+          fx.add({ tex: 'fx.snowflake', x: sx, y: sy, vy: -170, life: 0.6, size: 46 * u, end: 12 * u });
+          document.getElementById('walkFlakes').textContent = `❄️ ${this.flakesFound}`;
+          game.ui.toast(`❄️ A snowflake! ${found.flakes} of ${found.goal}`);
+          track('live_flake', { live: this.festival.id, kind: this.festival.kind, from: 'walk', flakes: String(found.flakes) });
+        }
       } else if (o.kind === 'mud' && !o.hit && Math.abs(o.x - px) < 34 * u) {
         o.hit = true;
         if (!actor.busy) actor.play(this.splash());
@@ -443,6 +479,7 @@ export const walk = {
       <div class="stats">
         <div class="stat"><b>${metres}</b><span>metres</span></div>
         <div class="stat"><b>${this.berries}</b><span>berries found</span></div>
+        ${this.flakesFound ? `<div class="stat"><b>${this.flakesFound}</b><span>snowflakes</span></div>` : ''}
         <div class="stat"><b>${s.totals.walked}</b><span>walks so far</span></div>
       </div>
       <p>${this.muddy ? `${name} is covered in mud and has never been happier. Bath time?` : metres > 60 ? `${name} is tired out in the best way.` : `${name} would have happily gone further.`}</p>
@@ -452,6 +489,8 @@ export const walk = {
       game.ui.hideSheet();
       fadeTo(home);
       setTimeout(() => celebrate(result), 600);
+      // What the festival's snowflakes earned on the way, once home.
+      this.rewards.forEach((r, i) => setTimeout(() => game.ui.festivalReward?.(r), 1600 + i * 400));
     });
   },
 
@@ -483,7 +522,9 @@ export const walk = {
       g.sprite(t, c.x, this.groundY * c.y, { w: t.w * c.s * u, h: t.h * c.s * u, tint: [amb[0], amb[1], amb[2], 1 - light.night * 0.6] });
     }
 
+    if (this.snow) overcast(g, 0, 0, w, this.groundY + 20);
     drawPark(g, assets, view, scroll, amb);
+    if (this.snow) drawSnow(g, assets, this.snow, { x: -20 * u, y: 0, w: w + 40 * u, h: view.h }, 9 * u, 0.95);
 
     // Things on the path, furthest back first.
     const sorted = [...this.objects].sort((a, b) => a.y - b.y);
@@ -498,6 +539,11 @@ export const walk = {
       } else if (o.kind === 'mud') {
         const t = assets.get('fx.mud');
         g.sprite(t, sx, sy + 12 * u, { w: 130 * u, h: 52 * u, tint: amb });
+      } else if (o.kind === 'flake') {
+        const t = assets.get('fx.snowflake');
+        const bob = motion.reduced ? 0 : Math.sin(game.time * 2.6 + o.bob) * 5 * u;
+        g.sprite(assets.get('fx.shadow'), sx, sy + 12 * u, { w: 46 * u, h: 12 * u, alpha: 0.45 });
+        g.sprite(t, sx, sy - 16 * u + bob, { w: 50 * u, h: 50 * u, rot: motion.reduced ? 0 : Math.sin(game.time * 1.3 + o.bob) * 0.3 });
       } else if (o.kind === 'berry') {
         const t = assets.get('prop.berry');
         const bob = Math.sin(game.time * 3 + o.bob) * 4 * u;

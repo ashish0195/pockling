@@ -288,12 +288,32 @@ function bakeFlower(kind) {
   return { canvas: c, w: 80, h: 100 };
 }
 
-export function definePark(a, Q) {
-  a.define('park.far', () => bakeFar(Q), { repeat: 'x' });
-  a.define('park.mid', () => bakeMid(Q), { repeat: 'x' });
-  a.define('park.near', () => bakeNear(Q), { repeat: 'x' });
-  a.define('park.ground', () => bakeGround(Q), { repeat: 'x' });
-  a.define('park.fore', () => bakeFore(Q), { repeat: 'x' });
+/**
+ * Snow over a baked layer, for the Snow Festival (festival.js): white settles thickest on top, where snow lands,
+ * and thins towards the bottom, so hills and trees keep their shapes under it. `top` and `bottom` are how white.
+ */
+function frost(made, top, bottom) {
+  const c = made.canvas;
+  const x = c.getContext('2d');
+  x.save();
+  x.globalCompositeOperation = 'source-atop';
+  const g = x.createLinearGradient(0, 0, 0, c.height);
+  g.addColorStop(0, `rgba(250,253,255,${top})`);
+  g.addColorStop(1, `rgba(236,244,252,${bottom})`);
+  x.fillStyle = g;
+  x.fillRect(0, 0, c.width, c.height);
+  x.restore();
+  return made;
+}
+
+/** The park's layers; with `snow`, under snow (the Snow Festival's walks and Fetch). */
+export function definePark(a, Q, { snow = false } = {}) {
+  const f = (bake, top, bottom) => (snow ? () => frost(bake(), top, bottom) : bake);
+  a.define('park.far', f(() => bakeFar(Q), 0.84, 0.62), { repeat: 'x' });
+  a.define('park.mid', f(() => bakeMid(Q), 0.82, 0.55), { repeat: 'x' });
+  a.define('park.near', f(() => bakeNear(Q), 0.8, 0.5), { repeat: 'x' });
+  a.define('park.ground', f(() => bakeGround(Q), 0.92, 0.86), { repeat: 'x' });
+  a.define('park.fore', f(() => bakeFore(Q), 0.78, 0.55), { repeat: 'x' });
   for (let i = 0; i < 4; i++) a.define(`park.flower${i}`, () => bakeFlower(i));
 }
 
