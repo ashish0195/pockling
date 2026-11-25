@@ -8,7 +8,7 @@
 <body>
 <canvas id="c"></canvas>
 <script type="module">
-  // Renders the app icon, the share image and the wordmark. tools/make-art.mjs screenshots these.
+  // Renders the app icon, the share image, the wordmark and the store's images. tools/make-art.mjs screenshots these.
   import { Renderer, Assets } from '../web/src/gl.js';
   import { Pet } from '../web/src/pet.js';
   import { defineOutfits } from '../web/src/bake/outfits.js';
@@ -142,6 +142,111 @@
     const [outer, inner] = wide ? [[1400, 0.74], [790, 0.86]] : [[1440, 0.7], [845, 0.86]];
     const faces = [['drakling', 'mint', 'smile', -1, outer], ['puppling', 'honey', 'happy', 1, outer], ['foxling', 'ember', 'joy', -1, inner], ['bunling', 'lilac', 'bliss', 1, inner], ['kitling', 'peach', 'happy', 0, [0, 1]]];
     for (const [breed, coat, face, side, [dx, size]] of faces) add({ breed, coat }, W / 2 + side * dx * k, row, big * size * k, face);
+  } else if (mode === 'event-card' || mode === 'event-details') {
+    // The Snow Festival's App Store in-app event images: the card (1920 x 1080) and the details page (1080 x 1920).
+    // No words, prices or logos: the App Store sets the event's badge, name and description over the lower third
+    // (and the app's icon in the card's top right corner), so the pets stand above that, on snow, in the game's own
+    // winter hats and scarves, under festival lights.
+    const tall = mode === 'event-details';
+    const k = Math.min(W, H) / 1080;
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+    const groundY = H * (tall ? 0.54 : 0.58);
+    bg = backdrop((x) => {
+      const sky = x.createLinearGradient(0, 0, 0, groundY);
+      sky.addColorStop(0, '#4f4fa6');
+      sky.addColorStop(0.5, '#8f86d9');
+      sky.addColorStop(1, '#f2c6de');
+      x.fillStyle = sky;
+      x.fillRect(0, 0, W, H);
+      const glow = x.createRadialGradient(W / 2, groundY - 80 * k, 0, W / 2, groundY - 80 * k, Math.max(W, H) * 0.55);
+      glow.addColorStop(0, 'rgba(255,240,246,0.9)');
+      glow.addColorStop(0.45, 'rgba(255,225,238,0.35)');
+      glow.addColorStop(1, 'rgba(255,225,238,0)');
+      x.fillStyle = glow;
+      x.fillRect(0, 0, W, H);
+      // Far snowy hills, then the snow the pets stand on.
+      const hills = (y, amp, color, phase) => {
+        x.fillStyle = color;
+        x.beginPath();
+        x.moveTo(0, H);
+        for (let i = 0; i <= 48; i++) {
+          const px = (W * i) / 48;
+          x.lineTo(px, y + Math.sin(i * 0.55 + phase) * amp + Math.sin(i * 0.21 + phase * 2) * amp * 0.8);
+        }
+        x.lineTo(W, H);
+        x.closePath();
+        x.fill();
+      };
+      hills(groundY - (tall ? 210 : 70) * k, 16 * k, '#ddd4f4', 0.4);
+      hills(groundY - (tall ? 150 : 26) * k, 12 * k, '#efe9fb', 2.1);
+      const snow = x.createLinearGradient(0, groundY, 0, H);
+      snow.addColorStop(0, '#ffffff');
+      snow.addColorStop(1, '#e6e1f6');
+      x.fillStyle = snow;
+      x.beginPath();
+      x.moveTo(0, H);
+      x.lineTo(0, groundY + 10 * k);
+      x.bezierCurveTo(W * 0.3, groundY - 22 * k, W * 0.7, groundY - 22 * k, W, groundY + 10 * k);
+      x.lineTo(W, H);
+      x.closePath();
+      x.fill();
+      // Festival lights on a sagging string across the top.
+      const wireY = H * (tall ? 0.08 : 0.05);
+      const sag = (tall ? 90 : 80) * k;
+      const wire = (t) => [W * -0.04 + t * W * 1.08, wireY + Math.sin(Math.PI * t) * sag];
+      x.strokeStyle = 'rgba(60,45,90,0.55)';
+      x.lineWidth = 3 * k;
+      x.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const [px, py] = wire(i / 60);
+        if (i === 0) x.moveTo(px, py); else x.lineTo(px, py);
+      }
+      x.stroke();
+      const bulbs = ['#ffd76b', '#ff9cc0', '#8fe3c8', '#9ccaff', '#ffb27a'];
+      const count = tall ? 9 : 15;
+      for (let i = 1; i < count; i++) {
+        const [px, py] = wire(i / count);
+        const col = bulbs[i % bulbs.length];
+        const halo = x.createRadialGradient(px, py + 14 * k, 0, px, py + 14 * k, 46 * k);
+        halo.addColorStop(0, col + 'cc');
+        halo.addColorStop(1, col + '00');
+        x.fillStyle = halo;
+        x.fillRect(px - 50 * k, py - 36 * k, 100 * k, 100 * k);
+        x.fillStyle = col;
+        x.beginPath();
+        x.ellipse(px, py + 16 * k, 9 * k, 13 * k, 0, 0, Math.PI * 2);
+        x.fill();
+        x.fillStyle = 'rgba(70,55,100,0.8)';
+        x.fillRect(px - 5 * k, py, 10 * k, 6 * k);
+      }
+      // Falling snow: soft flakes, bigger ones nearer.
+      for (let i = 0; i < (tall ? 190 : 220); i++) {
+        const px = rnd() * W;
+        const py = rnd() * H;
+        const r = (2 + rnd() * rnd() * 9) * k;
+        const flake = x.createRadialGradient(px, py, 0, px, py, r);
+        flake.addColorStop(0, 'rgba(255,255,255,0.95)');
+        flake.addColorStop(0.6, 'rgba(255,255,255,0.7)');
+        flake.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = flake;
+        x.beginPath();
+        x.arc(px, py, r, 0, Math.PI * 2);
+        x.fill();
+      }
+    });
+    // Side by side on the wide card; on the tall page the two friends stand a step back, up the slope.
+    const feet = groundY + (tall ? 40 : 22) * k;
+    const big = (tall ? 1.8 : 1.65) * k;
+    const [gap, back, small] = tall ? [300 * k, 150 * k, 0.68] : [470 * k, 0, 0.8];
+    const crew = [
+      [{ breed: 'foxling', coat: 'ember', outfit: { head: 'beanie', neck: 'scarf' } }, -1, 'happy'],
+      [{ breed: 'bunling', coat: 'lilac', outfit: { head: 'beanie', neck: 'scarf' } }, 1, 'bliss'],
+      [{ breed: 'kitling', coat: 'peach', outfit: { head: 'santa', neck: 'scarf' } }, 0, 'joy'],
+    ];
+    for (const [spec, side, face] of crew) {
+      add(spec, W / 2 + side * gap, feet - (side ? back + 6 * k : 0), big * (side ? small : 1), face);
+    }
   } else if (mode === 'word') {
     canvas.style.display = 'none';
     document.documentElement.style.background = 'transparent';

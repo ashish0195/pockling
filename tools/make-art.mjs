@@ -35,6 +35,18 @@ if (process.argv[2] === 'store') {
   process.exit(0);
 }
 
+// The Snow Festival's App Store in-app event images (card and details page), as JPEGs.
+//   node tools/make-art.mjs event <out dir>
+if (process.argv[2] === 'event') {
+  const dest = process.argv[3];
+  for (const [name, mode, width, height] of [['snow-festival-card-1920x1080', 'event-card', 1920, 1080], ['snow-festival-details-1080x1920', 'event-details', 1080, 1920]]) {
+    const png = await snap(name, mode, width, height);
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', png, '-pix_fmt', 'rgb24', join(dest, `${name}.png`)]);
+    execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '90', join(dest, `${name}.png`), '--out', join(dest, `${name}.jpg`)], { stdio: 'ignore' });
+  }
+  process.exit(0);
+}
+
 const icon = await snap('icon-1024', 'icon', 1024, 1024);
 const sips = (...args) => execFileSync('sips', args, { stdio: 'ignore' });
 const web = join(root, 'web');
