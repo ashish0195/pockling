@@ -103,6 +103,12 @@ the festival once 1.4 is approved?".
   4. Submit the whole draft (covered by the go-ahead above). If 1.5 can't be live before the event's publish
      date (8 Dec), tell the live-events session first: it moves the event's dates.
 - 1.4.1 (9) stays archived (from 3000ae4) but won't be uploaded: 1.5 carries the festival and fixes its widget bug.
-- **The web game** at bitfold.9io.ai/pockling/ is still 1.4's (4b93e30). Visit links open there, so main's web game
-  has to be deployed before 1.5 is out, or a friend opening a link sees the eggs instead of the pet. It waits for
-  the user's OK.
+- **The web game** was deployed on the user's "Yes, deploy it" at 23:42:43 IST, from main 756bfa7 (its web/ as
+  d9d8964). Before it, the server matched 1.4's deploy (4b93e30, 43 files); after it, all 48 files on the server
+  matched main. Checked live in headless Chrome: the game starts at the eggs, and a visit link opened fresh shows
+  "💌 Mochi came to visit!" with "Hatch your own" and "Get Pockling for iPhone".
+- **Found while checking:** visit links waited the whole time the hatch scene showed. So a new player who got the
+  app from a friend's visit, opened it to the eggs and tapped "See Mochi there" saw nothing happen, and a web tab
+  at the eggs ignored a new #visit=. Fixed on main in ef87d21: only mid-hatch waits now, and smoke `links` checks
+  it. Build 10 and the live web game don't have the fix. 1.5 (11) and a web redeploy would carry it, on the
+  user's OK.
