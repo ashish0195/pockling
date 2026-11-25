@@ -88,15 +88,21 @@ the festival once 1.4 is approved?".
   all three. The export registered the new App ID `app.pockling.Pockling.Stickers` with the App Group. Also
   checked: `com.apple.message-payload-provider` with the iMessage App Icon, no non-exempt encryption, Live
   Activities on, and the web game inside at 1.5. IPA 21,381,715 bytes, SHA-256 00a3e0a19025b7ad…. Uploaded at
-  23:38:59 IST ("Upload succeeded").
+  23:38:59 IST ("Upload succeeded"). Build `d5b605b1-6db2-49f1-9af4-5a39f81f605b` was VALID by 23:41 IST, with no
+  non-exempt encryption.
 - **Next, once 1.4 (8) is approved and live** (Waiting for Review since 25 Nov 22:01 IST; App Store Connect allows
   no new version while one is in review):
   1. Create version 1.5 from 1.4, which copies its text, media and review details.
   2. Enter What's New in four languages and the review notes paragraph above. Add the iMessage screenshots
-     (iPhone 6.3", iPad 13"), attach build 10, and release automatically.
+     (English (U.S.)): `store/imessage-6.3/` into `IMESSAGE_APP_IPHONE_61` (as the main iPhone set is
+     `APP_IPHONE_61`), `store/imessage-ipad-13/` into `IMESSAGE_APP_IPAD_PRO_3GEN_129`. Attach build 10, and release
+     automatically.
   3. Add for Review, which makes the draft submission. Then message the live-events session with the version
      and the draft's id: it adds the Snow Festival event (6839282325) to that draft and says when it's in.
      Don't add the event from here.
   4. Submit the whole draft (covered by the go-ahead above). If 1.5 can't be live before the event's publish
      date (8 Dec), tell the live-events session first: it moves the event's dates.
 - 1.4.1 (9) stays archived (from 3000ae4) but won't be uploaded: 1.5 carries the festival and fixes its widget bug.
+- **The web game** at bitfold.9io.ai/pockling/ is still 1.4's (4b93e30). Visit links open there, so main's web game
+  has to be deployed before 1.5 is out, or a friend opening a link sees the eggs instead of the pet. It waits for
+  the user's OK.
