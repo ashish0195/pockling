@@ -11,8 +11,9 @@ back identical. On 25 Nov the user OK'd sending it to review in the same submiss
 that carries the festival ("Yes, with that update", in the live-events session).
 
 **27 Nov 2026:** added to Pockling 1.5's draft submission `2c154b8f-c4b4-445f-bbcf-81aa1a83e018`, next to
-version 1.5 (build 12). Both items are Ready for Review. **Not submitted:** the orchestrator checks the
-draft and submits it. The checks before adding it:
+version 1.5 (build 12). **Submitted** by the orchestrator together with 1.5 at 18:38 IST on 27 Nov
+(13:08:46Z), after it checked the event and the version. It's Waiting for Review (`listing-1.5.md`).
+The checks before adding it:
 - 1.4 is live.
 - Build 12 is valid.
 - Build 12's archive, `5be5f45`, contains the festival (`3000ae4`, `web/src/festival.js`) and the
@@ -63,8 +64,11 @@ kind's payload keys).
 - Payload `{"room": "snow", "park": "snow", "goal": 7, "outfits": ["beanie", "santa", "scarf"], "steps": [2,
   4, 7], "window": 1, "walk": 2}`. The app has the same defaults built in.
 - A draft on the server since 25 Nov 2026; debug builds see it.
-- Publish it on the games dashboard's Live events card once 1.4.1 is live. It's then listed from 8 Dec,
-  seven days before the start.
+- Publish it on the games dashboard's Live events card, on the user's OK. It's then listed from 8 Dec,
+  seven days before the start, to 1.4.1 and later.
+  - That includes the web game at bitfold.9io.ai/pockling/, which runs the festival code at version
+    1.5 already.
+  - 1.4 never lists it.
 
 The app sends `live_open` (`from`: `card` or `link`), and puts `live: "snow-festival-2026"` on the walks'
 `play` and `finish` while the festival is on.
