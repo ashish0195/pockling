@@ -150,6 +150,25 @@ enum Reminders {
         defaults.set(Dictionary(uniqueKeysWithValues: plan.linesByDay.map { (String($0.key), $0.value) }), forKey: linesKey)
     }
 
+    /// The first reminder the queue would hold if the player said yes now, word for word, and the line
+    /// over it on the notification card ("Tomorrow at 6 pm, it says:"). Today is a visit, so it's
+    /// tomorrow's at the soonest.
+    static func preview(now: Date = Date(), calendar: Calendar = .current) -> (label: String, title: String, body: String)? {
+        let plan = ReminderPlan.make(now: now, calendar: calendar, enabled: true, pet: ReminderPet(save: save),
+                                     lastVisit: lastVisit ?? now, previous: storedLines())
+        guard let first = plan.reminders.first else { return nil }
+        return (previewLabel(for: first.date, now: now, calendar: calendar), first.title, first.body)
+    }
+
+    static func previewLabel(for date: Date, now: Date, calendar: Calendar = .current) -> String {
+        if calendar.isDate(date, inSameDayAs: now) { return "This evening at 6 pm, it says:" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
+            return "Tomorrow at 6 pm, it says:"
+        }
+        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        return "On \(names[(calendar.component(.weekday, from: date) + 6) % 7]) at 6 pm, it says:"
+    }
+
     static func storedLines() -> [Int: String] {
         let stored = defaults.dictionary(forKey: linesKey) as? [String: String] ?? [:]
         return Dictionary(uniqueKeysWithValues: stored.compactMap { key, value in Int(key).map { ($0, value) } })

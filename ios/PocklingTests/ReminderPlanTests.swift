@@ -373,6 +373,38 @@ struct ReminderPlanTests {
         #expect(ReminderPet(save: nil) == nil)
         #expect(ReminderPet(save: "not json") == nil)
     }
+
+    // MARK: The notification card's preview
+
+    /// The card shows the queue's first reminder word for word: after a visit today (a new player's first
+    /// launch), tomorrow's, and always a line from the pool, filled in.
+    @Test func theCardShowsTheFirstReminderWordForWord() throws {
+        let now = Self.date(27, 16)
+        let plan = Self.plan(now: now, lastVisit: now, pet: Self.pet(at: now, careDays: 1))
+        let first = try #require(plan.reminders.first)
+        #expect(first.date == Self.date(28, 18))
+        #expect(Reminders.previewLabel(for: first.date, now: now, calendar: Self.india) == "Tomorrow at 6 pm, it says:")
+        #expect(!first.title.contains("{") && !first.body.contains("{"))
+        #expect(ReminderPlan.pool.contains { $0.id == first.line.id })
+    }
+
+    @Test func thePreviewSaysWhichEvening() {
+        let morning = Self.date(27, 10)
+        #expect(Reminders.previewLabel(for: Self.date(27, 18), now: morning, calendar: Self.india) == "This evening at 6 pm, it says:")
+        #expect(Reminders.previewLabel(for: Self.date(28, 18), now: morning, calendar: Self.india) == "Tomorrow at 6 pm, it says:")
+        // 27 November 2026 is a Friday: two days on is Sunday.
+        #expect(Reminders.previewLabel(for: Self.date(29, 18), now: morning, calendar: Self.india) == "On Sunday at 6 pm, it says:")
+    }
+
+    /// NineIO.swift is stocks-bot's games/client copy with quiet notifications after "Not now" (d4a73bd):
+    /// Pockling, the tests' host, turns them on at launch.
+    @Test func notNowMeansQuietReminders() async throws {
+        for _ in 0..<50 where !NineIO.shared.quietAfterNotNow {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        #expect(NineIO.shared.quietAfterNotNow)
+        #expect(NineIO.shared.app == "pockling")
+    }
 }
 
 @MainActor

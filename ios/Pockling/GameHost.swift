@@ -122,7 +122,7 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
             Reminders.setName(body["name"] as? String)
         case "track":
             track(body)
-        case "notifySettings", "notifySet", "notifyOffer", "notifyAnswer":
+        case "notifySettings", "notifySet", "notifyOffer", "notifyAnswer", "notifyBanners":
             Task { await answerNotify(command, body) }
         case "review":
             askForReview(body)
@@ -251,16 +251,31 @@ final class GameHost: NSObject, ObservableObject, WKScriptMessageHandler, WKNavi
             }
             Reminders.refresh()
         case "notifyOffer":
-            answer["offer"] = await nine.shouldOfferNotifications()
+            // `at` is where the card would show (lower_snake_case, for notif_card); the first reminder goes
+            // with a yes, word for word.
+            let moment = (body["at"] as? String).flatMap {
+                $0.range(of: "^[a-z][a-z0-9_]{0,39}$", options: .regularExpression) != nil ? $0 : nil
+            }
+            let offer = await nine.shouldOfferNotifications(at: moment)
+            answer["offer"] = offer
+            if offer, let preview = Reminders.preview() {
+                answer["preview"] = ["label": preview.label, "title": preview.title, "body": preview.body]
+            }
         case "notifyAnswer":
             let choice = NineIO.Answer(rawValue: body["answer"] as? String ?? "") ?? .later
             answer["granted"] = await nine.answerNotificationOffer(choice)
+            Reminders.refresh()
+        case "notifyBanners":
+            // From quiet reminders to banners and sounds: iOS's prompt, once.
+            if await nine.requestPermission() { nine.remindersEnabled = true }
             Reminders.refresh()
         default:
             break
         }
         let status = await nine.notificationStatus()
         answer["allowed"] = status == .authorized || status == .provisional || status == .ephemeral
+        // Reminders arrive quietly (after "Not now" on the card): Notification Center only.
+        answer["quiet"] = status == .provisional
         answer["reminders"] = nine.remindersEnabled
         answer["news"] = nine.newsEnabled
         answer["analytics"] = nine.analyticsEnabled

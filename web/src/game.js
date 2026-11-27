@@ -335,21 +335,24 @@ function endRound() {
 }
 
 /**
- * Home again after a game that ended well: a good moment to offer reminders, once per launch, and not
- * before the pet has been looked after on two different days; or else, on a day whose stamp kept a
- * streak going, for the app's rating prompt. Never in the launch the pet hatched in. The app adds its
- * own limits: the card only before iOS has asked, at most three times, days apart; the rating from the
- * second day of use, once per version, never in a launch that showed the card.
+ * Home again after a game that ended well: a good moment to offer reminders, once per launch, from the
+ * very first one, the launch the pet hatched in included (most players who hatch a pet finish a game
+ * with it that first time, and only a third come back the next day, so waiting for a second day of care
+ * reached almost nobody); or else, on a day whose stamp kept a streak going, for the app's rating prompt,
+ * never in the launch the pet hatched in. The app adds its own limits: the card only before iOS has
+ * asked (or while reminders arrive quietly), at most three times, days apart; the rating from the second
+ * day of use, once per version, never in a launch that showed the card.
  */
 function afterHappyRound() {
   const p = game.state.pet;
-  if (!isNative || game.demo || !p || p.born >= launchedAt) return;
-  const offer = !offered && p.careDays >= 2;
-  const rate = !rated && keptStreakToday();
+  if (!isNative || game.demo || !p) return;
+  const hatchedNow = p.born >= launchedAt;
+  const offer = !offered;
+  const rate = !rated && !hatchedNow && keptStreakToday();
   if (!offer && !rate) return;
   offered ||= offer;
   rated ||= rate;
-  game.ui?.afterHappyRound?.({ offer, rate });
+  game.ui?.afterHappyRound?.({ offer, rate, at: p.careDays >= 2 ? 'happy_round' : 'first_day' });
 }
 
 /** Today's stamp is in the book, and it's the second day in a row or more. */

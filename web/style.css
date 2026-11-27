@@ -636,6 +636,17 @@ button:focus-visible { outline: 3px solid var(--pink-deep); outline-offset: 2px;
 .btn.plain { min-height: 44px; padding: 10px 16px; background: none; box-shadow: none; color: var(--soft); }
 .btn.plain:active { transform: none; box-shadow: none; }
 .banner .btn.plain { margin-top: 4px; }
+/* The notification card's first reminder, as it would arrive, and its line about quiet reminders. */
+.banner .note-label { margin: 0 0 6px; font-size: 13px; text-align: left; }
+.banner .note-preview { margin: 0 0 14px; padding: 10px 12px; border-radius: 16px; background: var(--cream);
+  box-shadow: inset 0 0 0 1px var(--line); text-align: left; font-size: 14px; line-height: 1.3; }
+.banner .note-preview b { display: block; margin: 3px 0 2px; color: var(--ink); font-weight: 800; }
+.banner .note-preview > span { display: block; color: var(--soft); font-weight: 600; }
+.banner .note-app { display: flex; justify-content: space-between; color: var(--soft); font-size: 11px;
+  font-weight: 800; letter-spacing: 0.05em; }
+.banner .note-quiet { margin: 8px 0 0; font-size: 12px; }
+/* A taller card (the notification card with its preview): higher up, and it scrolls on a short screen. */
+.banner.tall { top: max(12px, min(18%, calc(100% - 600px))); max-height: calc(100% - 24px - var(--safe-b)); overflow-y: auto; }
 
 /* Bedtime strip and game bars. */
 #bedtime {

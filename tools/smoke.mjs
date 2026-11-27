@@ -20,6 +20,23 @@ const APP_BRIDGE = `
   } } } };
 `;
 
+/**
+ * The app's bridge for the reminders card: like APP_BRIDGE, and it answers the card's questions as the app
+ * would on a phone where iOS hasn't asked yet (GameHost.swift's answerNotify): the card is due, with the first
+ * reminder word for word, and "Not now" turns on quiet reminders.
+ */
+const REMINDERS_BRIDGE = `
+  window.__sent = [];
+  window.webkit = { messageHandlers: { pockling: { postMessage(m) {
+    window.__sent.push({ cmd: m.cmd, at: m.at, answer: m.answer });
+    const choices = { allowed: false, quiet: false, reminders: true, news: false, analytics: true };
+    const reply = (value) => setTimeout(() => window.__pockling.emit('answer', { id: m.id, value: { ...choices, ...value } }), 20);
+    if (m.cmd === 'notifyOffer') reply({ offer: true, preview: { label: 'Tomorrow at 6 pm, it says:', title: 'Biscuit has a question about dinner', body: 'It is a very small question. It is about dinner.' } });
+    else if (m.cmd === 'notifyAnswer') reply(m.answer === 'later' ? { granted: true, allowed: true, quiet: true } : { granted: true, allowed: true });
+    else if (m.cmd === 'notifySettings') reply({});
+  } } } };
+`;
+
 const flows = {
   async hatch(d) {
     await d.open('web/');
@@ -580,6 +597,51 @@ const flows = {
     assert(keys[0] !== keys[1], 'a new set of stickers for the new look');
   },
 
+  // The reminders card (Football Kick 1.3's pattern): in the very launch the pet hatched in, the first game that
+  // ends well brings it, saying where (notif_card's "first_day"), with the first reminder word for word and what
+  // "Not now" does. "Not now" goes to the app, which turns on quiet reminders.
+  async reminders(d) {
+    await d.open('web/');
+    assert(await d.js(`T.scene === __scenes.hatch`), 'a new game starts with an egg');
+    const egg = await d.js(`(() => { const e = T.scene.eggs[0]; return [e.x, e.y]; })()`);
+    await d.js(`T.tap(${egg[0]}, ${egg[1]}); T.click('#hatchBtn'); T.ff(2)`);
+    const w = await d.js(`[__game.view.w / 2, __game.view.h * 0.46]`);
+    for (let i = 0; i < 6; i++) await d.js(`T.tap(${w[0]}, ${w[1]}); T.ff(0.3)`);
+    await d.js(`T.ff(5)`);
+    await d.waitFor(`document.getElementById('studioDone')`);
+    await d.js(`T.click('#studioDone')`);
+    await d.waitFor(`document.getElementById('petName')`);
+    await d.js(`document.getElementById('petName').value = 'Biscuit'; T.click('#nameBtn')`);
+    await d.waitFor(`T.scene === __scenes.home`);
+    await d.js(`T.ff(2)`);
+    assert(await d.js(`__game.state.pet.born > Date.now() - 600000`), 'the pet hatched just now, in this launch');
+    assert(!(await d.js(`__sent.some((m) => m.cmd === 'notifyOffer')`)), 'no card before a game');
+    // A snack that ends well, then home.
+    await d.js(`(async () => {
+      const { goTo, roundDone } = await import('./src/game.js');
+      goTo(__scenes.snackGame);
+      T.ff(0.5);
+      roundDone();
+      goTo(__scenes.home);
+      T.ff(0.5);
+    })()`);
+    await d.waitFor(`document.querySelector('#banners .banner')`, 20000);
+    const offer = await d.js(`__sent.find((m) => m.cmd === 'notifyOffer')`);
+    assert(offer && offer.at === 'first_day', `the card asks the app, saying where (${JSON.stringify(offer)})`);
+    const card = await d.js(`document.querySelector('#banners .banner').innerText`);
+    assert(card.includes('Can Biscuit say hello?'), 'the card is about the pet');
+    assert(card.includes('Tomorrow at 6 pm, it says:') && card.includes('Biscuit has a question about dinner'), 'it shows the first reminder word for word');
+    assert(card.includes("they'll arrive quietly in Notification Center"), 'it says what Not now does');
+    assert(!/free|price|sale|\$/i.test(card), 'no price words');
+    await d.js(`T.ff(0.6)`);
+    await d.shot('reminders-card', { draw: false });
+    await d.js(`T.click('#banners [data-answer="later"]')`);
+    await d.waitFor(`__sent.some((m) => m.cmd === 'notifyAnswer')`, 4000);
+    assert((await d.js(`__sent.find((m) => m.cmd === 'notifyAnswer').answer`)) === 'later', 'Not now goes to the app');
+    await d.waitFor(`/Notification Center/.test(document.getElementById('live').textContent)`, 4000);
+    await d.shot('reminders-quiet', { draw: false });
+  },
+
   // A tapped reminder or a pockling:// link (ios/Pockling/PetLinks.swift) tells the game to show the pet.
   async links(d) {
     await d.open('web/');
@@ -740,6 +802,7 @@ async function duoMoments(d, tag, fold) {
   }
 }
 flows.app.init = APP_BRIDGE;
+flows.reminders.init = REMINDERS_BRIDGE;
 for (const tag of ['duo-book', 'duo-laptop']) {
   const [width, height, fold] = DUO[tag];
   flows[`moments-${tag}`] = (d) => duoMoments(d, tag, fold);

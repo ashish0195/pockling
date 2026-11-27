@@ -6,7 +6,7 @@ import { applySettings, askForRatingNicely, celebrate, defineRoomArt, game, grew
 import { foodThumb } from '../bake/food.js';
 import { OUTFIT_ART } from '../bake/outfits.js';
 import { festivalNow, festivalSettings, festivalSoon, festivalState, walkFlakesLeft, windowFlakeDue } from '../festival.js';
-import { answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting, shareLink, track } from '../platform.js';
+import { allowNotificationBanners, answerNotificationOffer, canOfferNotifications, clearSave, haptic, isNative, notifySettings, openLink, openNotificationSettings, setNotifySetting, shareLink, track } from '../platform.js';
 import { visitLink } from '../visit.js';
 import { ageDays, buyOutfit, buyRoom, levelOf, levelProgress, mood, stageOf, tasteOf, trait, useRoom, wear } from '../state.js';
 import { dayNumber } from '../util.js';
@@ -158,10 +158,10 @@ export const ui = {
   },
 
   /** A card in the middle of the screen. onClose gets the [data-close] button that closed it, if any. */
-  banner(html, { onClose } = {}) {
+  banner(html, { onClose, tall = false } = {}) {
     const wrap = document.createElement('div');
     wrap.className = 'banner-wrap';
-    wrap.innerHTML = `<div class="banner">${html}</div>`;
+    wrap.innerHTML = `<div class="banner${tall ? ' tall' : ''}">${html}</div>`;
     $('#banners').append(wrap);
     const close = (by = null) => {
       wrap.remove();
@@ -365,7 +365,9 @@ export const ui = {
    */
   choiceToggles() {
     const row = (key, label, sub) => `<button class="row" data-action="choice" data-key="${key}" role="switch" aria-checked="${this.chosen(key)}"><span>${label}<small>${sub}</small></span><span class="switch${this.chosen(key) ? ' on' : ''}"></span></button>`;
-    return `${row('reminders', '🔔 Reminders', 'A little note from your pet at 6 pm on days you haven\'t visited')}
+    const quietly = this.choices.quiet && this.chosen('reminders');
+    return `${row('reminders', '🔔 Reminders', `A little note from your pet at 6 pm on days you haven't visited${quietly ? '. For now they arrive quietly in Notification Center.' : ''}`)}
+      ${quietly ? '<button class="row" data-action="banners"><span>🔔 Show them as banners too<small>iOS asks once</small></span></button>' : ''}
       ${row('news', '📣 News and new games', 'New games and events from 9io')}
       ${row('analytics', '📊 Share anonymous usage data', 'Helps us see what Pocklings like doing. No account, no ads, no tracking.')}`;
   },
@@ -403,6 +405,20 @@ export const ui = {
     if (answer.blocked) this.notificationsOff();
   },
 
+  /** Reminders arrive quietly (after "Not now" on the card): iOS's prompt, once, for banners and sounds. */
+  async on_banners(el) {
+    const answer = await allowNotificationBanners();
+    if (!answer) return;
+    this.choices = answer;
+    this.showChoices();
+    if (!answer.quiet) {
+      el.remove();
+      const note = root().querySelector('[data-action="choice"][data-key="reminders"] small');
+      if (note) note.textContent = 'A little note from your pet at 6 pm on days you haven\'t visited';
+    }
+    if (!answer.allowed) this.notificationsOff();
+  },
+
   /** A notification switch went on, but iOS has notifications turned off for Pockling. */
   notificationsOff() {
     this.banner(`<div class="big">🔕</div><h2>Notifications are off</h2><p>Pockling isn't allowed to send notifications. You can turn them on in iOS Settings.</p><button class="btn" data-close data-go="settings">Open Settings</button><button class="btn alt" data-close>Not now</button>`, {
@@ -417,26 +433,36 @@ export const ui = {
    * notifications?" card if offer and the app says so, or else, if rate, the app's rating prompt (the app
    * decides whether it's due). The card's answer goes to the app, which asks iOS unless it was Not now.
    */
-  async afterHappyRound({ offer, rate }) {
+  async afterHappyRound({ offer, rate, at }) {
     for (let i = 0; i < 20 && !this.quiet(); i++) await new Promise((r) => setTimeout(r, 700));
     if (!this.quiet()) return;
-    const answer = offer ? await canOfferNotifications() : null;
+    const answer = offer ? await canOfferNotifications(at) : null;
     if (!this.quiet()) return;
     if (!answer?.offer) {
       if (rate) askForRatingNicely('streak');
       return;
     }
     const name = esc(game.state.pet.name);
+    // The first reminder, word for word, as it would arrive (Reminders.swift's plan).
+    const p = answer.preview;
+    const preview = p ? `<p class="note-label">${esc(p.label)}</p><div class="note-preview" role="img" aria-label="${esc(`${p.label} ${p.title}. ${p.body}`)}"><div class="note-app"><span>POCKLING</span><span>6:00 PM</span></div><b>${esc(p.title)}</b><span>${esc(p.body)}</span></div>` : '';
+    const later = answer.quiet ? 'For now they arrive quietly in Notification Center.' : 'Not now? Then they\'ll arrive quietly in Notification Center, to keep or turn off there.';
     this.banner(`<div class="big">🔔</div><h2>Can ${name} say hello?</h2><p>A little note at 6 pm on days you haven't visited, with all of ${name}'s news.</p>
+      ${preview}
       <button class="btn" data-close data-answer="all">Reminders and news<small>Also news about new games and events from 9io</small></button>
       <button class="btn alt" data-close data-answer="reminders">Just reminders</button>
-      <button class="btn plain" data-close data-answer="later">Not now</button>`, {
+      <button class="btn plain" data-close data-answer="later">Not now</button>
+      <p class="note-quiet">${later}</p>`, {
+      tall: Boolean(preview),
       onClose: async (by) => {
         audio.click();
         const result = await answerNotificationOffer(by?.dataset.answer ?? 'later');
         if (!result) return;
         this.choices = result;
-        if (result.granted) this.toast(`🔔 ${game.state.pet.name} will say hello at 6 pm`);
+        if (result.granted) {
+          this.toast(result.quiet ? `🔔 ${game.state.pet.name}'s notes will wait in Notification Center`
+            : `🔔 ${game.state.pet.name} will say hello at 6 pm`);
+        }
       },
     });
   },

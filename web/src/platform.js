@@ -187,11 +187,18 @@ export const notifySettings = () => ask('notifySettings');
 /** key is reminders, news or analytics. Turning on a notification one asks iOS; blocked: it said no. */
 export const setNotifySetting = (key, value) => ask('notifySet', { key, on: value });
 
-/** { offer }: whether to show our own "turn on notifications?" card now. */
-export const canOfferNotifications = () => ask('notifyOffer');
+/**
+ * { offer, preview, quiet }: whether to show our own "turn on notifications?" card now (at is where, for
+ * the app's notif_card event: "first_day" or "happy_round"), and with a yes the first reminder word for
+ * word: { label, title, body }. quiet: reminders already arrive quietly, in Notification Center.
+ */
+export const canOfferNotifications = (at) => ask('notifyOffer', at ? { at } : {});
 
 /** answer is all (reminders and news), reminders or later. { granted }: iOS allowed them. */
 export const answerNotificationOffer = (answer) => ask('notifyAnswer', { answer });
+
+/** From quiet reminders (Notification Center only) to banners and sounds: iOS's prompt, once. */
+export const allowNotificationBanners = () => ask('notifyBanners');
 
 /** Opens Pockling's page in iOS Settings, to allow notifications. */
 export function openNotificationSettings() {
