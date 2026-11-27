@@ -17,7 +17,7 @@ chmod -R u=rwX,go=rX "$STAGE"
 # braces matter: zsh would read "$HOST:/var" as a history modifier
 rsync -az --delete -e "ssh -i $KEY $SSH_OPTS" "$STAGE/" "${HOST}:/var/www/bitfold/pockling/"
 
-for path in "" privacy/ support/ src/app.js; do
+for path in "" guide/ privacy/ support/ src/app.js; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "https://bitfold.9io.ai/pockling/$path")
   [ "$code" = 200 ] || { echo "live check failed ($code): /pockling/$path" >&2; exit 1; }
 done
