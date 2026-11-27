@@ -196,3 +196,20 @@ the festival once 1.4 is approved?".
 - Sent to the live-events session (local_3a80bda8), which adds the Snow Festival in-app event (6839282325) to this
   draft under the user's OK in its own chat, and to the orchestrator, which checks the draft and submits. The event
   publishes on 8 Dec, so 1.5 should be live before then.
+
+### Submitted (27 Nov 2026)
+
+- **Submitted by the orchestrator at 18:38 IST** (13:08:46Z), with the Snow Festival in-app event (6839282325) in
+  the same submission. Before that it checked the draft:
+  - **Build:** 12 VALID, and the release automatic.
+  - **What's New:** en-US, en-GB, es-MX and hi, each with 1.5's text and the reminders sentence, and no price
+    words.
+  - **Unchanged from live 1.4:** keywords, descriptions, promotional text, links, and 1.4's screenshot, Duo and
+    preview sets.
+  - **Messages screenshots:** the two iMessage sets (iPhone 6.1" and iPad 13") are real captures of the nine
+    stickers.
+  - **The event:** its dates (publish 8 Dec 12:00Z, running 15 Dec to 14 Jan) and its four languages.
+- Submission `2c154b8f` is WAITING_FOR_REVIEW.
+- **What's next:**
+  - The event publishes on 8 Dec, so 1.5 needs approval before then.
+  - Once 1.5 is live, the live-events session publishes the server-side festival, on the user's OK.
