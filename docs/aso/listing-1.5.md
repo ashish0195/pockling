@@ -107,10 +107,22 @@ What's New: 1.5's text above, with one more sentence at the end:
 - hi: शाम 6 बजे एक हैलो चाहिए? आपका पालतू अब ठीक-ठीक दिखाता है कि वह क्या कहेगा, और Not now चुनने पर उसके नोट
   चुपचाप Notification Center में इंतज़ार करते हैं।
 
-Review notes: 1.5's paragraph, plus: "The reminders card can now appear in the first session, after the first
-game that ends well. It shows the exact text of the next reminder. Not now requests provisional authorization
-(UNAuthorizationOptions.provisional): reminders go quietly to Notification Center and iOS asks whether to keep
-them. News is a separate choice and is never sent that way."
+Review notes as entered (3,944 characters, under the 4,000 cap): 1.4's, with its first paragraph (1.4's studio)
+replaced by 1.5's (visits, stickers, naps), the notification card paragraph rewritten for the new timing, the
+exact text and provisional "Not now", and the Settings paragraph tightened with the banners row.
+
+### In App Store Connect (27 Nov 2026, on the user's "Yes, upload all five" in the reminders session)
+
+- 18:23 IST: build 12 uploaded (`xcodebuild -exportArchive`, destination upload) from the archive of `5be5f45`.
+- Version 1.5 `7a73bbd2-202f-442b-a5c3-cce576b21f7a` created through iris (POST appStoreVersions): it copied
+  1.4's text, media, review details, copyright (2026 9io) and release type (AFTER_APPROVAL).
+- What's New in en-US, en-GB, es-MX and hi (1.5's text plus the sentence above), read back identical; no price
+  word in What's New or the promotional text.
+- Review notes (`appStoreReviewDetails` `38cb2ae3`), read back identical; sign-in not required.
+- iMessage screenshots, English (U.S.), through iris (appScreenshotSets, then appScreenshots with their upload
+  operations and checksums): `IMESSAGE_APP_IPHONE_61` (`2b2cd16c`) holds `store/imessage-6.3/01-send` and
+  `02-stickers`; `IMESSAGE_APP_IPAD_PRO_3GEN_129` (`aa92867b`) holds `store/imessage-ipad-13/01-send` and
+  `02-stickers`. All four COMPLETE, their MD5s matching the files.
 
 ## Release
 
@@ -175,3 +187,12 @@ the festival once 1.4 is approved?".
     fix from the eggs and `FESTIVAL_VERSION` 1.5.
 
   On 5522851's code: npm test 81 pass, and smoke `app` (widget pictures and stickers) and `links` (visits) pass.
+
+### Build 12's draft (27 Nov 2026)
+
+- Build 12 (`4a988cef-a6a1-4c2b-a8d2-450a631694e4`) VALID, no non-exempt encryption; attached to 1.5 in place of 11.
+- **Draft submission `2c154b8f-c4b4-445f-bbcf-81aa1a83e018`** (iOS, created through iris about 18:35 IST): version
+  1.5 with build 12, READY_FOR_REVIEW (Apple's checks passed, the iMessage screenshots included). Not submitted.
+- Sent to the live-events session (local_3a80bda8), which adds the Snow Festival in-app event (6839282325) to this
+  draft under the user's OK in its own chat, and to the orchestrator, which checks the draft and submits. The event
+  publishes on 8 Dec, so 1.5 should be live before then.
