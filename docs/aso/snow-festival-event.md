@@ -4,11 +4,21 @@ The user chose "December live events" on 25 Nov 2026: a Snow Festival in Pocklin
 App Store as an in-app event (search and the Today tab) and run in the game as a live event from
 the 9io games service. It takes up `docs/ASO.md`'s "First Snow" idea.
 
-## App Store Connect: in-app event 6839282325 (draft)
+## App Store Connect: in-app event 6839282325
 
 Entered on 25 Nov 2026 through App Store Connect's own API from the web session (iris), and read
-back identical. **Not submitted.** It goes to review together with the Pockling update that carries
-the festival and its deep link, and only on the user's OK.
+back identical. On 25 Nov the user OK'd sending it to review in the same submission as the update
+that carries the festival ("Yes, with that update", in the live-events session).
+
+**27 Nov 2026:** added to Pockling 1.5's draft submission `2c154b8f-c4b4-445f-bbcf-81aa1a83e018`, next to
+version 1.5 (build 12). Both items are Ready for Review. **Not submitted:** the orchestrator checks the
+draft and submits it. The checks before adding it:
+- 1.4 is live.
+- Build 12 is valid.
+- Build 12's archive, `5be5f45`, contains the festival (`3000ae4`, `web/src/festival.js`) and the
+  `snowfestival` link key.
+
+1.5 has to be live before the 8 Dec publish date, or the event's dates move.
 
 | Field | As entered |
 |---|---|
