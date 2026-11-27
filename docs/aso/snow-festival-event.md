@@ -63,12 +63,13 @@ kind's payload keys).
 - `min_version` `1.4.1`.
 - Payload `{"room": "snow", "park": "snow", "goal": 7, "outfits": ["beanie", "santa", "scarf"], "steps": [2,
   4, 7], "window": 1, "walk": 2}`. The app has the same defaults built in.
-- A draft on the server since 25 Nov 2026; debug builds see it.
-- Publish it on the games dashboard's Live events card, on the user's OK. It's then listed from 8 Dec,
-  seven days before the start, to 1.4.1 and later.
-  - That includes the web game at bitfold.9io.ai/pockling/, which runs the festival code at version
-    1.5 already.
+- **Published on 27 Nov 2026** on the user's "Yes, publish it": scheduled, and listed from 8 Dec at
+  17:30 IST (12:00 UTC), seven days before the start, to 1.4.1 and later.
+  - That includes the web game at bitfold.9io.ai/pockling/, which already runs the festival code at
+    version 1.5.
   - 1.4 never lists it.
+  - Until 8 Dec, release builds get an empty list.
+  - To end it early, use "End now" on the games dashboard's Live events card.
 
 The app sends `live_open` (`from`: `card` or `link`), and puts `live: "snow-festival-2026"` on the walks'
 `play` and `finish` while the festival is on.
