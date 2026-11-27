@@ -77,6 +77,41 @@ reaches a server). No new permission, purchase or data collection.
     UI test that drives Messages (`xcodegen generate`, then `xcodebuild test`; its header says how).
 - The main sets stay as 1.4's. No price words anywhere (2.3.7).
 
+## 1.5 (12): reminders that reach new players (27 Nov 2026)
+
+Build 12 replaces build 11 in 1.5: build 11 plus the reminders change from the session "Reminders that reach
+players, in every app" (`bead5a8`; the shared plan is stocks-bot `games/REMINDERS-REACH.md`).
+
+- **Why:** 16 of 58 installs had seen the reminders card by 27 Nov. It came only from the pet's second day of
+  care and never in the hatch launch, and only a third of players come back the next day, while 13 of 16
+  first-day hatchers finish a game that first launch.
+- **What:** the card at the first game that ends well, the hatch launch included; the first reminder word for
+  word from the native plan (`Reminders.preview()`); "Not now" turns on quiet notifications (provisional:
+  Notification Center only) and says so; the menu's Reminders row says they arrive quietly and offers
+  "Show them as banners too"; NineIO.swift is stocks-bot `d4a73bd` (`notif_card` with `at` first_day or
+  happy_round, `notif_quiet`). The rating prompt still never comes in the hatch launch.
+- **Checked:** npm test 81; all 27 smoke flows, among them the new `reminders`; 28 native tests (3 new). In
+  the Debug app on an iPhone 17 Pro simulator (iOS 27.2): hatch Biscuit, a snack, the card with the plan's
+  real line ("Tomorrow at 6 pm, it says: Biscuit has questions / Mostly about snacks. One is about you."),
+  Not now: provisional, `notif_card {at: first_day, n: 1}`, `notif_prompt {answer: later}`,
+  `notif_quiet {granted: 1}`, news off, the week's queue starting with that line.
+- **Upgrade from the live 1.4 (8)** (`4b93e30`; Mochi hatched on its Debug build, then its Release build) to
+  **1.5 (12)** (Release): Mochi unchanged (name, kitling, cream with the lemon look, seed, XP, care days,
+  outfit, room, born, 42 berries, streak 1), and home opened with nothing over it.
+
+What's New: 1.5's text above, with one more sentence at the end:
+- en-US and en-GB: Want a hello at 6 pm? Your pet now shows you exactly what it'll say, and Not now lets its
+  notes wait quietly in Notification Center.
+- es-MX: ¿Quieres un saludo a las 6 p. m.? Tu mascota te muestra exactamente lo que dirá, y con Not now sus
+  notas esperan en silencio en el Centro de notificaciones.
+- hi: शाम 6 बजे एक हैलो चाहिए? आपका पालतू अब ठीक-ठीक दिखाता है कि वह क्या कहेगा, और Not now चुनने पर उसके नोट
+  चुपचाप Notification Center में इंतज़ार करते हैं।
+
+Review notes: 1.5's paragraph, plus: "The reminders card can now appear in the first session, after the first
+game that ends well. It shows the exact text of the next reminder. Not now requests provisional authorization
+(UNAuthorizationOptions.provisional): reminders go quietly to Notification Center and iOS asks whether to keep
+them. News is a separate choice and is never sent that way."
+
 ## Release
 
 The user's go-ahead in the pockling-duo session, 25 Nov 2026: "Yes, do that" to "Upload 1.5 now, and submit it with
