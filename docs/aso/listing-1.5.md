@@ -1,4 +1,4 @@
-# Pockling 1.5 (10): visits, stickers and naps
+# Pockling 1.5: visits, stickers and naps (ships as build 12)
 
 1.5 is the rest of the Pockling ideas the user chose on 25 Nov 2026: pet visits by link, stickers of your own
 pet for Messages, and naps in the Dynamic Island. All three are about the pet travelling beyond the app, where
@@ -125,18 +125,27 @@ the festival once 1.4 is approved?".
   Activities on, and the web game inside at 1.5. IPA 21,381,715 bytes, SHA-256 00a3e0a19025b7ad…. Uploaded at
   23:38:59 IST ("Upload succeeded"). Build `d5b605b1-6db2-49f1-9af4-5a39f81f605b` was VALID by 23:41 IST, with no
   non-exempt encryption.
-- **Next, once 1.4 (8) is approved and live** (Waiting for Review since 25 Nov 22:01 IST; App Store Connect allows
-  no new version while one is in review):
-  1. Create version 1.5 from 1.4, which copies its text, media and review details.
-  2. Enter What's New in four languages and the review notes paragraph above. Add the iMessage screenshots
-     (English (U.S.)): `store/imessage-6.3/` into `IMESSAGE_APP_IPHONE_61` (as the main iPhone set is
-     `APP_IPHONE_61`), `store/imessage-ipad-13/` into `IMESSAGE_APP_IPAD_PRO_3GEN_129`. Attach build 11 (not 10), and release
-     automatically.
-  3. Add for Review, which makes the draft submission. Then message the live-events session with the version
-     and the draft's id: it adds the Snow Festival event (6839282325) to that draft and says when it's in.
-     Don't add the event from here.
-  4. Submit the whole draft (covered by the go-ahead above). If 1.5 can't be live before the event's publish
-     date (8 Dec), tell the live-events session first: it moves the event's dates.
+- **1.4 (8) went live on 25 Nov at 23:13 UTC** (26 Nov, 04:43 IST, by Apple's lookup), so version 1.5 can be made.
+- **Changed on 27 Nov: build 12 goes to review, not build 11, and this session doesn't submit.** Build 12 is
+  build 11 plus the reminders card (1.5 (12) above). The orchestrator's plan, once the user OKs the upload in its
+  chat:
+  1. The reminders session uploads build 12, creates version 1.5 from 1.4 (which copies its text, media and
+     review details) and fills in what doesn't come over:
+     - What's New in four languages: the text above, then the reminders sentence;
+     - the review notes: the 1.5 paragraph, then the reminders one;
+     - the iMessage screenshots (English (U.S.)), new with the Messages extension, so 1.4 has none to copy:
+       `store/imessage-6.3/` into `IMESSAGE_APP_IPHONE_61` (as the main iPhone set is `APP_IPHONE_61`),
+       `store/imessage-ipad-13/` into `IMESSAGE_APP_IPAD_PRO_3GEN_129`;
+     - build 12 (not 10 or 11), released automatically.
+
+     Then Add for Review, which makes the draft submission.
+  2. The live-events session adds the Snow Festival event (6839282325) to that draft, on the OK in its own chat.
+  3. The orchestrator checks the draft and submits it. If 1.5 can't be live before the event's publish date
+     (8 Dec), the live-events session hears first: it moves the event's dates.
+
+  The Duo media come over with 1.4's sets, and custom product pages aren't part of a version, so 1.5 needs
+  nothing new for either. The user's "Yes, do that" above was for this session's builds 10 and 11. Build 12 goes
+  up on the OK the orchestrator is asking for.
 - 1.4.1 (9) stays archived (from 3000ae4) but won't be uploaded: 1.5 carries the festival and fixes its widget bug.
 - **The web game** was deployed on the user's "Yes, deploy it" at 23:42:43 IST, from main 756bfa7 (its web/ as
   d9d8964). Before it, the server matched 1.4's deploy (4b93e30, 43 files); after it, all 48 files on the server
@@ -150,9 +159,19 @@ the festival once 1.4 is approved?".
     same way: 1.5 (11) on all three bundles, the App Group on each, push `production`, and the fix inside. IPA
     21,381,893 bytes, SHA-256 d85a9275857da5ca…. Uploaded at 23:54:30 IST. Build
     `a39ff5bd-a14f-44eb-b28b-597602be7716` was VALID by 23:56 IST, with no non-exempt encryption.
-  - **Build 11 is the one to submit**, in place of build 10. The upgrade tests above were on build 10; 11 changes
-    only how visit links are let in.
+  - Build 11 was the one to submit until 27 Nov, when build 12 took its place. The upgrade tests above were on
+    build 10; 11 changes only how visit links are let in.
   - The web game was redeployed at 23:54:43 IST from 93ddfce. Only `src/app.js` changed, and all 48 files match
     main.
   - Checked live: a visit link opens Mochi's visit fresh, in a tab already at the eggs, and when navigated to in a
     running tab.
+- **Build 12, checked from this session (27 Nov)** in the reminders session's export (archive
+  `ios/build/Pockling-1.5-12.xcarchive`, not in git):
+  - 1.5 (12) on all three bundles, Apple Distribution (9X9HQVQ78G), the App Group on all three, and push
+    `production` on the app;
+  - the Messages extension is a `com.apple.message-payload-provider` with the iMessage App Icon, and Live
+    Activities are on; the naps, widget, stickers, visit and pet-art code is unchanged since build 11;
+  - the game inside matches main's `web/` file for file, with the stickers' and widget's `painter()`, the visit
+    fix from the eggs and `FESTIVAL_VERSION` 1.5.
+
+  On 5522851's code: npm test 81 pass, and smoke `app` (widget pictures and stickers) and `links` (visits) pass.
